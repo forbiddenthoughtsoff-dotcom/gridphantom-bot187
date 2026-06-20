@@ -1,0 +1,26 @@
+# Secrets — NEVER commit these
+*.json
+.env
+*.key
+credentials.json
+client_secrets.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+
+# Temp files
+/tmp/
+*.mp4
+*.mp3
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
