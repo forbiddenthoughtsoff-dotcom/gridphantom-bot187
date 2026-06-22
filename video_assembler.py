@@ -3,44 +3,105 @@ import os
 import logging
 import random
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from moviepy.editor import (
-    VideoFileClip, AudioFileClip, CompositeVideoClip,
-    ColorClip, ImageClip
+    ImageClip, AudioFileClip, CompositeVideoClip,
+    concatenate_videoclips
 )
 from config import Config
 
 logger = logging.getLogger(__name__)
 
-# YouTube Shorts: 9:16 vertical format
-SHORTS_W = 1080
-SHORTS_H = 1920
+# YouTube Shorts: 9:16 vertical
+W, H = 1080, 1920
+
+HIGHLIGHT_COLOR = (255, 220, 0)    # Yellow for keywords
+TEXT_COLOR = (255, 255, 255)        # White main text
+SHADOW_COLOR = (0, 0, 0)            # Black shadow
+BG_OVERLAY = (0, 0, 0, 160)        # Dark overlay on background
 
 
-def _make_text_image(text, size=(SHORTS_W, SHORTS_H), fontsize=90):
-    """PIL text rendering — no ImageMagick needed."""
-    img = Image.new('RGBA', size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    font = None
+def load_font(size):
     for path in [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ]:
         if os.path.exists(path):
             try:
-                font = ImageFont.truetype(path, fontsize)
-                break
+                return ImageFont.truetype(path, size)
             except Exception:
                 pass
-    if font is None:
-        font = ImageFont.load_default()
+    return ImageFont.load_default()
 
-    max_w = int(size[0] * 0.85)
+
+def fetch_background_image(keyword: str) -> Image.Image:
+    """Fetch a portrait photo from Pexels as background."""
+    try:
+        url = "https://api.pexels.com/v1/search"
+        headers = {"Authorization": Config.PEXELS_API_KEY}
+        params = {"query": keyword, "per_page": 5,
+                  "orientation": "portrait", "size": "large"}
+        r = requests.get(url, headers=headers, params=params, timeout=10)
+        r.raise_for_status()
+        photos = r.json().get('photos', [])
+        if photos:
+            photo = random.choice(photos)
+            img_url = photo['src']['large']
+            img_data = requests.get(img_url, timeout=20).content
+            from io import BytesIO
+            img = Image.open(BytesIO(img_data)).convert('RGB')
+            # Crop to 9:16
+            target_w = int(img.height * 9 / 16)
+            if target_w <= img.width:
+                x = (img.width - target_w) // 2
+                img = img.crop((x, 0, x + target_w, img.height))
+            img = img.resize((W, H), Image.LANCZOS)
+            logger.info(f"Background image fetched: {keyword}")
+            return img
+    except Exception as e:
+        logger.error(f"Background fetch error: {e}")
+    # Fallback: dark gradient
+    img = Image.new('RGB', (W, H), (10, 10, 30))
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        val = int(10 + 40 * (y / H))
+        draw.line([(0, y), (W, y)], fill=(val, val, val + 20))
+    return img
+
+
+def draw_text_frame(bg: Image.Image, text: str,
+                    title: str = "", subtitle: str = "") -> np.ndarray:
+    """Draw one text frame over background image."""
+    frame = bg.copy()
+
+    # Dark overlay for readability
+    overlay = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    draw_overlay = ImageDraw.Draw(overlay)
+    draw_overlay.rectangle([(0, H // 3), (W, H)], fill=(0, 0, 0, 180))
+    frame = Image.alpha_composite(frame.convert('RGBA'), overlay).convert('RGB')
+
+    draw = ImageDraw.Draw(frame)
+
+    # Title (small, top area)
+    if title:
+        font_title = load_font(52)
+        bbox = draw.textbbox((0, 0), title, font=font_title)
+        tw = bbox[2] - bbox[0]
+        tx = (W - tw) // 2
+        ty = H // 3 + 40
+        # Shadow
+        draw.text((tx + 2, ty + 2), title, font=font_title, fill=(0, 0, 0))
+        draw.text((tx, ty), title, font=font_title, fill=HIGHLIGHT_COLOR)
+
+    # Main text (large, center)
+    font_main = load_font(82)
     words = text.split()
-    lines, cur = [], ""
+    lines = []
+    cur = ""
+    max_w = int(W * 0.88)
     for w in words:
         test = (cur + " " + w).strip()
-        bbox = draw.textbbox((0, 0), test, font=font)
+        bbox = draw.textbbox((0, 0), test, font=font_main)
         if bbox[2] - bbox[0] <= max_w:
             cur = test
         else:
@@ -50,23 +111,41 @@ def _make_text_image(text, size=(SHORTS_W, SHORTS_H), fontsize=90):
     if cur:
         lines.append(cur)
 
-    line_heights = []
-    for ln in lines:
-        bbox = draw.textbbox((0, 0), ln, font=font)
-        line_heights.append(bbox[3] - bbox[1])
-    total_h = sum(line_heights) + (len(lines) - 1) * 16
-    y = (size[1] - total_h) // 2
+    line_h = 96
+    total_h = len(lines) * line_h
+    start_y = H // 2 - total_h // 2 + 80
 
-    for ln, lh in zip(lines, line_heights):
-        bbox = draw.textbbox((0, 0), ln, font=font)
-        w = bbox[2] - bbox[0]
-        x = (size[0] - w) // 2
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font_main)
+        lw = bbox[2] - bbox[0]
+        lx = (W - lw) // 2
+        ly = start_y + i * line_h
+        # Shadow
         for dx, dy in [(-3, -3), (3, -3), (-3, 3), (3, 3)]:
-            draw.text((x + dx, y + dy), ln, font=font, fill=(0, 0, 0, 255))
-        draw.text((x, y), ln, font=font, fill=(255, 255, 255, 255))
-        y += lh + 16
+            draw.text((lx + dx, ly + dy), line, font=font_main, fill=SHADOW_COLOR)
+        # Highlight first line yellow, rest white
+        color = HIGHLIGHT_COLOR if i == 0 else TEXT_COLOR
+        draw.text((lx, ly), line, font=font_main, fill=color)
 
-    return np.array(img)
+    # Subtitle (small, bottom)
+    if subtitle:
+        font_sub = load_font(48)
+        bbox = draw.textbbox((0, 0), subtitle, font=font_sub)
+        sw = bbox[2] - bbox[0]
+        sx = (W - sw) // 2
+        sy = H - 220
+        draw.text((sx + 2, sy + 2), subtitle, font=font_sub, fill=(0, 0, 0))
+        draw.text((sx, sy), subtitle, font=font_sub, fill=(200, 200, 200))
+
+    # GridPhantom branding bottom
+    font_brand = load_font(38)
+    brand = "@GridPhantom187"
+    bbox = draw.textbbox((0, 0), brand, font=font_brand)
+    bw = bbox[2] - bbox[0]
+    draw.text(((W - bw) // 2, H - 120), brand, font=font_brand,
+              fill=(150, 150, 150))
+
+    return np.array(frame)
 
 
 class VideoAssembler:
@@ -75,100 +154,48 @@ class VideoAssembler:
         self.output_dir = "/tmp/videos"
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def fetch_stock_videos(self, keyword: str) -> list:
-        url = "https://api.pexels.com/videos/search"
-        headers = {"Authorization": self.pexels_key}
-        params = {"query": keyword, "per_page": 5,
-                  "size": "small", "orientation": "portrait"}
-        try:
-            response = requests.get(url, headers=headers, params=params, timeout=10)
-            response.raise_for_status()
-            videos = response.json().get('videos', [])
-            urls = []
-            for v in videos:
-                files = v.get('video_files', [])
-                sd = [f for f in files if f.get('quality') in ('sd', 'hd')]
-                if sd:
-                    urls.append(sd[0]['link'])
-                elif files:
-                    urls.append(files[0]['link'])
-            return urls
-        except Exception as e:
-            logger.error(f"Pexels fetch error: {e}")
-            return []
-
-    def download_video(self, url: str, path: str) -> str:
-        r = requests.get(url, stream=True, timeout=30)
-        with open(path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-        return path
-
     def assemble(self, script: dict, audio_path: str, topic: dict) -> str:
-        keyword = script.get('thumbnail_keyword', 'technology')
         language = script.get('language', 'en')
-        output_path = f"{self.output_dir}/short_{language}_{random.randint(1000,9999)}.mp4"
+        mode = os.environ.get('VIDEO_MODE', 'short')
+        output_path = f"{self.output_dir}/video_{language}_{random.randint(1000,9999)}.mp4"
 
         audio = AudioFileClip(audio_path)
-        mode = os.environ.get('VIDEO_MODE', 'short')
-        max_dur = 45 if mode == 'short' else 180  # 45s for shorts, 3min for long
-        total_duration = min(audio.duration, max_dur)
+        duration = audio.duration
 
-        logger.info(f"Fetching portrait stock video for: {keyword}")
-        video_urls = self.fetch_stock_videos(keyword)
+        keyword = script.get('thumbnail_keyword', 'technology artificial intelligence')
+        title = script.get('thumbnail_text', '')
+        narration = script.get('narration', '')
 
-        if video_urls:
-            try:
-                dl_path = "/tmp/stock_0.mp4"
-                self.download_video(video_urls[0], dl_path)
-                clip = VideoFileClip(dl_path)
+        logger.info(f"Fetching background image for: {keyword}")
+        bg = fetch_background_image(keyword)
 
-                # Crop to 9:16 portrait
-                target_w = int(clip.h * 9 / 16)
-                if target_w <= clip.w:
-                    x1 = (clip.w - target_w) // 2
-                    clip = clip.crop(x1=x1, y1=0, x2=x1+target_w, y2=clip.h)
-                clip = clip.resize((SHORTS_W, SHORTS_H))
+        if mode == 'short':
+            # Single frame with full narration text
+            frame = draw_text_frame(bg, narration, title=title,
+                                    subtitle=script.get('title', ''))
+            clip = ImageClip(frame).set_duration(duration).set_audio(audio)
 
-                # Loop if needed
-                if clip.duration < total_duration:
-                    loops = int(total_duration / clip.duration) + 1
-                    from moviepy.editor import concatenate_videoclips
-                    clip = concatenate_videoclips([clip] * loops)
-                clip = clip.subclip(0, total_duration).set_audio(audio.subclip(0, total_duration))
+        else:
+            # Long form: split narration into sentences, one frame each
+            sentences = [s.strip() for s in narration.replace('!', '.').replace('?', '.').split('.') if s.strip()]
+            if not sentences:
+                sentences = [narration]
 
-                # Title overlay at top
-                title_arr = _make_text_image(script.get('thumbnail_text', ''),
-                                             size=(SHORTS_W, 300), fontsize=80)
-                title_clip = (ImageClip(title_arr)
-                              .set_duration(total_duration)
-                              .set_position(('center', 100)))
-                video = CompositeVideoClip([clip, title_clip], size=(SHORTS_W, SHORTS_H))
+            seg_dur = duration / len(sentences)
+            clips = []
+            for i, sentence in enumerate(sentences):
+                frame = draw_text_frame(bg, sentence, title=title if i == 0 else "")
+                seg_audio = audio.subclip(i * seg_dur, min((i + 1) * seg_dur, duration))
+                c = ImageClip(frame).set_duration(seg_dur).set_audio(seg_audio)
+                clips.append(c)
+            clip = concatenate_videoclips(clips)
 
-                logger.info(f"Exporting Short ({total_duration:.1f}s)...")
-                video.write_videofile(output_path, fps=30, codec='libx264',
-                                      audio_codec='aac', threads=1,
-                                      preset='ultrafast', logger=None)
-                try:
-                    os.remove(dl_path)
-                except:
-                    pass
-                logger.info(f"Short assembled: {output_path}")
-                return output_path
-            except Exception as e:
-                logger.error(f"Stock video error: {e}")
+        logger.info(f"Exporting video ({duration:.1f}s)...")
+        clip.write_videofile(
+            output_path, fps=24, codec='libx264',
+            audio_codec='aac', threads=1,
+            preset='ultrafast', logger=None
+        )
 
-        # Fallback: dark background
-        return self._create_fallback_short(script, audio, total_duration, output_path)
-
-    def _create_fallback_short(self, script, audio, duration, output_path):
-        bg = ColorClip(size=(SHORTS_W, SHORTS_H), color=[10, 10, 30]).set_duration(duration)
-        arr = _make_text_image(script.get('thumbnail_text', 'GridPhantom'))
-        title = ImageClip(arr).set_duration(duration).set_position('center')
-        video = CompositeVideoClip([bg, title], size=(SHORTS_W, SHORTS_H))
-        video = video.set_audio(audio.subclip(0, duration))
-        video.write_videofile(output_path, fps=30, codec='libx264',
-                              audio_codec='aac', threads=1,
-                              preset='ultrafast', logger=None)
-        logger.info(f"Fallback Short assembled: {output_path}")
+        logger.info(f"Video assembled: {output_path}")
         return output_path
