@@ -54,11 +54,15 @@ Summary: {topic.get('summary', '')}
 MAXIMUM 60 WORDS for narration. Make it ONE shocking sentence — maximum 15 words.
 Return ONLY valid JSON. No markdown. No code blocks."""
 
+        mode = os.environ.get('VIDEO_MODE', 'short')
+        system = LONG_PROMPT if mode == 'long' else SHORT_PROMPT
+        max_tok = 2000 if mode == 'long' else 500
+
         try:
             message = self.client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=500,
-                system=SYSTEM_PROMPT,
+                max_tokens=max_tok,
+                system=system,
                 messages=[{"role": "user", "content": user_prompt}]
             )
 
