@@ -110,7 +110,9 @@ class VideoAssembler:
         output_path = f"{self.output_dir}/short_{language}_{random.randint(1000,9999)}.mp4"
 
         audio = AudioFileClip(audio_path)
-        total_duration = min(audio.duration, 7)  # Shorts max 59s
+        mode = os.environ.get('VIDEO_MODE', 'short')
+        max_dur = 45 if mode == 'short' else 180  # 45s for shorts, 3min for long
+        total_duration = min(audio.duration, max_dur)
 
         logger.info(f"Fetching portrait stock video for: {keyword}")
         video_urls = self.fetch_stock_videos(keyword)
