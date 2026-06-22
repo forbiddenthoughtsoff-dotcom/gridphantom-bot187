@@ -1,4 +1,15 @@
 # ============================================================
+# Patch PIL.Image.ANTIALIAS for MoviePy compatibility with Pillow 10+
+# Must run before any moviepy import
+# ============================================================
+try:
+    from PIL import Image
+    if not hasattr(Image, "ANTIALIAS"):
+        Image.ANTIALIAS = Image.LANCZOS
+except Exception:
+    pass
+
+# ============================================================
 # Health server starts FIRST — in its own thread, crash-proof
 # ============================================================
 import json
