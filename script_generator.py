@@ -53,7 +53,23 @@ Return ONLY valid JSON in this exact format:
             raw = message.content[0].text
             # Clean potential markdown
             raw = raw.replace('```json', '').replace('```', '').strip()
-            script = json.loads(raw)
+
+            # Try direct parse first
+            try:
+                script = json.loads(raw)
+            except json.JSONDecodeError:
+                # Extract JSON block between first { and last }
+                start = raw.find('{')
+                end = raw.rfind('}') + 1
+                if start != -1 and end > start:
+                    raw = raw[start:end]
+                # Replace problematic characters in narration field only
+                import re
+                def fix_json_string(m):
+                    return m.group(0).replace('\n', '\\n').replace('\t', '\\t')
+                raw = re.sub(r'"narration"\s*:\s*"(.*?)"(?=\s*,\s*"chapters")', fix_json_string, raw, flags=re.DOTALL)
+                script = json.loads(raw)
+
             script['language'] = language
             script['source_topic'] = topic
 
