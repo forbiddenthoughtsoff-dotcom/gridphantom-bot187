@@ -30,8 +30,14 @@ class YouTubeUploader:
                     'https://www.googleapis.com/auth/youtube']
         )
 
-        if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+        # Always refresh to ensure valid token
+        if creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                logger.info('YouTube credentials refreshed successfully')
+            except Exception as e:
+                logger.error(f'Token refresh failed: {e}')
+                raise
 
         return build('youtube', 'v3', credentials=creds)
 
