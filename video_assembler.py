@@ -14,11 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 def _make_text_image(text, size=(1920, 1080), fontsize=80):
-    """Render centered text to a transparent PNG using PIL (no ImageMagick)."""
+    """Render centered text to a transparent RGBA array using PIL."""
     img = Image.new('RGBA', size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Try to load a bundled truetype font, fall back to default
     font = None
     for path in [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
@@ -33,7 +32,6 @@ def _make_text_image(text, size=(1920, 1080), fontsize=80):
     if font is None:
         font = ImageFont.load_default()
 
-    # Word-wrap to fit width
     max_w = int(size[0] * 0.85)
     words = text.split()
     lines, cur = [], ""
@@ -49,7 +47,6 @@ def _make_text_image(text, size=(1920, 1080), fontsize=80):
     if cur:
         lines.append(cur)
 
-    # Vertical centering
     line_heights = []
     for ln in lines:
         bbox = draw.textbbox((0, 0), ln, font=font)
@@ -61,7 +58,6 @@ def _make_text_image(text, size=(1920, 1080), fontsize=80):
         bbox = draw.textbbox((0, 0), ln, font=font)
         w = bbox[2] - bbox[0]
         x = (size[0] - w) // 2
-        # outline for readability
         for dx, dy in [(-2, -2), (2, -2), (-2, 2), (2, 2)]:
             draw.text((x + dx, y + dy), ln, font=font, fill=(0, 0, 0, 255))
         draw.text((x, y), ln, font=font, fill=(255, 255, 255, 255))
@@ -106,9 +102,23 @@ class VideoAssembler:
         return path
 
     def _title_overlay(self, text, duration, size=(1920, 1080)):
-        """Build a moviepy ImageClip from PIL-rendered text."""
         arr = _make_text_image(text, size=size, fontsize=80)
         return ImageClip(arr).set_duration(duration)
+
+    def _export(self, video, output_path):
+        """Export with RAM-optimized settings to prevent OOM kills."""
+        video.write_videofile(
+            output_path,
+            fps=24,
+            codec='libx264',
+            audio_codec='aac',
+            temp_audiofile='/tmp/temp_audio.m4a',
+            remove_temp=True,
+            threads=1,
+            preset='ultrafast',
+            verbose=False,
+            logger=None
+        )
 
     def assemble(self, script: dict, audio_path: str, topic: dict) -> str:
         keyword = script.get('thumbnail_keyword', 'artificial intelligence technology')
@@ -131,7 +141,8 @@ class VideoAssembler:
                 dl_path = f"/tmp/stock_{i}.mp4"
                 self.download_video(url, dl_path)
                 downloaded.append(dl_path)
-                clip = VideoFileClip(dl_path).resize((1920, 1080))
+                # Limit to 1080p height to reduce RAM usage
+                clip = VideoFileClip(dl_path).resize(height=1080)
                 seg_duration = min(12, clip.duration)
                 clip = clip.subclip(0, seg_duration)
                 clips.append(clip)
@@ -162,11 +173,7 @@ class VideoAssembler:
             video = CompositeVideoClip([video, title_clip])
 
         logger.info(f"Exporting video to {output_path}...")
-        video.write_videofile(
-            output_path, fps=30, codec='libx264', audio_codec='aac',
-            temp_audiofile='/tmp/temp_audio.m4a', remove_temp=True,
-            verbose=False, logger=None
-        )
+        self._export(video, output_path)
 
         for path in downloaded:
             try:
@@ -178,7 +185,7 @@ class VideoAssembler:
         return output_path
 
     def _create_fallback_video(self, script: dict, audio_path: str, output_path: str) -> str:
-        """Fallback: dark background with PIL-rendered text (no ImageMagick)."""
+        """Fallback: dark background with PIL text, no ImageMagick, minimal RAM."""
         audio = AudioFileClip(audio_path)
         duration = audio.duration
 
@@ -187,7 +194,6 @@ class VideoAssembler:
         title = self._title_overlay(title_text, duration).set_position('center')
 
         video = CompositeVideoClip([bg, title]).set_audio(audio)
-        video.write_videofile(output_path, fps=30, codec='libx264',
-                              audio_codec='aac', verbose=False, logger=None)
+        self._export(video, output_path)
         logger.info(f"Fallback video assembled: {output_path}")
         return output_path
