@@ -62,7 +62,7 @@ Title: {topic.get('title', '')}
 Summary: {topic.get('summary', '')}
 
 The script should be engaging for a tech-savvy audience interested in AI and technology.
-Make the narration 8-10 minutes when read at a normal pace.
+Make the narration 2-3 minutes when read at a normal pace (400-500 words maximum).
 CRITICAL: Return ONLY valid JSON. No markdown. No code blocks."""
 
         try:
