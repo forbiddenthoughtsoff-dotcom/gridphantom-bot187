@@ -117,16 +117,19 @@ def run_bot():
     logger.info("🏁 Bot cycle complete")
 
 if __name__ == "__main__":
+    # Start health server FIRST — before anything else
+    start_health_server()
+
     logger.info("=" * 60)
     logger.info("  GridPhantom Bot — @GridPhantom187")
     logger.info("  Fully Autonomous AI & Tech YouTube Channel")
     logger.info("=" * 60)
+    logger.info("🌐 Health server started on port 8080")
 
     validate_config()
 
-    # Start health check server for Manufact
-    start_health_server()
-    logger.info("🌐 Health server started on port 8080")
+    # Delay first run by 5s to ensure health check passes first
+    time.sleep(5)
 
     # Run immediately on start
     run_bot()
