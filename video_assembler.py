@@ -136,14 +136,14 @@ class VideoAssembler:
         total_duration = audio.duration
 
         clips, downloaded = [], []
-        for i, url in enumerate(video_urls[:8]):
+        for i, url in enumerate(video_urls[:4]):
             try:
                 dl_path = f"/tmp/stock_{i}.mp4"
                 self.download_video(url, dl_path)
                 downloaded.append(dl_path)
                 # Limit to 1080p height to reduce RAM usage
                 clip = VideoFileClip(dl_path).resize(height=1080)
-                seg_duration = min(12, clip.duration)
+                seg_duration = min(8, clip.duration)
                 clip = clip.subclip(0, seg_duration)
                 clips.append(clip)
             except Exception as e:
