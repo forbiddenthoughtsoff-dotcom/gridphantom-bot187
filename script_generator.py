@@ -22,7 +22,7 @@ Output this exact JSON structure:
   "title": "Viral YouTube Shorts title with emoji (max 60 chars)",
   "thumbnail_text": "3-4 words MAX for thumbnail",
   "thumbnail_keyword": "2-3 word keyword for stock video search",
-  "narration": "MAXIMUM 60 WORDS. Hook in first sentence. Fast, punchy, shocking.",
+  "narration": "MAXIMUM 15 WORDS. One single shocking sentence. No intro, no outro.",
   "tags": ["shorts", "ai", "tech", "viral", "tag4", "tag5"]
 }"""
 
@@ -51,13 +51,13 @@ class ScriptGenerator:
 Title: {topic.get('title', '')}
 Summary: {topic.get('summary', '')}
 
-MAXIMUM 60 WORDS for narration. Make it SHOCKING and VIRAL.
+MAXIMUM 60 WORDS for narration. Make it ONE shocking sentence — maximum 15 words.
 Return ONLY valid JSON. No markdown. No code blocks."""
 
         try:
             message = self.client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=1000,
+                max_tokens=500,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}]
             )
