@@ -111,9 +111,11 @@ class YouTubeUploader:
         if language == 'en':
             description += "\n\n🤖 GridPhantom — AI & Tech, decoded daily.\n"
             description += "🔔 Subscribe for daily AI news\n"
+            description += "\n#shorts #ai #tech #artificialintelligence #technology #aitools #technews #viral #trending #gridphantom"
         else:
             description += "\n\n🤖 GridPhantom — KI & Tech, täglich erklärt.\n"
             description += "🔔 Abonniere für tägliche KI-News\n"
+            description += "\n#shorts #ki #tech #künstlicheintelligenz #technologie #aitools #technews #viral #trending #gridphantom"
 
         return description[:5000]
 
