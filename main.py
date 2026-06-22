@@ -124,6 +124,17 @@ def guarded_bot_start():
         diag(f"BOT PIPELINE CRASHED: {e}")
         traceback.print_exc()
 
+
+def run_bot_short():
+    """Run pipeline for a 30-45 second Short"""
+    os.environ['VIDEO_MODE'] = 'short'
+    run_full_bot()
+
+def run_bot_long():
+    """Run pipeline for a 2-3 minute video"""
+    os.environ['VIDEO_MODE'] = 'long'
+    run_full_bot()
+
 def run_full_bot():
     """Load heavy modules and run the actual pipeline."""
     import logging, sys
@@ -177,13 +188,15 @@ def run_full_bot():
         run_pipeline('de', topics[1] if len(topics) > 1 else topics[0])
         logger.info("🏁 Cycle complete")
 
-    schedule.every().day.at("07:00").do(run_bot)
-    schedule.every().day.at("10:00").do(run_bot)
-    schedule.every().day.at("13:00").do(run_bot)
-    schedule.every().day.at("16:00").do(run_bot)
-    schedule.every().day.at("19:00").do(run_bot)
-    schedule.every().day.at("22:00").do(run_bot)
-    logger.info("⏰ Scheduler active: 07:00 10:00 13:00 16:00 19:00 22:00")
+    # 4x Shorts täglich
+    schedule.every().day.at("07:00").do(run_bot_short)
+    schedule.every().day.at("11:00").do(run_bot_short)
+    schedule.every().day.at("15:00").do(run_bot_short)
+    schedule.every().day.at("20:00").do(run_bot_short)
+    # 2x normale Videos täglich (2-3 Min)
+    schedule.every().day.at("09:00").do(run_bot_long)
+    schedule.every().day.at("18:00").do(run_bot_long)
+    logger.info("⏰ Shorts: 07 11 15 20 | Long: 09 18")
 
     run_bot()  # first run now
 
