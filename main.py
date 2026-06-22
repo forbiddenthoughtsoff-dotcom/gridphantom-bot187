@@ -177,9 +177,13 @@ def run_full_bot():
         run_pipeline('de', topics[1] if len(topics) > 1 else topics[0])
         logger.info("🏁 Cycle complete")
 
-    schedule.every().day.at("09:00").do(run_bot)
-    schedule.every().day.at("17:00").do(run_bot)
-    logger.info("⏰ Scheduler active: 09:00 and 17:00")
+    schedule.every().day.at("07:00").do(run_bot)
+    schedule.every().day.at("10:00").do(run_bot)
+    schedule.every().day.at("13:00").do(run_bot)
+    schedule.every().day.at("16:00").do(run_bot)
+    schedule.every().day.at("19:00").do(run_bot)
+    schedule.every().day.at("22:00").do(run_bot)
+    logger.info("⏰ Scheduler active: 07:00 10:00 13:00 16:00 19:00 22:00")
 
     run_bot()  # first run now
 
