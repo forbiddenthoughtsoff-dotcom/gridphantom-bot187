@@ -146,17 +146,14 @@ if __name__ == "__main__":
 
     validate_config()
 
-    # Delay first run by 5s to ensure health check passes first
-    time.sleep(5)
-
-    # Run immediately on start
-    run_bot()
-
     # Schedule: 2 videos per day (09:00 and 17:00 Zurich time)
     schedule.every().day.at("09:00").do(run_bot)
     schedule.every().day.at("17:00").do(run_bot)
-
     logger.info("⏰ Scheduler active: 09:00 and 17:00 daily")
+
+    # Run first cycle in a background thread so the health check
+    # and scheduler loop are never blocked by the pipeline.
+    threading.Thread(target=run_bot, daemon=True).start()
 
     while True:
         schedule.run_pending()
