@@ -7,24 +7,32 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are an expert YouTube Shorts script writer for a viral tech channel called GridPhantom.
-
-Create PUNCHY, viral YouTube Shorts scripts about AI and technology.
-
+SHORT_PROMPT = """You are an expert YouTube Shorts script writer for a viral tech channel called GridPhantom.
 CRITICAL RULES:
-- Maximum 60 words total narration (this is a SHORT, not a long video)
-- Hook must be in the FIRST 3 seconds — shocking, controversial or surprising fact
-- Fast-paced, energetic tone
-- End with a cliffhanger or call to action
+- Maximum 15 WORDS total narration — one single shocking sentence
+- No intro, no outro, just the punch
 - CRITICAL: Output raw valid JSON only. No markdown. No code blocks.
-
 Output this exact JSON structure:
 {
-  "title": "Viral YouTube Shorts title with emoji (max 60 chars)",
-  "thumbnail_text": "3-4 words MAX for thumbnail",
-  "thumbnail_keyword": "2-3 word keyword for stock video search",
-  "narration": "MAXIMUM 15 WORDS. One single shocking sentence. No intro, no outro.",
-  "tags": ["shorts", "ai", "tech", "viral", "tag4", "tag5"]
+  "title": "Viral title with emoji (max 60 chars)",
+  "thumbnail_text": "3-4 words MAX",
+  "thumbnail_keyword": "2-3 word stock video keyword",
+  "narration": "ONE shocking sentence, maximum 15 words.",
+  "tags": ["shorts", "ai", "tech", "viral", "trending", "gridphantom"]
+}"""
+
+LONG_PROMPT = """You are an expert YouTube script writer for a tech channel called GridPhantom.
+CRITICAL RULES:
+- Narration: 300-400 words (2-3 minutes when read aloud)
+- Engaging hook intro, 2-3 clear main points, strong CTA outro
+- CRITICAL: Output raw valid JSON only. No markdown. No code blocks.
+Output this exact JSON structure:
+{
+  "title": "Engaging title with emoji (max 60 chars)",
+  "thumbnail_text": "4-5 word thumbnail text",
+  "thumbnail_keyword": "2-3 word stock video keyword",
+  "narration": "300-400 words. Hook, main points, CTA.",
+  "tags": ["ai", "tech", "technews", "artificialintelligence", "technology", "gridphantom"]
 }"""
 
 
@@ -47,17 +55,20 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, topic: dict, language: str) -> dict:
-        lang_name = "German" if language == 'de' else "English"
-        user_prompt = f"""Create a VIRAL YouTube Shorts script in {lang_name} about:
-Title: {topic.get('title', '')}
-Summary: {topic.get('summary', '')}
-
-MAXIMUM 60 WORDS for narration. Make it ONE shocking sentence — maximum 15 words.
-Return ONLY valid JSON. No markdown. No code blocks."""
-
         mode = os.environ.get('VIDEO_MODE', 'short')
         system = LONG_PROMPT if mode == 'long' else SHORT_PROMPT
         max_tok = 2000 if mode == 'long' else 500
+        lang_name = "German" if language == 'de' else "English"
+
+        if mode == 'short':
+            user_prompt = f"""Create a VIRAL YouTube Short script in {lang_name} about:
+Title: {topic.get('title', '')}
+ONE shocking sentence, maximum 15 words. Return ONLY valid JSON."""
+        else:
+            user_prompt = f"""Create a YouTube video script in {lang_name} about:
+Title: {topic.get('title', '')}
+Summary: {topic.get('summary', '')}
+300-400 words, engaging and informative. Return ONLY valid JSON."""
 
         try:
             message = self.client.messages.create(
@@ -74,11 +85,7 @@ Return ONLY valid JSON. No markdown. No code blocks."""
             except json.JSONDecodeError as e:
                 logger.warning(f"JSON parse error, sanitizing: {e}")
                 sanitized = _sanitize_json(raw)
-                try:
-                    script = json.loads(sanitized)
-                except json.JSONDecodeError as e2:
-                    logger.error(f"JSON sanitization failed: {e2}")
-                    raise
+                script = json.loads(sanitized)
 
             script['language'] = language
             script['source_topic'] = topic
