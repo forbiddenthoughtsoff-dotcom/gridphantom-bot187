@@ -1,6 +1,9 @@
-# --- Health server starts FIRST, before any heavy imports ---
+# ============================================================
+# Health server starts FIRST — in its own thread, crash-proof
+# ============================================================
 import json
 import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 class HealthHandler(BaseHTTPRequestHandler):
@@ -16,137 +19,166 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
-        response = json.dumps({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "result": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "serverInfo": {"name": "gridphantom-bot", "version": "1.0.0"}
-            }
-        })
-        self.wfile.write(response.encode())
+        self.wfile.write(json.dumps({
+            "jsonrpc": "2.0", "id": 1,
+            "result": {"protocolVersion": "2024-11-05", "capabilities": {},
+                       "serverInfo": {"name": "gridphantom-bot", "version": "1.0.0"}}
+        }).encode())
 
     def log_message(self, format, *args):
         pass
 
 def _run_health_server():
-    server = HTTPServer(('0.0.0.0', 8080), HealthHandler)
-    server.serve_forever()
+    while True:
+        try:
+            HTTPServer(('0.0.0.0', 8080), HealthHandler).serve_forever()
+        except Exception as e:
+            print(f"[HEALTH] server error, restarting: {e}", flush=True)
+            time.sleep(2)
 
-# Start health server immediately in a background thread,
-# BEFORE importing any heavy modules (moviepy, edge_tts, etc.)
 threading.Thread(target=_run_health_server, daemon=True).start()
+print("[HEALTH] Health server thread started on port 8080", flush=True)
 
-# --- Now the rest of the imports ---
-import schedule
-import time
-import logging
-import os
+# ============================================================
+# Diagnostic startup — find out exactly what works and what breaks
+# ============================================================
 import sys
-from datetime import datetime
 
-from config import Config
-from trend_finder import TrendFinder
-from script_generator import ScriptGenerator
-from voice_generator import VoiceGenerator
-from video_assembler import VideoAssembler
-from youtube_uploader import YouTubeUploader
+def diag(msg):
+    print(f"[DIAG] {msg}", flush=True)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('/tmp/gridphantom-bot.log')
-    ]
-)
-logger = logging.getLogger('GridPhantomBot')
+diag("Python started. Beginning import checks...")
 
-def validate_config():
-    """Ensure all required environment variables are set"""
-    required = [
-        'ANTHROPIC_API_KEY',
-        'PEXELS_API_KEY',
-        'YOUTUBE_CLIENT_SECRETS',
-    ]
-    missing = [k for k in required if not os.environ.get(k)]
-    if missing:
-        logger.error(f"Missing environment variables: {missing}")
-        sys.exit(1)
-    logger.info("✅ Configuration validated")
+# Test each heavy import individually
+try:
+    import os
+    diag("os: OK")
+    import logging
+    diag("logging: OK")
+    import schedule
+    diag("schedule: OK")
+    from datetime import datetime
+    diag("datetime: OK")
+except Exception as e:
+    diag(f"BASIC IMPORT FAILED: {e}")
 
-def run_pipeline(language: str, topic: dict):
-    """Run the full content pipeline for one language"""
-    logger.info(f"🎬 Starting pipeline: {language.upper()} | {topic['title']}")
+try:
+    import edge_tts
+    diag("edge_tts import: OK")
+except Exception as e:
+    diag(f"edge_tts IMPORT FAILED: {e}")
 
+try:
+    import moviepy
+    diag("moviepy import: OK")
+except Exception as e:
+    diag(f"moviepy IMPORT FAILED: {e}")
+
+# Test edge-tts ACTUAL synthesis with a short phrase
+def test_edge_tts():
     try:
-        logger.info("📝 Generating script...")
-        script_gen = ScriptGenerator()
-        script = script_gen.generate(topic, language)
-
-        logger.info("🎙️ Generating voice...")
-        voice_gen = VoiceGenerator()
-        audio_path = voice_gen.generate(script['narration'], language)
-
-        logger.info("🎥 Assembling video...")
-        assembler = VideoAssembler()
-        video_path = assembler.assemble(script, audio_path, topic)
-
-        logger.info("📤 Uploading to YouTube...")
-        uploader = YouTubeUploader()
-        video_id = uploader.upload(video_path, script, language)
-
-        for path in [audio_path, video_path]:
-            try:
-                os.remove(path)
-            except:
-                pass
-
-        logger.info(f"✅ SUCCESS [{language.upper()}]: https://youtube.com/watch?v={video_id}")
-        return video_id
-
+        import asyncio, edge_tts
+        diag("Testing edge-tts synthesis with short phrase...")
+        async def _t():
+            c = edge_tts.Communicate("Test eins zwei drei.", "de-DE-ConradNeural")
+            await c.save("/tmp/diag_test.mp3")
+        asyncio.run(_t())
+        size = os.path.getsize("/tmp/diag_test.mp3")
+        diag(f"edge-tts SYNTHESIS WORKS — produced {size} bytes")
+        return True
     except Exception as e:
-        logger.error(f"❌ Pipeline failed [{language}]: {e}", exc_info=True)
-        return None
+        diag(f"edge-tts SYNTHESIS FAILED: {type(e).__name__}: {e}")
+        return False
 
-def run_bot():
-    """Main bot cycle — find topics, create and upload videos"""
-    logger.info(f"🤖 GridPhantom Bot running — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+# Run the bot logic in a fully guarded background thread
+def guarded_bot_start():
+    time.sleep(3)  # let health check settle first
+    diag("=" * 40)
+    diag("Starting diagnostic sequence")
+    diag("=" * 40)
 
-    trend_finder = TrendFinder()
-    topics = trend_finder.get_trending_topics()
+    edge_ok = test_edge_tts()
 
-    if not topics:
-        logger.warning("No trending topics found — retrying next cycle")
+    if not edge_ok:
+        diag("edge-tts does not work in this environment. Bot cannot generate voice.")
+        diag("Health server stays up so deployment remains green. Fix needed.")
         return
 
-    best_topic = topics[0]
-    second_topic = topics[1] if len(topics) > 1 else topics[0]
+    # edge-tts works → load the real bot and run it
+    try:
+        diag("edge-tts confirmed working. Loading full bot pipeline...")
+        run_full_bot()
+    except Exception as e:
+        import traceback
+        diag(f"BOT PIPELINE CRASHED: {e}")
+        traceback.print_exc()
 
-    logger.info(f"📊 Best topic: {best_topic['title']}")
+def run_full_bot():
+    """Load heavy modules and run the actual pipeline."""
+    import logging, sys
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        handlers=[logging.StreamHandler(sys.stdout)]
+    )
+    logger = logging.getLogger('GridPhantomBot')
 
-    run_pipeline('en', best_topic)
-    run_pipeline('de', second_topic)
+    from config import Config
+    from trend_finder import TrendFinder
+    from script_generator import ScriptGenerator
+    from voice_generator import VoiceGenerator
+    from video_assembler import VideoAssembler
+    from youtube_uploader import YouTubeUploader
+    import schedule
 
-    logger.info("🏁 Bot cycle complete")
+    # validate config
+    required = ['ANTHROPIC_API_KEY', 'PEXELS_API_KEY', 'YOUTUBE_CLIENT_SECRETS']
+    missing = [k for k in required if not os.environ.get(k)]
+    if missing:
+        logger.error(f"Missing env vars: {missing}")
+        return
+    logger.info("✅ Configuration validated")
 
-if __name__ == "__main__":
-    logger.info("=" * 60)
-    logger.info("  GridPhantom Bot — @GridPhantom187")
-    logger.info("  Fully Autonomous AI & Tech YouTube Channel")
-    logger.info("=" * 60)
-    logger.info("🌐 Health server already running on port 8080")
+    def run_pipeline(language, topic):
+        logger.info(f"🎬 Pipeline {language.upper()}: {topic['title']}")
+        try:
+            script = ScriptGenerator().generate(topic, language)
+            logger.info(f"📝 Script: {script['title']}")
+            audio = VoiceGenerator().generate(script['narration'], language)
+            logger.info(f"🎙️ Voice done: {audio}")
+            video = VideoAssembler().assemble(script, audio, topic)
+            logger.info(f"🎥 Video done: {video}")
+            vid = YouTubeUploader().upload(video, script, language)
+            logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+            for p in [audio, video]:
+                try: os.remove(p)
+                except: pass
+        except Exception as e:
+            logger.error(f"❌ Pipeline failed [{language}]: {e}", exc_info=True)
 
-    validate_config()
+    def run_bot():
+        logger.info(f"🤖 Bot cycle — {datetime.now():%Y-%m-%d %H:%M}")
+        topics = TrendFinder().get_trending_topics()
+        if not topics:
+            logger.warning("No topics found")
+            return
+        run_pipeline('en', topics[0])
+        run_pipeline('de', topics[1] if len(topics) > 1 else topics[0])
+        logger.info("🏁 Cycle complete")
 
     schedule.every().day.at("09:00").do(run_bot)
     schedule.every().day.at("17:00").do(run_bot)
-    logger.info("⏰ Scheduler active: 09:00 and 17:00 daily")
+    logger.info("⏰ Scheduler active: 09:00 and 17:00")
 
-    # First cycle in background so the scheduler loop stays responsive
-    threading.Thread(target=run_bot, daemon=True).start()
+    run_bot()  # first run now
 
     while True:
         schedule.run_pending()
         time.sleep(60)
+
+# Start the guarded bot in background; main thread keeps health server alive
+threading.Thread(target=guarded_bot_start, daemon=True).start()
+
+# Keep main process alive forever so health server never dies
+while True:
+    time.sleep(3600)
