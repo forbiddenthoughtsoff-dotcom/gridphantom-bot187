@@ -1,19 +1,7 @@
-import schedule
-import time
-import logging
-import os
-import sys
+# --- Health server starts FIRST, before any heavy imports ---
 import json
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from datetime import datetime
-
-from config import Config
-from trend_finder import TrendFinder
-from script_generator import ScriptGenerator
-from voice_generator import VoiceGenerator
-from video_assembler import VideoAssembler
-from youtube_uploader import YouTubeUploader
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -28,7 +16,6 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
-        # MCP initialize response
         response = json.dumps({
             "jsonrpc": "2.0",
             "id": 1,
@@ -43,10 +30,28 @@ class HealthHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
-def start_health_server():
+def _run_health_server():
     server = HTTPServer(('0.0.0.0', 8080), HealthHandler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
+    server.serve_forever()
+
+# Start health server immediately in a background thread,
+# BEFORE importing any heavy modules (moviepy, edge_tts, etc.)
+threading.Thread(target=_run_health_server, daemon=True).start()
+
+# --- Now the rest of the imports ---
+import schedule
+import time
+import logging
+import os
+import sys
+from datetime import datetime
+
+from config import Config
+from trend_finder import TrendFinder
+from script_generator import ScriptGenerator
+from voice_generator import VoiceGenerator
+from video_assembler import VideoAssembler
+from youtube_uploader import YouTubeUploader
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,27 +81,22 @@ def run_pipeline(language: str, topic: dict):
     logger.info(f"🎬 Starting pipeline: {language.upper()} | {topic['title']}")
 
     try:
-        # Step 1: Generate script
         logger.info("📝 Generating script...")
         script_gen = ScriptGenerator()
         script = script_gen.generate(topic, language)
 
-        # Step 2: Generate voice
         logger.info("🎙️ Generating voice...")
         voice_gen = VoiceGenerator()
         audio_path = voice_gen.generate(script['narration'], language)
 
-        # Step 3: Assemble video
         logger.info("🎥 Assembling video...")
         assembler = VideoAssembler()
         video_path = assembler.assemble(script, audio_path, topic)
 
-        # Step 4: Upload to YouTube
         logger.info("📤 Uploading to YouTube...")
         uploader = YouTubeUploader()
         video_id = uploader.upload(video_path, script, language)
 
-        # Cleanup temp files
         for path in [audio_path, video_path]:
             try:
                 os.remove(path)
@@ -114,45 +114,37 @@ def run_bot():
     """Main bot cycle — find topics, create and upload videos"""
     logger.info(f"🤖 GridPhantom Bot running — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
-    # Find trending topics
     trend_finder = TrendFinder()
     topics = trend_finder.get_trending_topics()
 
     if not topics:
-        logger.warning("No trending topics found — retrying in 1 hour")
+        logger.warning("No trending topics found — retrying next cycle")
         return
 
-    # Use best topic for both languages
     best_topic = topics[0]
     second_topic = topics[1] if len(topics) > 1 else topics[0]
 
     logger.info(f"📊 Best topic: {best_topic['title']}")
 
-    # Run pipeline for both languages
     run_pipeline('en', best_topic)
     run_pipeline('de', second_topic)
 
     logger.info("🏁 Bot cycle complete")
 
 if __name__ == "__main__":
-    # Start health server FIRST — before anything else
-    start_health_server()
-
     logger.info("=" * 60)
     logger.info("  GridPhantom Bot — @GridPhantom187")
     logger.info("  Fully Autonomous AI & Tech YouTube Channel")
     logger.info("=" * 60)
-    logger.info("🌐 Health server started on port 8080")
+    logger.info("🌐 Health server already running on port 8080")
 
     validate_config()
 
-    # Schedule: 2 videos per day (09:00 and 17:00 Zurich time)
     schedule.every().day.at("09:00").do(run_bot)
     schedule.every().day.at("17:00").do(run_bot)
     logger.info("⏰ Scheduler active: 09:00 and 17:00 daily")
 
-    # Run first cycle in a background thread so the health check
-    # and scheduler loop are never blocked by the pipeline.
+    # First cycle in background so the scheduler loop stays responsive
     threading.Thread(target=run_bot, daemon=True).start()
 
     while True:
