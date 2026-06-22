@@ -62,11 +62,8 @@ def validate_config():
     """Ensure all required environment variables are set"""
     required = [
         'ANTHROPIC_API_KEY',
-        'ELEVENLABS_API_KEY',
         'PEXELS_API_KEY',
         'YOUTUBE_CLIENT_SECRETS',
-        'VOICE_ID_EN',
-        'VOICE_ID_DE',
     ]
     missing = [k for k in required if not os.environ.get(k)]
     if missing:
