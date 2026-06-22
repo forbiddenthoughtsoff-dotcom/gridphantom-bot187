@@ -3,6 +3,8 @@ import time
 import logging
 import os
 import sys
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 
 from config import Config
@@ -11,6 +13,19 @@ from script_generator import ScriptGenerator
 from voice_generator import VoiceGenerator
 from video_assembler import VideoAssembler
 from youtube_uploader import YouTubeUploader
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'GridPhantom Bot running')
+    def log_message(self, format, *args):
+        pass  # Suppress HTTP logs
+
+def start_health_server():
+    server = HTTPServer(('0.0.0.0', 8080), HealthHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -108,6 +123,10 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     validate_config()
+
+    # Start health check server for Manufact
+    start_health_server()
+    logger.info("🌐 Health server started on port 8080")
 
     # Run immediately on start
     run_bot()
