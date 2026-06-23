@@ -48,14 +48,13 @@ def fetch_background_image(keyword: str) -> Image.Image:
             photo = random.choice(photos)
             img_url = photo['src']['large']
             img_data = requests.get(img_url, timeout=20).content
-            from io import BytesIO
             img = Image.open(BytesIO(img_data)).convert('RGB')
             # Crop to 9:16
             target_w = int(img.height * 9 / 16)
             if target_w <= img.width:
                 x = (img.width - target_w) // 2
                 img = img.crop((x, 0, x + target_w, img.height))
-            img = img.resize((W, H), Image.LANCZOS)
+            img = img.resize((W, H), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
             logger.info(f"Background image fetched: {keyword}")
             return img
     except Exception as e:
