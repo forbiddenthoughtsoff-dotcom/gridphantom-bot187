@@ -81,7 +81,7 @@ def run_pipeline(language: str, topic: dict, mode: str = 'short'):
         return None
 
 def run_bot_short():
-    """4x daily: 45-second Shorts for reach."""
+    """Midday: 1 short English video for reach."""
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}")
     try:
         from trend_finder import TrendFinder
@@ -90,25 +90,23 @@ def run_bot_short():
             logger.warning("No topics found")
             return
         run_pipeline('en', topics[0], mode='short')
-        run_pipeline('de', topics[1] if len(topics) > 1 else topics[0], mode='short')
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
 
 def run_bot_long():
-    """2x daily: 2-3 minute videos for monetization."""
-    logger.info(f"🤖 LONG cycle — {datetime.now():%Y-%m-%d %H:%M}")
+    """Morning & evening: 1 longer English post each."""
+    logger.info(f"🤖 POST cycle — {datetime.now():%Y-%m-%d %H:%M}")
     try:
         from trend_finder import TrendFinder
         topics = TrendFinder().get_trending_topics()
         if not topics:
             logger.warning("No topics found")
             return
-        run_pipeline('en', topics[2] if len(topics) > 2 else topics[0], mode='long')
-        run_pipeline('de', topics[3] if len(topics) > 3 else topics[0], mode='long')
-        logger.info("🏁 Long cycle complete")
+        run_pipeline('en', topics[0], mode='long')
+        logger.info("🏁 Post cycle complete")
     except Exception as e:
-        logger.error(f"Long cycle error: {e}", exc_info=True)
+        logger.error(f"Post cycle error: {e}", exc_info=True)
 
 def validate_config():
     required = ['ANTHROPIC_API_KEY', 'PEXELS_API_KEY', 'YOUTUBE_CLIENT_SECRETS']
@@ -125,18 +123,14 @@ if __name__ == "__main__":
 
     validate_config()
 
-    # 4x Shorts daily
-    schedule.every().day.at("07:00").do(run_bot_short)
-    schedule.every().day.at("11:00").do(run_bot_short)
-    schedule.every().day.at("15:00").do(run_bot_short)
-    schedule.every().day.at("20:00").do(run_bot_short)
-    # 2x Long-form daily
-    schedule.every().day.at("09:00").do(run_bot_long)
-    schedule.every().day.at("18:00").do(run_bot_long)
-    logger.info("⏰ Shorts: 07 11 15 20 | Long: 09 18")
+    # English only — morning post, midday short, evening post (Zürich time)
+    schedule.every().day.at("08:00").do(run_bot_long)   # morning post
+    schedule.every().day.at("13:00").do(run_bot_short)  # midday short
+    schedule.every().day.at("19:00").do(run_bot_long)   # evening post
+    logger.info("⏰ Schedule: 08:00 post | 13:00 short | 19:00 post (EN only)")
 
     # First run immediately in background
-    threading.Thread(target=run_bot_short, daemon=True).start()
+    threading.Thread(target=run_bot_long, daemon=True).start()
 
     while True:
         schedule.run_pending()
