@@ -74,7 +74,13 @@ Summary: {topic.get('summary', '')}
             message = self.client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=max_tok,
-                system=system,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
                 messages=[{"role": "user", "content": user_prompt}]
             )
 
