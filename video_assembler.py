@@ -6,16 +6,12 @@ import random
 from io import BytesIO
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import (
-    ImageClip, AudioFileClip, concatenate_videoclips
-)
+from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
 from config import Config
 
 logger = logging.getLogger(__name__)
 
-W, H = 720, 1280
-HIGHLIGHT_COLOR = (255, 220, 0)
-TEXT_COLOR = (255, 255, 255)
+W, H = 1080, 1920
 
 
 def load_font(size):
@@ -31,45 +27,39 @@ def load_font(size):
     return ImageFont.load_default()
 
 
-def generate_ai_image(prompt: str, seed: int = None) -> Image.Image:
-    """Generate a Pixar-style image via Pollinations.ai (free, no key).
-    Robust: handles 429 rate limits with backoff, falls back gracefully."""
-    encoded = urllib.parse.quote(prompt[:900])
-    url = f"https://image.pollinations.ai/prompt/{encoded}?width={W}&height={H}&nologo=true"
-    if seed is not None:
-        url += f"&seed={seed}"
-
-    import time as _t
-    delays = [0, 4, 9]  # backoff between attempts (seconds)
-    for attempt, delay in enumerate(delays):
-        if delay:
-            _t.sleep(delay)
-        try:
-            req = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=45)
-            if req.status_code == 429:
-                logger.warning(f"Rate limited (429), attempt {attempt+1}, backing off...")
-                continue
-            req.raise_for_status()
-            img = Image.open(BytesIO(req.content)).convert('RGB')
-            if img.size != (W, H):
-                resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
-                img = img.resize((W, H), resample)
-            return img
-        except Exception as e:
-            logger.warning(f"AI image attempt {attempt+1} failed: {e}")
-            continue
-
-    # Fallback: cinematic dark gradient (still looks intentional)
-    logger.error("AI image generation failed after retries, using gradient fallback")
-    img = Image.new('RGB', (W, H), (15, 12, 30))
-    draw = ImageDraw.Draw(img)
-    for y in range(H):
-        v = int(10 + 35 * (y / H))
-        draw.line([(0, y), (W, y)], fill=(v, v // 2, v + 20))
-    return img
+def generate_background(image_prompt: str) -> Image.Image:
+    """Generate a cinematic background image via Pollinations."""
+    try:
+        encoded = urllib.parse.quote(image_prompt[:800])
+        url = f"https://image.pollinations.ai/prompt/{encoded}?width={W}&height={H}&nologo=true&seed={random.randint(1,99999)}"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=60)
+        r.raise_for_status()
+        img = Image.open(BytesIO(r.content)).convert('RGB')
+        resample = Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS
+        if img.size != (W, H):
+            img = img.resize((W, H), resample)
+        logger.info(f"Background generated: {img.size}")
+        return img
+    except Exception as e:
+        logger.error(f"Background error: {e}")
+        img = Image.new('RGB', (W, H), (20, 20, 20))
+        return img
 
 
-def wrap_text(draw, text, font, max_w):
+def draw_text_on_frame(bg: Image.Image, text: str) -> np.ndarray:
+    """Draw bold white text centered over the background image."""
+    frame = bg.copy()
+    overlay = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    draw_ov = ImageDraw.Draw(overlay)
+    # Dark gradient at bottom half for readability
+    for y in range(H // 2, H):
+        alpha = int(180 * (y - H // 2) / (H // 2))
+        draw_ov.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
+    frame = Image.alpha_composite(frame.convert('RGBA'), overlay).convert('RGB')
+    draw = ImageDraw.Draw(frame)
+
+    font = load_font(88)
+    max_w = int(W * 0.88)
     words = text.split()
     lines, cur = [], ""
     for w in words:
@@ -83,63 +73,30 @@ def wrap_text(draw, text, font, max_w):
             cur = w
     if cur:
         lines.append(cur)
-    return lines
 
-
-def add_text_to_image(img: Image.Image, onscreen_text: str, is_hook=False) -> np.ndarray:
-    """Burn on-screen text onto the image (bottom third)."""
-    frame = img.copy()
-    draw = ImageDraw.Draw(frame)
-
-    if not onscreen_text:
-        return np.array(frame)
-
-    font = load_font(58 if is_hook else 50)
-    max_w = int(W * 0.88)
-    lines = wrap_text(draw, onscreen_text, font, max_w)
-    line_h = 70
+    line_h = 108
     total_h = len(lines) * line_h
+    # Position: center of bottom half
+    start_y = int(H * 0.55) - total_h // 2
 
-    # Position: hook center, body lower third
-    start_y = (H - total_h) // 2 if is_hook else int(H * 0.70) - total_h
-
-    # Dark band behind text
-    band = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    bd = ImageDraw.Draw(band)
-    pad = 24
-    bd.rectangle([(0, start_y - pad), (W, start_y + total_h + pad)],
-                 fill=(0, 0, 0, 140))
-    frame = Image.alpha_composite(frame.convert('RGBA'), band).convert('RGB')
-    draw = ImageDraw.Draw(frame)
-
-    y = start_y
-    for line in lines:
+    for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
-        x = (W - (bbox[2] - bbox[0])) // 2
-        for dx, dy in [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -3), (0, 3)]:
-            draw.text((x + dx, y + dy), line, font=font, fill=(0, 0, 0))
-        draw.text((x, y), line, font=font,
-                  fill=HIGHLIGHT_COLOR if is_hook else TEXT_COLOR)
-        y += line_h
+        lw = bbox[2] - bbox[0]
+        x = (W - lw) // 2
+        y = start_y + i * line_h
+        # Strong shadow for readability
+        for dx, dy in [(-4,-4),(4,-4),(-4,4),(4,4),(0,-4),(0,4),(-4,0),(4,0)]:
+            draw.text((x+dx, y+dy), line, font=font, fill=(0, 0, 0))
+        draw.text((x, y), line, font=font, fill=(255, 255, 255))
 
     # Branding
-    font_brand = load_font(28)
+    font_brand = load_font(44)
     brand = "@GridPhantom187"
     bbox = draw.textbbox((0, 0), brand, font=font_brand)
-    draw.text(((W - (bbox[2] - bbox[0])) // 2, H - 70), brand,
-              font=font_brand, fill=(190, 190, 190))
+    bw = bbox[2] - bbox[0]
+    draw.text(((W-bw)//2, H-130), brand, font=font_brand, fill=(200, 200, 200))
 
     return np.array(frame)
-
-
-def zoom_clip(frame_array, duration, zoom_start=1.0, zoom_end=1.08):
-    """Create an ImageClip with a slow zoom (Ken Burns) effect."""
-    clip = ImageClip(frame_array).set_duration(duration)
-
-    def scaler(t):
-        return zoom_start + (zoom_end - zoom_start) * (t / duration)
-
-    return clip.resize(scaler).resize((W, H))
 
 
 class VideoAssembler:
@@ -154,50 +111,33 @@ class VideoAssembler:
         audio = AudioFileClip(audio_path)
         duration = audio.duration
 
-        scenes = script.get('scenes', [])
-        if not scenes:
-            scenes = [{'image_prompt': script.get('thumbnail_keyword', 'technology'),
-                       'onscreen_text': script.get('thumbnail_text', ''),
-                       'segment': 'hook'}]
+        # Generate ONE cinematic background image for the whole video
+        image_prompt = script.get('image_prompt', 'cinematic dramatic portrait, moody lighting')
+        logger.info(f"Generating background image...")
+        bg = generate_background(image_prompt)
 
-        # Cap scenes to keep total runtime bounded (max 6)
-        if len(scenes) > 6:
-            scenes = scenes[:6]
+        # Split sentences — each gets its own text frame over the same background
+        sentences = script.get('sentences', [script.get('narration', '')])
+        if not sentences:
+            sentences = [script.get('narration', '')]
 
-        seg_dur = duration / len(scenes)
-        seed = random.randint(1, 999999)  # same seed base for character consistency
-
-        # --- Generate images sequentially with rate-limit friendly pacing ---
-        import time as _t
-
-        images = {}
-        for idx, scene in enumerate(scenes):
-            prompt = scene.get('image_prompt', '')
-            logger.info(f"Scene {idx+1}/{len(scenes)}: generating image...")
-            images[idx] = generate_ai_image(prompt, seed=seed + idx)
-            _t.sleep(1.5)  # gentle pause to avoid 429 rate limiting
-        logger.info(f"All {len(scenes)} images generated")
-
-        # --- Build clips from pre-generated images ---
+        seg_dur = duration / len(sentences)
         clips = []
-        for i, scene in enumerate(scenes):
-            onscreen = scene.get('onscreen_text', '')
-            is_hook = scene.get('segment', '') == 'hook' or i == 0
-            frame = add_text_to_image(images[i], onscreen, is_hook=is_hook)
-
+        for i, sentence in enumerate(sentences):
+            frame = draw_text_on_frame(bg, sentence)
             start = i * seg_dur
             end = min((i + 1) * seg_dur, duration)
-            clip = zoom_clip(frame, end - start)
+            seg_audio = audio.subclip(start, end)
+            clip = ImageClip(frame).set_duration(end - start).set_audio(seg_audio)
             clips.append(clip)
 
-        final = concatenate_videoclips(clips)
-        final = final.set_audio(audio).set_duration(duration)
+        final = concatenate_videoclips(clips).set_audio(audio).set_duration(duration)
 
-        logger.info(f"Exporting video ({duration:.1f}s, {len(scenes)} scenes)...")
+        logger.info(f"Exporting {duration:.1f}s video ({len(sentences)} sentences)...")
         final.write_videofile(
             output_path, fps=24, codec='libx264',
             audio_codec='aac', threads=1, preset='ultrafast',
-            ffmpeg_params=['-crf', '28'], logger=None
+            ffmpeg_params=['-crf', '26'], logger=None
         )
 
         try:
