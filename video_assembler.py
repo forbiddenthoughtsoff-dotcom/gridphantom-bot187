@@ -32,22 +32,41 @@ def load_font(size):
 
 
 def generate_ai_image(prompt: str, seed: int = None) -> Image.Image:
-    """Generate a Pixar-style image via Pollinations.ai (free, no key)."""
-    try:
-        encoded = urllib.parse.quote(prompt[:900])
-        url = f"https://image.pollinations.ai/prompt/{encoded}?width={W}&height={H}&nologo=true"
-        if seed is not None:
-            url += f"&seed={seed}"
-        req = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=90)
-        req.raise_for_status()
-        img = Image.open(BytesIO(req.content)).convert('RGB')
-        if img.size != (W, H):
-            img = img.resize((W, H), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
-        return img
-    except Exception as e:
-        logger.error(f"AI image error: {e}")
-        img = Image.new('RGB', (W, H), (15, 12, 30))
-        return img
+    """Generate a Pixar-style image via Pollinations.ai (free, no key).
+    Robust: handles 429 rate limits with backoff, falls back gracefully."""
+    encoded = urllib.parse.quote(prompt[:900])
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width={W}&height={H}&nologo=true"
+    if seed is not None:
+        url += f"&seed={seed}"
+
+    import time as _t
+    delays = [0, 4, 9]  # backoff between attempts (seconds)
+    for attempt, delay in enumerate(delays):
+        if delay:
+            _t.sleep(delay)
+        try:
+            req = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=45)
+            if req.status_code == 429:
+                logger.warning(f"Rate limited (429), attempt {attempt+1}, backing off...")
+                continue
+            req.raise_for_status()
+            img = Image.open(BytesIO(req.content)).convert('RGB')
+            if img.size != (W, H):
+                resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+                img = img.resize((W, H), resample)
+            return img
+        except Exception as e:
+            logger.warning(f"AI image attempt {attempt+1} failed: {e}")
+            continue
+
+    # Fallback: cinematic dark gradient (still looks intentional)
+    logger.error("AI image generation failed after retries, using gradient fallback")
+    img = Image.new('RGB', (W, H), (15, 12, 30))
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        v = int(10 + 35 * (y / H))
+        draw.line([(0, y), (W, y)], fill=(v, v // 2, v + 20))
+    return img
 
 
 def wrap_text(draw, text, font, max_w):
@@ -137,29 +156,38 @@ class VideoAssembler:
 
         scenes = script.get('scenes', [])
         if not scenes:
-            # Fallback: single scene from narration
             scenes = [{'image_prompt': script.get('thumbnail_keyword', 'technology'),
                        'onscreen_text': script.get('thumbnail_text', ''),
                        'segment': 'hook'}]
 
+        # Cap scenes to keep total runtime bounded (max 6)
+        if len(scenes) > 6:
+            scenes = scenes[:6]
+
         seg_dur = duration / len(scenes)
         seed = random.randint(1, 999999)  # same seed base for character consistency
 
+        # --- Generate images sequentially with rate-limit friendly pacing ---
+        import time as _t
+
+        images = {}
+        for idx, scene in enumerate(scenes):
+            prompt = scene.get('image_prompt', '')
+            logger.info(f"Scene {idx+1}/{len(scenes)}: generating image...")
+            images[idx] = generate_ai_image(prompt, seed=seed + idx)
+            _t.sleep(1.5)  # gentle pause to avoid 429 rate limiting
+        logger.info(f"All {len(scenes)} images generated")
+
+        # --- Build clips from pre-generated images ---
         clips = []
         for i, scene in enumerate(scenes):
-            prompt = scene.get('image_prompt', '')
             onscreen = scene.get('onscreen_text', '')
             is_hook = scene.get('segment', '') == 'hook' or i == 0
-
-            logger.info(f"Scene {i+1}/{len(scenes)}: generating image...")
-            img = generate_ai_image(prompt, seed=seed + i)
-            frame = add_text_to_image(img, onscreen, is_hook=is_hook)
+            frame = add_text_to_image(images[i], onscreen, is_hook=is_hook)
 
             start = i * seg_dur
             end = min((i + 1) * seg_dur, duration)
-            seg_audio = audio.subclip(start, end)
-
-            clip = zoom_clip(frame, end - start).set_audio(seg_audio)
+            clip = zoom_clip(frame, end - start)
             clips.append(clip)
 
         final = concatenate_videoclips(clips)
