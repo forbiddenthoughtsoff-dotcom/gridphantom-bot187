@@ -1,4 +1,5 @@
 import requests
+import urllib.parse
 import os
 import logging
 import random
@@ -6,18 +7,15 @@ from io import BytesIO
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (
-    VideoFileClip, ImageClip, AudioFileClip,
-    CompositeVideoClip, concatenate_videoclips
+    ImageClip, AudioFileClip, concatenate_videoclips
 )
 from config import Config
 
 logger = logging.getLogger(__name__)
 
-# YouTube vertical 9:16 — but process at LOW res to save RAM, no upscaling
-W, H = 720, 1280          # processing resolution (RAM-friendly)
+W, H = 720, 1280
 HIGHLIGHT_COLOR = (255, 220, 0)
 TEXT_COLOR = (255, 255, 255)
-SHADOW_COLOR = (0, 0, 0)
 
 
 def load_font(size):
@@ -33,40 +31,23 @@ def load_font(size):
     return ImageFont.load_default()
 
 
-def fetch_background_video(keyword: str, out_path: str) -> str:
-    """Download ONE small SD portrait video from Pexels. RAM-friendly."""
+def generate_ai_image(prompt: str, seed: int = None) -> Image.Image:
+    """Generate a Pixar-style image via Pollinations.ai (free, no key)."""
     try:
-        url = "https://api.pexels.com/videos/search"
-        headers = {"Authorization": Config.PEXELS_API_KEY}
-        params = {"query": keyword, "per_page": 10,
-                  "orientation": "portrait", "size": "small"}
-        r = requests.get(url, headers=headers, params=params, timeout=10)
-        r.raise_for_status()
-        videos = r.json().get('videos', [])
-        if not videos:
-            return None
-        video = random.choice(videos)
-        # Pick the smallest file that is at least 600px wide (SD, low RAM)
-        files = sorted(video.get('video_files', []),
-                       key=lambda f: f.get('width') or 9999)
-        chosen = None
-        for f in files:
-            if (f.get('width') or 0) >= 540:
-                chosen = f
-                break
-        if not chosen and files:
-            chosen = files[0]
-        if not chosen:
-            return None
-        link = chosen['link']
-        data = requests.get(link, timeout=30).content
-        with open(out_path, 'wb') as fh:
-            fh.write(data)
-        logger.info(f"Background video downloaded: {keyword} ({chosen.get('width')}x{chosen.get('height')})")
-        return out_path
+        encoded = urllib.parse.quote(prompt[:900])
+        url = f"https://image.pollinations.ai/prompt/{encoded}?width={W}&height={H}&nologo=true"
+        if seed is not None:
+            url += f"&seed={seed}"
+        req = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=90)
+        req.raise_for_status()
+        img = Image.open(BytesIO(req.content)).convert('RGB')
+        if img.size != (W, H):
+            img = img.resize((W, H), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
+        return img
     except Exception as e:
-        logger.error(f"Video fetch error: {e}")
-        return None
+        logger.error(f"AI image error: {e}")
+        img = Image.new('RGB', (W, H), (15, 12, 30))
+        return img
 
 
 def wrap_text(draw, text, font, max_w):
@@ -86,91 +67,60 @@ def wrap_text(draw, text, font, max_w):
     return lines
 
 
-def make_text_overlay(block_text, hook=""):
-    """Create a transparent RGBA text overlay (PNG) at processing resolution."""
-    overlay = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
+def add_text_to_image(img: Image.Image, onscreen_text: str, is_hook=False) -> np.ndarray:
+    """Burn on-screen text onto the image (bottom third)."""
+    frame = img.copy()
+    draw = ImageDraw.Draw(frame)
 
-    # Semi-transparent dark band behind text for readability
+    if not onscreen_text:
+        return np.array(frame)
+
+    font = load_font(58 if is_hook else 50)
+    max_w = int(W * 0.88)
+    lines = wrap_text(draw, onscreen_text, font, max_w)
+    line_h = 70
+    total_h = len(lines) * line_h
+
+    # Position: hook center, body lower third
+    start_y = (H - total_h) // 2 if is_hook else int(H * 0.70) - total_h
+
+    # Dark band behind text
     band = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     bd = ImageDraw.Draw(band)
-    bd.rectangle([(0, int(H * 0.28)), (W, int(H * 0.78))], fill=(0, 0, 0, 130))
-    overlay = Image.alpha_composite(overlay, band)
-    draw = ImageDraw.Draw(overlay)
+    pad = 24
+    bd.rectangle([(0, start_y - pad), (W, start_y + total_h + pad)],
+                 fill=(0, 0, 0, 140))
+    frame = Image.alpha_composite(frame.convert('RGBA'), band).convert('RGB')
+    draw = ImageDraw.Draw(frame)
 
-    font_hook = load_font(54)
-    font_main = load_font(52)
-    max_w = int(W * 0.86)
-
-    hook_lines = wrap_text(draw, hook, font_hook, max_w) if hook else []
-    body_lines = wrap_text(draw, block_text, font_main, max_w)
-
-    lh_hook, lh_body, gap = 66, 70, 36
-    total_h = len(hook_lines) * lh_hook + (gap if hook_lines and body_lines else 0) + len(body_lines) * lh_body
-    y = (H - total_h) // 2
-
-    for line in hook_lines:
-        bbox = draw.textbbox((0, 0), line, font=font_hook)
+    y = start_y
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=font)
         x = (W - (bbox[2] - bbox[0])) // 2
-        for dx, dy in [(-2, -2), (2, -2), (-2, 2), (2, 2), (0, -2), (0, 2)]:
-            draw.text((x + dx, y + dy), line, font=font_hook, fill=(0, 0, 0, 255))
-        draw.text((x, y), line, font=font_hook, fill=HIGHLIGHT_COLOR + (255,))
-        y += lh_hook
-    if hook_lines and body_lines:
-        y += gap
-    for line in body_lines:
-        bbox = draw.textbbox((0, 0), line, font=font_main)
-        x = (W - (bbox[2] - bbox[0])) // 2
-        for dx, dy in [(-2, -2), (2, -2), (-2, 2), (2, 2), (0, -2), (0, 2)]:
-            draw.text((x + dx, y + dy), line, font=font_main, fill=(0, 0, 0, 255))
-        draw.text((x, y), line, font=font_main, fill=TEXT_COLOR + (255,))
-        y += lh_body
+        for dx, dy in [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -3), (0, 3)]:
+            draw.text((x + dx, y + dy), line, font=font, fill=(0, 0, 0))
+        draw.text((x, y), line, font=font,
+                  fill=HIGHLIGHT_COLOR if is_hook else TEXT_COLOR)
+        y += line_h
 
     # Branding
-    font_brand = load_font(30)
+    font_brand = load_font(28)
     brand = "@GridPhantom187"
     bbox = draw.textbbox((0, 0), brand, font=font_brand)
-    bw = bbox[2] - bbox[0]
-    draw.text(((W - bw) // 2, H - 90), brand, font=font_brand, fill=(190, 190, 190, 255))
+    draw.text(((W - (bbox[2] - bbox[0])) // 2, H - 70), brand,
+              font=font_brand, fill=(190, 190, 190))
 
-    return np.array(overlay)
-
-
-def split_into_blocks(narration, max_words=12):
-    import re
-    sentences = re.split(r'(?<=[.!?])\s+', narration.strip())
-    blocks = []
-    for s in sentences:
-        s = s.strip()
-        if not s:
-            continue
-        words = s.split()
-        if len(words) <= max_words:
-            blocks.append(s)
-        else:
-            for i in range(0, len(words), max_words):
-                blocks.append(" ".join(words[i:i + max_words]))
-    return blocks if blocks else [narration]
+    return np.array(frame)
 
 
-def prepare_bg_clip(video_path, duration):
-    """Load bg video, crop to 9:16, resize to processing res, loop to duration."""
-    clip = VideoFileClip(video_path, audio=False, target_resolution=(H, None))
-    # Crop center to 9:16
-    if clip.w / clip.h > W / H:
-        new_w = int(clip.h * W / H)
-        x1 = (clip.w - new_w) // 2
-        clip = clip.crop(x1=x1, y1=0, x2=x1 + new_w, y2=clip.h)
-    else:
-        new_h = int(clip.w * H / W)
-        y1 = (clip.h - new_h) // 2
-        clip = clip.crop(x1=0, y1=y1, x2=clip.w, y2=y1 + new_h)
-    clip = clip.resize((W, H))
-    # Loop to fill duration
-    if clip.duration < duration:
-        n = int(duration / clip.duration) + 1
-        clip = concatenate_videoclips([clip] * n)
-    return clip.subclip(0, duration)
+def zoom_clip(frame_array, duration, zoom_start=1.0, zoom_end=1.08):
+    """Create an ImageClip with a slow zoom (Ken Burns) effect."""
+    clip = ImageClip(frame_array).set_duration(duration)
+
+    def scaler(t):
+        return zoom_start + (zoom_end - zoom_start) * (t / duration)
+
+    return clip.resize(scaler).resize((W, H))
 
 
 class VideoAssembler:
@@ -185,55 +135,46 @@ class VideoAssembler:
         audio = AudioFileClip(audio_path)
         duration = audio.duration
 
-        keyword = script.get('thumbnail_keyword', 'futuristic technology abstract')
-        hook = script.get('thumbnail_text', '')
-        narration = script.get('narration', '')
+        scenes = script.get('scenes', [])
+        if not scenes:
+            # Fallback: single scene from narration
+            scenes = [{'image_prompt': script.get('thumbnail_keyword', 'technology'),
+                       'onscreen_text': script.get('thumbnail_text', ''),
+                       'segment': 'hook'}]
 
-        blocks = split_into_blocks(narration)
-        logger.info(f"Narration -> {len(blocks)} blocks")
+        seg_dur = duration / len(scenes)
+        seed = random.randint(1, 999999)  # same seed base for character consistency
 
-        # Try to get a moving background video
-        bg_path = fetch_background_video(keyword, "/tmp/bg_raw.mp4")
+        clips = []
+        for i, scene in enumerate(scenes):
+            prompt = scene.get('image_prompt', '')
+            onscreen = scene.get('onscreen_text', '')
+            is_hook = scene.get('segment', '') == 'hook' or i == 0
 
-        try:
-            if bg_path:
-                bg_clip = prepare_bg_clip(bg_path, duration)
-            else:
-                raise RuntimeError("no bg video")
-        except Exception as e:
-            logger.error(f"BG video prep failed ({e}), using dark fallback")
-            from moviepy.editor import ColorClip
-            bg_clip = ColorClip(size=(W, H), color=(12, 12, 28)).set_duration(duration)
+            logger.info(f"Scene {i+1}/{len(scenes)}: generating image...")
+            img = generate_ai_image(prompt, seed=seed + i)
+            frame = add_text_to_image(img, onscreen, is_hook=is_hook)
 
-        # Build text overlays per block, timed to the narration
-        seg_dur = duration / len(blocks)
-        overlay_clips = []
-        for i, block in enumerate(blocks):
-            arr = make_text_overlay(block, hook=hook if i == 0 else "")
             start = i * seg_dur
             end = min((i + 1) * seg_dur, duration)
-            oc = (ImageClip(arr)
-                  .set_start(start)
-                  .set_duration(end - start))
-            overlay_clips.append(oc)
+            seg_audio = audio.subclip(start, end)
 
-        final = CompositeVideoClip([bg_clip] + overlay_clips, size=(W, H))
+            clip = zoom_clip(frame, end - start).set_audio(seg_audio)
+            clips.append(clip)
+
+        final = concatenate_videoclips(clips)
         final = final.set_audio(audio).set_duration(duration)
 
-        logger.info(f"Exporting video ({duration:.1f}s, {len(blocks)} blocks) at {W}x{H}...")
+        logger.info(f"Exporting video ({duration:.1f}s, {len(scenes)} scenes)...")
         final.write_videofile(
             output_path, fps=24, codec='libx264',
             audio_codec='aac', threads=1, preset='ultrafast',
             ffmpeg_params=['-crf', '28'], logger=None
         )
 
-        # Cleanup
         try:
-            bg_clip.close()
             audio.close()
             final.close()
-            if bg_path and os.path.exists(bg_path):
-                os.remove(bg_path)
         except Exception:
             pass
 
