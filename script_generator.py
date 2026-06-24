@@ -43,7 +43,7 @@ Output ONLY valid JSON in this exact structure (no markdown, no code blocks):
   "tags": ["shorts", "ai", "tech", "viral", "trending", "gridphantom"]
 }
 
-Produce 5-7 scenes total. Each voiceover line max 12 words. Always start the image_prompt with the visual style constant.
+Produce exactly 5 scenes total. Each voiceover line max 12 words. Always start the image_prompt with the visual style constant.
 """
 
 
@@ -68,7 +68,7 @@ class ScriptGenerator:
 Title: {topic.get('title', '')}
 Summary: {topic.get('summary', '')}
 
-Create 5-7 scenes with 1:1 voiceover-to-scene mapping. Consistent characters across all scenes.
+Create exactly 5 scenes with 1:1 voiceover-to-scene mapping. Consistent characters across all scenes.
 Each image_prompt must begin with: "{VISUAL_CONSTANT}".
 Return ONLY valid JSON."""
 
