@@ -7,44 +7,26 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-VISUAL_CONSTANT = ("3D animated style, Pixar-like character design, vibrant colors, "
-                   "cinematic lighting, depth of field, 9:16 aspect ratio")
+SYSTEM_PROMPT = """You are a viral short-form content creator. You create shocking, fascinating facts and stories for YouTube Shorts.
 
-SYSTEM_PROMPT = """You are an autonomous chief screenwriter and prompt engineer for viral YouTube Shorts, specialized in timely niche content with viral potential.
+Your content style:
+- ONE powerful fact or story, told in 3-5 short punchy sentences
+- Each sentence max 10 words
+- Hook in the first sentence — shocking or unbelievable
+- No fluff, no intro, no "did you know"
+- Direct, fast, memorable
 
-Analyze the provided story, psychologically optimize it, and produce an exact production script with consistent image prompts.
+Also generate a vivid image prompt for an AI image that visually matches the topic.
+The image should look like a real, cinematic, dramatic photo or painting — NOT cartoon, NOT Pixar.
+Example topics: historical figures, athletes, celebrities, shocking world facts, science, money, power
 
-Follow these 3 stages strictly:
-
-1. RETENTION PSYCHOLOGY
-- Hook (0-3s): Simultaneous audio, text and visual hook. No intro, no greeting. Direct entry at the moment of maximum curiosity/tension.
-- Body: Short, universally understandable sentences. Each line describes one clear visual action. Fast pacing, 0% filler.
-- Reward: The emotional or shocking payoff sits exactly at the end of the last line.
-
-2. CHARACTER CONSISTENCY
-- Identify the core characters up front. Keep their specific traits (clothing, hair, age) IDENTICAL across all scene prompts.
-
-3. STRUCTURE
-- Strict 1:1 mapping: 1 script line (voiceover) = 1 visual scene = 1 precise image prompt.
-
-Output ONLY valid JSON in this exact structure (no markdown, no code blocks):
+Output ONLY valid JSON, no markdown:
 {
-  "title": "Viral title with emoji (max 60 chars)",
-  "thumbnail_text": "3-5 word on-screen hook",
-  "characters": "Brief description of recurring characters and their fixed traits",
-  "scenes": [
-    {
-      "segment": "hook",
-      "voiceover": "Opening line in English, max 12 words",
-      "image_prompt": "full image prompt including character details and action",
-      "onscreen_text": "short punchy on-screen text"
-    }
-  ],
-  "tags": ["shorts", "ai", "tech", "viral", "trending", "gridphantom"]
-}
-
-Produce exactly 5 scenes total. Each voiceover line max 12 words. Always start the image_prompt with the visual style constant.
-"""
+  "title": "Catchy title with emoji (max 60 chars)",
+  "image_prompt": "Cinematic, photorealistic, dramatic image of [subject]. High detail, moody lighting, 9:16 portrait format. NO cartoon, NO animation.",
+  "sentences": ["sentence 1", "sentence 2", "sentence 3", "sentence 4", "sentence 5"],
+  "tags": ["shorts", "facts", "viral", "trending", "didyouknow", "gridphantom"]
+}"""
 
 
 def _sanitize_json(raw: str) -> str:
@@ -63,52 +45,30 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, topic: dict, language: str = 'en') -> dict:
-        user_prompt = f"""Process this raw material into a viral Short script:
-
+        user_prompt = f"""Create a viral short about this topic:
 Title: {topic.get('title', '')}
 Summary: {topic.get('summary', '')}
 
-Create exactly 5 scenes with 1:1 voiceover-to-scene mapping. Consistent characters across all scenes.
-Each image_prompt must begin with: "{VISUAL_CONSTANT}".
+Make it shocking and fascinating. 3-5 sentences max 10 words each.
 Return ONLY valid JSON."""
 
+        message = self.client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            system=[{"type": "text", "text": SYSTEM_PROMPT,
+                     "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+
+        raw = message.content[0].text
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=3000,
-                system=[
-                    {
-                        "type": "text",
-                        "text": SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"}
-                    }
-                ],
-                messages=[{"role": "user", "content": user_prompt}]
-            )
+            script = json.loads(raw)
+        except json.JSONDecodeError:
+            script = json.loads(_sanitize_json(raw))
 
-            raw = message.content[0].text
-            try:
-                script = json.loads(raw)
-            except json.JSONDecodeError as e:
-                logger.warning(f"JSON parse error, sanitizing: {e}")
-                script = json.loads(_sanitize_json(raw))
-
-            # Ensure every image prompt starts with the visual constant
-            for scene in script.get('scenes', []):
-                ip = scene.get('image_prompt', '')
-                if not ip.startswith("3D animated"):
-                    scene['image_prompt'] = f"{VISUAL_CONSTANT}, {ip}"
-
-            # Build a single narration string from all voiceover lines
-            script['narration'] = " ".join(
-                s.get('voiceover', '') for s in script.get('scenes', [])
-            )
-            script['language'] = language
-            script['source_topic'] = topic
-            logger.info(f"Script generated: {script.get('title','?')} "
-                        f"({len(script.get('scenes', []))} scenes)")
-            return script
-
-        except Exception as e:
-            logger.error(f"Script generation error: {e}")
-            raise
+        # Build narration from sentences
+        script['narration'] = " ".join(script.get('sentences', []))
+        script['language'] = language
+        script['source_topic'] = topic
+        logger.info(f"Script: {script.get('title','?')} ({len(script.get('sentences',[]))} sentences)")
+        return script
