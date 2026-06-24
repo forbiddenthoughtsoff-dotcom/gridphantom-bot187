@@ -1,3 +1,11 @@
+# Set timezone to Zurich so schedule times match local expectations
+import os as _os, time as _time
+_os.environ['TZ'] = 'Europe/Zurich'
+try:
+    _time.tzset()
+except Exception:
+    pass
+
 # PIL patch before any moviepy import
 try:
     from PIL import Image
