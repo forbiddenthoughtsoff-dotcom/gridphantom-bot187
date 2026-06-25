@@ -46,12 +46,18 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, topic: dict, language: str = 'en') -> dict:
+        mode = os.environ.get('VIDEO_MODE', 'long')
+        if mode == 'short':
+            count = "2-3 sentences — ultra short, under 20 seconds when spoken"
+        else:
+            count = "5-7 sentences — 45-60 seconds when spoken"
+
         user_prompt = f"""Create a viral YouTube Short with a powerful quote or hard truth.
 Topic inspiration: {topic.get('title', 'life, success, relationships, power')}
 
-Generate original bold quotes — not news, not facts.
-The kind of thing a confident, beautiful woman would say.
-3-5 sentences, each max 10 words. First sentence stops the scroll.
+Generate {count}.
+Bold, confident quotes — the kind a beautiful woman says that stops men scrolling.
+First sentence is the hook. Make it hit hard.
 Return ONLY valid JSON."""
 
         message = self.client.messages.create(
