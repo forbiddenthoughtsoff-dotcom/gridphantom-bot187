@@ -3,6 +3,7 @@ import urllib.parse
 import os
 import logging
 import random
+import time
 from io import BytesIO
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -12,6 +13,7 @@ from config import Config
 logger = logging.getLogger(__name__)
 
 W, H = 1080, 1920
+RESAMPLE = Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS
 
 
 def load_font(size):
@@ -27,74 +29,97 @@ def load_font(size):
     return ImageFont.load_default()
 
 
-def generate_background(image_prompt: str) -> Image.Image:
-    """Generate a cinematic background image via Pollinations."""
+def fetch_image(prompt: str) -> Image.Image:
+    """
+    Fetch background image. Strategy:
+    1. Pollinations.ai (AI-generated, free, no key) — short prompt, fast model
+    2. Unsplash Source (real photos, free, no key)
+    3. Dark gradient fallback
+    """
+    # Strategy 1: Pollinations with turbo model (faster, less timeout risk)
     try:
-        encoded = urllib.parse.quote(image_prompt[:800])
-        url = f"https://image.pollinations.ai/prompt/{encoded}?width={W}&height={H}&nologo=true&seed={random.randint(1,99999)}"
-        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=60)
+        short_prompt = prompt[:200]
+        encoded = urllib.parse.quote(short_prompt)
+        url = (f"https://image.pollinations.ai/prompt/{encoded}"
+               f"?width=1080&height=1920&nologo=true&model=flux&seed={random.randint(1,9999)}")
+        r = requests.get(url, timeout=80, headers={'User-Agent': 'GridPhantomBot/1.0'})
         r.raise_for_status()
         img = Image.open(BytesIO(r.content)).convert('RGB')
-        resample = Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS
         if img.size != (W, H):
-            img = img.resize((W, H), resample)
-        logger.info(f"Background generated: {img.size}")
+            img = img.resize((W, H), RESAMPLE)
+        logger.info(f"✅ Pollinations image: {img.size}")
         return img
     except Exception as e:
-        logger.error(f"Background error: {e}")
-        img = Image.new('RGB', (W, H), (20, 20, 20))
+        logger.warning(f"Pollinations failed: {e}, trying Unsplash...")
+
+    # Strategy 2: Unsplash Source (real photos, always fast)
+    try:
+        keywords = prompt.split(',')[0].strip().replace(' ', '+')[:50]
+        url = f"https://source.unsplash.com/1080x1920/?{keywords}"
+        r = requests.get(url, timeout=15, headers={'User-Agent': 'GridPhantomBot/1.0'})
+        r.raise_for_status()
+        img = Image.open(BytesIO(r.content)).convert('RGB')
+        img = img.resize((W, H), RESAMPLE)
+        logger.info(f"✅ Unsplash fallback: {img.size}")
         return img
+    except Exception as e:
+        logger.warning(f"Unsplash failed: {e}, using gradient")
+
+    # Strategy 3: Dark gradient
+    img = Image.new('RGB', (W, H), (15, 15, 25))
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        v = int(15 + 25 * y / H)
+        draw.line([(0, y), (W, y)], fill=(v, v, v + 15))
+    return img
 
 
-def draw_text_on_frame(bg: Image.Image, text: str) -> np.ndarray:
-    """Draw bold white text centered over the background image."""
-    frame = bg.copy()
-    overlay = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    draw_ov = ImageDraw.Draw(overlay)
-    # Dark gradient at bottom half for readability
-    for y in range(H // 2, H):
-        alpha = int(180 * (y - H // 2) / (H // 2))
-        draw_ov.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
-    frame = Image.alpha_composite(frame.convert('RGBA'), overlay).convert('RGB')
+def make_frame(bg: Image.Image, text: str) -> np.ndarray:
+    """Bold white text centered over background, with dark gradient for readability."""
+    frame = bg.copy().convert('RGBA')
+
+    # Dark gradient overlay bottom 60%
+    grad = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(grad)
+    for y in range(int(H * 0.35), H):
+        alpha = int(195 * (y - H * 0.35) / (H * 0.65))
+        gd.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
+    frame = Image.alpha_composite(frame, grad).convert('RGB')
     draw = ImageDraw.Draw(frame)
 
-    font = load_font(88)
+    font = load_font(92)
     max_w = int(W * 0.88)
+
+    # Word wrap
     words = text.split()
     lines, cur = [], ""
     for w in words:
         test = (cur + " " + w).strip()
-        bbox = draw.textbbox((0, 0), test, font=font)
-        if bbox[2] - bbox[0] <= max_w:
+        if draw.textbbox((0,0), test, font=font)[2] <= max_w:
             cur = test
         else:
-            if cur:
-                lines.append(cur)
+            if cur: lines.append(cur)
             cur = w
-    if cur:
-        lines.append(cur)
+    if cur: lines.append(cur)
 
-    line_h = 108
+    line_h = 112
     total_h = len(lines) * line_h
-    # Position: center of bottom half
-    start_y = int(H * 0.55) - total_h // 2
+    start_y = int(H * 0.58) - total_h // 2
 
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
-        lw = bbox[2] - bbox[0]
-        x = (W - lw) // 2
+        x = (W - (bbox[2] - bbox[0])) // 2
         y = start_y + i * line_h
-        # Strong shadow for readability
-        for dx, dy in [(-4,-4),(4,-4),(-4,4),(4,4),(0,-4),(0,4),(-4,0),(4,0)]:
-            draw.text((x+dx, y+dy), line, font=font, fill=(0, 0, 0))
-        draw.text((x, y), line, font=font, fill=(255, 255, 255))
+        # Strong black shadow for readability on any background
+        for dx, dy in [(-4,-4),(4,-4),(-4,4),(4,4),(0,-5),(0,5),(-5,0),(5,0)]:
+            draw.text((x+dx, y+dy), line, font=font, fill=(0,0,0,255))
+        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
 
     # Branding
-    font_brand = load_font(44)
+    font_b = load_font(42)
     brand = "@GridPhantom187"
-    bbox = draw.textbbox((0, 0), brand, font=font_brand)
-    bw = bbox[2] - bbox[0]
-    draw.text(((W-bw)//2, H-130), brand, font=font_brand, fill=(200, 200, 200))
+    bw = draw.textbbox((0,0), brand, font=font_b)[2]
+    draw.text(((W - bw)//2, H - 120), brand, font=font_b, fill=(210, 210, 210))
 
     return np.array(frame)
 
@@ -109,29 +134,27 @@ class VideoAssembler:
         output_path = f"{self.output_dir}/video_{language}_{random.randint(1000,9999)}.mp4"
 
         audio = AudioFileClip(audio_path)
-        duration = audio.duration
+        duration = min(audio.duration, 58)  # max 58s for Shorts compliance
 
-        # Generate ONE cinematic background image for the whole video
-        image_prompt = script.get('image_prompt', 'cinematic dramatic portrait, moody lighting')
-        logger.info(f"Generating background image...")
-        bg = generate_background(image_prompt)
-
-        # Split sentences — each gets its own text frame over the same background
-        sentences = script.get('sentences', [script.get('narration', '')])
+        image_prompt = script.get('image_prompt', 'cinematic dramatic portrait')
+        sentences = script.get('sentences', [])
         if not sentences:
             sentences = [script.get('narration', '')]
+
+        logger.info(f"Fetching background image...")
+        bg = fetch_image(image_prompt)
 
         seg_dur = duration / len(sentences)
         clips = []
         for i, sentence in enumerate(sentences):
-            frame = draw_text_on_frame(bg, sentence)
+            frame = make_frame(bg, sentence)
             start = i * seg_dur
             end = min((i + 1) * seg_dur, duration)
-            seg_audio = audio.subclip(start, end)
-            clip = ImageClip(frame).set_duration(end - start).set_audio(seg_audio)
-            clips.append(clip)
+            c = ImageClip(frame).set_duration(end - start).set_audio(
+                audio.subclip(start, end))
+            clips.append(c)
 
-        final = concatenate_videoclips(clips).set_audio(audio).set_duration(duration)
+        final = concatenate_videoclips(clips).set_audio(audio.subclip(0, duration))
 
         logger.info(f"Exporting {duration:.1f}s video ({len(sentences)} sentences)...")
         final.write_videofile(
@@ -141,8 +164,7 @@ class VideoAssembler:
         )
 
         try:
-            audio.close()
-            final.close()
+            audio.close(); final.close()
         except Exception:
             pass
 
