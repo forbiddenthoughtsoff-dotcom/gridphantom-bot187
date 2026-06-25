@@ -39,16 +39,22 @@ class HealthHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+class ReuseHTTPServer(HTTPServer):
+    allow_reuse_address = True
+
 def _run_health_server():
+    port = int(os.environ.get('PORT', 8080))
     while True:
         try:
-            HTTPServer(('0.0.0.0', 8080), HealthHandler).serve_forever()
+            server = ReuseHTTPServer(('0.0.0.0', port), HealthHandler)
+            server.serve_forever()
         except Exception as e:
-            print(f"[HEALTH] error, restarting: {e}", flush=True)
+            print(f"[HEALTH] Error, restarting in 2s: {e}", flush=True)
             time.sleep(2)
 
 threading.Thread(target=_run_health_server, daemon=True).start()
-print("[HEALTH] Health server started on port 8080", flush=True)
+print(f"[HEALTH] Health server init on port {os.environ.get('PORT', 8080)}", flush=True)
+
 
 logging.basicConfig(
     level=logging.INFO,
