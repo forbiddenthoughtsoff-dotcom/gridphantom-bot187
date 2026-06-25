@@ -39,22 +39,16 @@ class HealthHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
-class ReuseHTTPServer(HTTPServer):
-    allow_reuse_address = True
-
 def _run_health_server():
-    port = int(os.environ.get('PORT', 8080))
     while True:
         try:
-            server = ReuseHTTPServer(('0.0.0.0', port), HealthHandler)
-            server.serve_forever()
+            HTTPServer(('0.0.0.0', 8080), HealthHandler).serve_forever()
         except Exception as e:
-            print(f"[HEALTH] Error, restarting in 2s: {e}", flush=True)
+            print(f"[HEALTH] error, restarting: {e}", flush=True)
             time.sleep(2)
 
 threading.Thread(target=_run_health_server, daemon=True).start()
-print(f"[HEALTH] Health server init on port {os.environ.get('PORT', 8080)}", flush=True)
-
+print("[HEALTH] Health server started on port 8080", flush=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -126,12 +120,12 @@ def run_bot_long():
         logger.error(f"Post cycle error: {e}", exc_info=True)
 
 def validate_config():
-    required = ['ANTHROPIC_API_KEY', 'PEXELS_API_KEY', 'YOUTUBE_CLIENT_SECRETS']
+    required = ['ANTHROPIC_API_KEY', 'YOUTUBE_CLIENT_SECRETS']
     missing = [k for k in required if not os.environ.get(k)]
     if missing:
-        logger.error(f"Missing env vars: {missing}")
-        sys.exit(1)
-    logger.info("✅ Configuration validated")
+        logger.error(f"Missing env vars: {missing} — bot will not post until fixed")
+    else:
+        logger.info("✅ Configuration validated")
 
 if __name__ == "__main__":
     logger.info("=" * 60)
