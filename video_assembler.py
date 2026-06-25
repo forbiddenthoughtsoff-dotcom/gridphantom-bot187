@@ -142,7 +142,8 @@ class VideoAssembler:
             sentences = [script.get('narration', '')]
 
         logger.info(f"Fetching background image...")
-        bg = fetch_image(image_prompt)
+        from image_generator import get_background_image
+        bg = get_background_image(image_prompt)
 
         seg_dur = duration / len(sentences)
         clips = []
