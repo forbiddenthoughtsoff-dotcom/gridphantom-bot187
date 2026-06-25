@@ -135,14 +135,14 @@ if __name__ == "__main__":
     validate_config()
 
     # English only — morning post, midday short, evening post (Zürich time)
-    schedule.every().day.at("07:00").do(run_bot_short)   # Short 15-20s
-    schedule.every().day.at("12:00").do(run_bot_long)    # Beitrag 45-60s
-    schedule.every().day.at("17:00").do(run_bot_short)   # Short 15-20s
-    schedule.every().day.at("22:00").do(run_bot_long)    # Beitrag 45-60s
-    logger.info("⏰ 07 Short | 12 Post | 17 Short | 22 Post (EN)")
+    schedule.every().day.at("07:00").do(run_bot_short)
+    schedule.every().day.at("12:00").do(run_bot_short)
+    schedule.every().day.at("17:00").do(run_bot_short)
+    schedule.every().day.at("22:00").do(run_bot_short)
+    logger.info("⏰ 4x daily Shorts: 07 | 12 | 17 | 22 (EN)")
 
     # First post immediately
-    threading.Thread(target=run_bot_long, daemon=True).start()
+    threading.Thread(target=run_bot_short, daemon=True).start()
 
     while True:
         schedule.run_pending()
