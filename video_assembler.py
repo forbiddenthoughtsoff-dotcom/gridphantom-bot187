@@ -1,19 +1,14 @@
-import requests
-import urllib.parse
 import os
 import logging
 import random
-import time
-from io import BytesIO
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
-from config import Config
+from image_generator import get_background_image
 
 logger = logging.getLogger(__name__)
 
 W, H = 1080, 1920
-RESAMPLE = Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS
 
 
 def load_font(size):
@@ -29,97 +24,71 @@ def load_font(size):
     return ImageFont.load_default()
 
 
-def fetch_image(prompt: str) -> Image.Image:
-    """
-    Fetch background image. Strategy:
-    1. Pollinations.ai (AI-generated, free, no key) — short prompt, fast model
-    2. Unsplash Source (real photos, free, no key)
-    3. Dark gradient fallback
-    """
-    # Strategy 1: Pollinations with turbo model (faster, less timeout risk)
-    try:
-        short_prompt = prompt[:200]
-        encoded = urllib.parse.quote(short_prompt)
-        url = (f"https://image.pollinations.ai/prompt/{encoded}"
-               f"?width=1080&height=1920&nologo=true&model=flux&seed={random.randint(1,9999)}")
-        r = requests.get(url, timeout=80, headers={'User-Agent': 'GridPhantomBot/1.0'})
-        r.raise_for_status()
-        img = Image.open(BytesIO(r.content)).convert('RGB')
-        if img.size != (W, H):
-            img = img.resize((W, H), RESAMPLE)
-        logger.info(f"✅ Pollinations image: {img.size}")
-        return img
-    except Exception as e:
-        logger.warning(f"Pollinations failed: {e}, trying Unsplash...")
-
-    # Strategy 2: Unsplash Source (real photos, always fast)
-    try:
-        keywords = prompt.split(',')[0].strip().replace(' ', '+')[:50]
-        url = f"https://source.unsplash.com/1080x1920/?{keywords}"
-        r = requests.get(url, timeout=15, headers={'User-Agent': 'GridPhantomBot/1.0'})
-        r.raise_for_status()
-        img = Image.open(BytesIO(r.content)).convert('RGB')
-        img = img.resize((W, H), RESAMPLE)
-        logger.info(f"✅ Unsplash fallback: {img.size}")
-        return img
-    except Exception as e:
-        logger.warning(f"Unsplash failed: {e}, using gradient")
-
-    # Strategy 3: Dark gradient
-    img = Image.new('RGB', (W, H), (15, 15, 25))
-    draw = ImageDraw.Draw(img)
-    for y in range(H):
-        v = int(15 + 25 * y / H)
-        draw.line([(0, y), (W, y)], fill=(v, v, v + 15))
-    return img
-
-
 def make_frame(bg: Image.Image, text: str) -> np.ndarray:
-    """Bold white text centered over background, with dark gradient for readability."""
+    """HUGE bold white text centered. Text takes ~1/3 of frame."""
     frame = bg.copy().convert('RGBA')
 
-    # Dark gradient overlay bottom 60%
+    # Dark gradient overlay bottom half — makes text readable on any background
     grad = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     gd = ImageDraw.Draw(grad)
-    for y in range(int(H * 0.35), H):
-        alpha = int(195 * (y - H * 0.35) / (H * 0.65))
+    for y in range(int(H * 0.25), H):
+        alpha = int(220 * (y - H * 0.25) / (H * 0.75))
         gd.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
     frame = Image.alpha_composite(frame, grad).convert('RGB')
     draw = ImageDraw.Draw(frame)
 
-    font = load_font(92)
-    max_w = int(W * 0.88)
+    # MASSIVE font - target ~1/3 of frame height for text block
+    # Start big and shrink only if absolutely needed
+    font_size = 150
+    max_w = int(W * 0.92)
 
-    # Word wrap
-    words = text.split()
-    lines, cur = [], ""
-    for w in words:
-        test = (cur + " " + w).strip()
-        if draw.textbbox((0,0), test, font=font)[2] <= max_w:
-            cur = test
-        else:
-            if cur: lines.append(cur)
-            cur = w
-    if cur: lines.append(cur)
+    def wrap_text(font, size):
+        words = text.split()
+        lines, cur = [], ""
+        for w in words:
+            test = (cur + " " + w).strip()
+            bbox = draw.textbbox((0, 0), test, font=font)
+            if bbox[2] - bbox[0] <= max_w:
+                cur = test
+            else:
+                if cur:
+                    lines.append(cur)
+                cur = w
+        if cur:
+            lines.append(cur)
+        return lines
 
-    line_h = 112
+    # Shrink font until text fits in 4 lines max
+    while font_size > 80:
+        font = load_font(font_size)
+        lines = wrap_text(font, font_size)
+        if len(lines) <= 4:
+            break
+        font_size -= 10
+
+    font = load_font(font_size)
+    lines = wrap_text(font, font_size)
+    line_h = int(font_size * 1.15)
     total_h = len(lines) * line_h
-    start_y = int(H * 0.58) - total_h // 2
+    start_y = (H - total_h) // 2  # Vertically centered
 
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
         x = (W - (bbox[2] - bbox[0])) // 2
         y = start_y + i * line_h
-        # Strong black shadow for readability on any background
-        for dx, dy in [(-4,-4),(4,-4),(-4,4),(4,4),(0,-5),(0,5),(-5,0),(5,0)]:
-            draw.text((x+dx, y+dy), line, font=font, fill=(0,0,0,255))
-        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
+        # Strong shadow for max readability
+        shadow_offset = max(6, font_size // 20)
+        for dx in [-shadow_offset, 0, shadow_offset]:
+            for dy in [-shadow_offset, 0, shadow_offset]:
+                if dx or dy:
+                    draw.text((x+dx, y+dy), line, font=font, fill=(0, 0, 0))
+        draw.text((x, y), line, font=font, fill=(255, 255, 255))
 
-    # Branding
-    font_b = load_font(42)
+    # Branding bottom
+    fb = load_font(48)
     brand = "@GridPhantom187"
-    bw = draw.textbbox((0,0), brand, font=font_b)[2]
-    draw.text(((W - bw)//2, H - 120), brand, font=font_b, fill=(210, 210, 210))
+    bw = draw.textbbox((0, 0), brand, font=fb)[2]
+    draw.text(((W - bw)//2, H - 130), brand, font=fb, fill=(220, 220, 220))
 
     return np.array(frame)
 
@@ -130,19 +99,17 @@ class VideoAssembler:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def assemble(self, script: dict, audio_path: str, topic: dict) -> str:
-        language = script.get('language', 'en')
-        output_path = f"{self.output_dir}/video_{language}_{random.randint(1000,9999)}.mp4"
+        output_path = f"{self.output_dir}/video_en_{random.randint(1000,9999)}.mp4"
 
         audio = AudioFileClip(audio_path)
-        duration = min(audio.duration, 58)  # max 58s for Shorts compliance
+        duration = min(audio.duration, 58)
 
-        image_prompt = script.get('image_prompt', 'cinematic dramatic portrait')
-        sentences = script.get('sentences', [])
+        image_prompt = script.get('image_prompt', 'beautiful attractive woman, cinematic')
+        sentences = script.get('sentences', [script.get('narration', '')])
         if not sentences:
             sentences = [script.get('narration', '')]
 
-        logger.info(f"Fetching background image...")
-        from image_generator import get_background_image
+        logger.info("Fetching background image...")
         bg = get_background_image(image_prompt)
 
         seg_dur = duration / len(sentences)
