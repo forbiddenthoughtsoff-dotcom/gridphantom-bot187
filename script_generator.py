@@ -7,25 +7,25 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a viral short-form content creator. You create shocking, fascinating facts and stories for YouTube Shorts.
+SYSTEM_PROMPT = """You are a viral short-form content creator for YouTube Shorts and Instagram Reels.
 
-Your content style:
-- ONE powerful fact or story, told in 3-5 short punchy sentences
-- Each sentence max 10 words
-- Hook in the first sentence — shocking or unbelievable
-- No fluff, no intro, no "did you know"
-- Direct, fast, memorable
+Your style:
+- Shocking, fascinating, or controversial facts about real people, history, science, money, or power
+- ONE topic per video — deep, not broad
+- 4-6 sentences max, each under 12 words
+- Hook sentence first: shocking or unbelievable, makes people stop scrolling
+- No filler, no "did you know", no intro
+- Fast, punchy, direct
 
-Also generate a vivid image prompt for an AI image that visually matches the topic.
-The image should look like a real, cinematic, dramatic photo or painting — NOT cartoon, NOT Pixar.
-Example topics: historical figures, athletes, celebrities, shocking world facts, science, money, power
+Generate a short cinematic image prompt for a background image matching the topic.
+The image must look: real, dramatic, cinematic, photorealistic. NO cartoons, NO animation.
 
-Output ONLY valid JSON, no markdown:
+Output ONLY valid JSON, no markdown, no code blocks:
 {
-  "title": "Catchy title with emoji (max 60 chars)",
-  "image_prompt": "Cinematic, photorealistic, dramatic image of [subject]. High detail, moody lighting, 9:16 portrait format. NO cartoon, NO animation.",
-  "sentences": ["sentence 1", "sentence 2", "sentence 3", "sentence 4", "sentence 5"],
-  "tags": ["shorts", "facts", "viral", "trending", "didyouknow", "gridphantom"]
+  "title": "Punchy title with emoji (max 60 chars)",
+  "image_prompt": "Cinematic photorealistic [subject], dramatic moody lighting, high detail, portrait 9:16",
+  "sentences": ["hook sentence max 12 words", "sentence 2", "sentence 3", "sentence 4"],
+  "tags": ["shorts", "facts", "viral", "trending", "history", "gridphantom"]
 }"""
 
 
@@ -45,16 +45,19 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, topic: dict, language: str = 'en') -> dict:
-        user_prompt = f"""Create a viral short about this topic:
+        user_prompt = f"""Create a viral YouTube Short about:
 Title: {topic.get('title', '')}
 Summary: {topic.get('summary', '')}
 
-Make it shocking and fascinating. 3-5 sentences max 10 words each.
-Return ONLY valid JSON."""
+Rules:
+- 4-6 sentences, each max 12 words
+- First sentence must be shocking hook
+- English only
+- Return ONLY valid JSON"""
 
         message = self.client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1000,
+            max_tokens=800,
             system=[{"type": "text", "text": SYSTEM_PROMPT,
                      "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_prompt}]
@@ -66,9 +69,8 @@ Return ONLY valid JSON."""
         except json.JSONDecodeError:
             script = json.loads(_sanitize_json(raw))
 
-        # Build narration from sentences
         script['narration'] = " ".join(script.get('sentences', []))
-        script['language'] = language
+        script['language'] = 'en'  # Always English
         script['source_topic'] = topic
         logger.info(f"Script: {script.get('title','?')} ({len(script.get('sentences',[]))} sentences)")
         return script
