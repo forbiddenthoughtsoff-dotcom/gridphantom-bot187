@@ -37,10 +37,9 @@ def make_frame(bg: Image.Image, text: str) -> np.ndarray:
     frame = Image.alpha_composite(frame, grad).convert('RGB')
     draw = ImageDraw.Draw(frame)
 
-    # MASSIVE font - target ~1/3 of frame height for text block
-    # Start big and shrink only if absolutely needed
-    font_size = 150
-    max_w = int(W * 0.92)
+    # Readable font size - clear but not overwhelming
+    font_size = 90
+    max_w = int(W * 0.85)
 
     def wrap_text(font, size):
         words = text.split()
@@ -58,13 +57,13 @@ def make_frame(bg: Image.Image, text: str) -> np.ndarray:
             lines.append(cur)
         return lines
 
-    # Shrink font until text fits in 4 lines max
-    while font_size > 80:
+    # Shrink only if text would exceed 5 lines
+    while font_size > 60:
         font = load_font(font_size)
         lines = wrap_text(font, font_size)
-        if len(lines) <= 4:
+        if len(lines) <= 5:
             break
-        font_size -= 10
+        font_size -= 8
 
     font = load_font(font_size)
     lines = wrap_text(font, font_size)
