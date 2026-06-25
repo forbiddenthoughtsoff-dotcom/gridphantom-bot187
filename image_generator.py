@@ -18,7 +18,7 @@ def generate_with_fal(prompt: str) -> Image.Image:
     if not fal_key:
         raise ValueError("FAL_KEY not set")
 
-    url = "https://fal.run/fal-ai/flux-pro/v1.1"
+    url = "https://queue.fal.run/fal-ai/flux-pro/v1.1"
     payload = {
         "prompt": prompt,
         "image_size": "portrait_9_16",
@@ -45,7 +45,7 @@ def generate_with_pollinations(prompt: str) -> Image.Image:
     """Fallback: Pollinations.ai — free, no key."""
     encoded = urllib.parse.quote(prompt[:300])
     url = (f"https://image.pollinations.ai/prompt/{encoded}"
-           f"?width={W}&height={H}&nologo=true&model=flux&seed={random.randint(1,9999)}")
+           f"?width={W}&height={H}&nologo=true&model=flux&seed=7777")
     r = requests.get(url, timeout=80, headers={'User-Agent': 'GridPhantomBot/1.0'})
     r.raise_for_status()
     img = Image.open(BytesIO(r.content)).convert('RGB')
