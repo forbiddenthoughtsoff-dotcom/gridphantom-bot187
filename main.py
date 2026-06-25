@@ -77,7 +77,10 @@ def run_pipeline(language: str, topic: dict, mode: str = 'short'):
         logger.info(f"🎥 Video done: {video}")
 
         vid = YouTubeUploader().upload(video, script, language)
-        logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+        if vid:
+            logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+        else:
+            logger.error(f"❌ Upload returned None for [{language}]")
 
         for p in [audio, video]:
             try: os.remove(p)
@@ -132,10 +135,10 @@ if __name__ == "__main__":
     validate_config()
 
     # English only — morning post, midday short, evening post (Zürich time)
-    schedule.every().day.at("10:00").do(run_bot_long)   # morning post
+    schedule.every().day.at("10:05").do(run_bot_long)   # morning post
     schedule.every().day.at("13:00").do(run_bot_short)  # midday short
     schedule.every().day.at("19:00").do(run_bot_long)   # evening post
-    logger.info("⏰ Schedule: 10:00 post | 13:00 short | 19:00 post (EN only)")
+    logger.info("⏰ Schedule: 10:05 post | 13:00 short | 19:00 post (EN only)")
 
     while True:
         schedule.run_pending()
