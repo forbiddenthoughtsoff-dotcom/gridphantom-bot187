@@ -17,15 +17,16 @@ Your style:
 - No filler, no "did you know", no intro
 - Fast, punchy, direct
 
-Generate a short cinematic image prompt for a background image matching the topic.
-The image must look: real, dramatic, cinematic, photorealistic. NO cartoons, NO animation.
+For the background image: always generate a beautiful AI woman — attractive, stylish, confident. 
+The woman should visually match the topic mood (mysterious, powerful, playful, elegant).
+Photorealistic, cinematic lighting, portrait 9:16. No nudity, no explicit content.
 
 Output ONLY valid JSON, no markdown, no code blocks:
 {
   "title": "Punchy title with emoji (max 60 chars)",
-  "image_prompt": "Cinematic photorealistic [subject], dramatic moody lighting, high detail, portrait 9:16",
+  "image_prompt": "Beautiful attractive woman, [mood matching topic], cinematic lighting, photorealistic, portrait 9:16, high detail",
   "sentences": ["hook sentence max 12 words", "sentence 2", "sentence 3", "sentence 4"],
-  "tags": ["shorts", "facts", "viral", "trending", "history", "gridphantom"]
+  "tags": ["shorts", "facts", "viral", "trending", "gridphantom"]
 }"""
 
 
