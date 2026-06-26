@@ -7,11 +7,11 @@ logger = logging.getLogger(__name__)
 
 class VoiceGenerator:
     def __init__(self):
-        self.voice = 'en-US-AvaNeural'  # Natural female English voice
+        self.voice = 'de-DE-KatjaNeural'  # Natural female German voice
 
-    def generate(self, text: str, language: str = 'en', output_path: str = None) -> str:
+    def generate(self, text: str, language: str = 'de', output_path: str = None) -> str:
         if not output_path:
-            output_path = '/tmp/narration_en.mp3'
+            output_path = '/tmp/narration_de.mp3'
         asyncio.run(self._generate(text, output_path))
         import os
         logger.info(f"Audio generated: {output_path} ({os.path.getsize(output_path)} bytes)")
