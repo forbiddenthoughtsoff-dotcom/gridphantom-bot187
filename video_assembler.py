@@ -37,8 +37,8 @@ def make_frame(bg: Image.Image, text: str) -> np.ndarray:
     frame = Image.alpha_composite(frame, grad).convert('RGB')
     draw = ImageDraw.Draw(frame)
 
-    # Readable font size - clear but not overwhelming
-    font_size = 90
+    # Balanced readable font - clear without dominating the image
+    font_size = 80
     max_w = int(W * 0.85)
 
     def wrap_text(font, size):
@@ -57,19 +57,18 @@ def make_frame(bg: Image.Image, text: str) -> np.ndarray:
             lines.append(cur)
         return lines
 
-    # Shrink only if text would exceed 5 lines
-    while font_size > 60:
+    while font_size > 56:
         font = load_font(font_size)
         lines = wrap_text(font, font_size)
         if len(lines) <= 5:
             break
-        font_size -= 8
+        font_size -= 6
 
     font = load_font(font_size)
     lines = wrap_text(font, font_size)
     line_h = int(font_size * 1.15)
     total_h = len(lines) * line_h
-    start_y = (H - total_h) // 2  # Vertically centered
+    start_y = int(H * 0.68) - total_h // 2  # Lower third
 
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font)
