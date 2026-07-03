@@ -82,6 +82,8 @@ def run_pipeline(topic: dict = None, language: str = 'en'):
         vid = uploader.upload(video, script, language)
         if vid:
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+            from community_manager import CommunityManager
+            CommunityManager(uploader.service).seed_comment(vid, script)
         else:
             logger.error(f"❌ Upload returned None for [{language}]")
 
@@ -108,6 +110,16 @@ def run_bot_short():
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
 
+def run_engagement():
+    """Reply to new viewer comments across recent videos."""
+    logger.info(f"💬 ENGAGEMENT cycle — {datetime.now():%Y-%m-%d %H:%M}")
+    try:
+        from youtube_uploader import YouTubeUploader
+        from community_manager import CommunityManager
+        CommunityManager(YouTubeUploader().service).respond_to_comments()
+    except Exception as e:
+        logger.error(f"Engagement cycle error: {e}", exc_info=True)
+
 def validate_config():
     required = ['ANTHROPIC_API_KEY', 'YOUTUBE_CLIENT_SECRETS']
     missing = [k for k in required if not os.environ.get(k)]
@@ -129,6 +141,10 @@ if __name__ == "__main__":
     schedule.every().day.at("17:00").do(run_bot_short)
     schedule.every().day.at("22:00").do(run_bot_short)
     logger.info("⏰ 4x daily Shorts: 07 | 12 | 17 | 22 (EN)")
+
+    # Community management: answer viewer comments every 2 hours
+    schedule.every(2).hours.do(run_engagement)
+    logger.info("💬 Engagement: comment replies every 2h")
 
     # Immediate post on startup only if explicitly enabled — otherwise every
     # deploy/restart uploads an unscheduled extra video
