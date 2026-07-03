@@ -36,4 +36,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        # Exit code 5 means "no tests collected" - fine while the repo has no tests yet
+        pytest || { rc=$?; [ $rc -eq 5 ] && echo "No tests found - skipping" || exit $rc; }
