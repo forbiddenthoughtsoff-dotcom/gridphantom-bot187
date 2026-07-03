@@ -1,9 +1,12 @@
 import os
 import logging
 import random
+import requests
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import VideoClip, AudioFileClip, concatenate_videoclips
+from moviepy.editor import (VideoClip, AudioFileClip, ImageClip,
+                            VideoFileClip, CompositeVideoClip,
+                            concatenate_videoclips, vfx)
 from image_generator import get_background_image
 
 logger = logging.getLogger(__name__)
@@ -124,6 +127,34 @@ def make_kb_clip(bg_big: np.ndarray, text: str, duration: float,
     return VideoClip(frame, duration=duration)
 
 
+def fetch_pexels_video(query: str) -> str:
+    """Free stock video background from Pexels (needs PEXELS_API_KEY).
+    Returns a local mp4 path or None."""
+    key = os.environ.get('PEXELS_API_KEY', '')
+    if not key:
+        return None
+    r = requests.get(
+        'https://api.pexels.com/videos/search',
+        params={'query': query, 'orientation': 'portrait', 'per_page': 15},
+        headers={'Authorization': key}, timeout=20)
+    r.raise_for_status()
+    videos = r.json().get('videos', [])
+    random.shuffle(videos)
+    for v in videos:
+        files = sorted(v.get('video_files', []),
+                       key=lambda f: abs((f.get('height') or 0) - H))
+        for f in files:
+            if (f.get('height') or 0) >= 1080 and f.get('link'):
+                path = '/tmp/bg_video.mp4'
+                data = requests.get(f['link'], timeout=90).content
+                with open(path, 'wb') as fh:
+                    fh.write(data)
+                logger.info(f"🎥 Pexels footage: '{query}' "
+                            f"({f.get('width')}x{f.get('height')})")
+                return path
+    return None
+
+
 class VideoAssembler:
     def __init__(self):
         self.output_dir = "/tmp/videos"
@@ -140,24 +171,58 @@ class VideoAssembler:
         if not sentences:
             sentences = [script.get('narration', '')]
 
-        logger.info("Fetching background image...")
-        bg = get_background_image(image_prompt)
-
-        # Oversized background gives the Ken-Burns zoom room to move
-        big_w, big_h = int(W * (1 + ZOOM)), int(H * (1 + ZOOM))
-        bg_big = np.asarray(bg.resize((big_w, big_h), Image.LANCZOS))
-
         seg_dur = duration / len(sentences)
-        clips = []
-        for i, sentence in enumerate(sentences):
-            start = i * seg_dur
-            end = min((i + 1) * seg_dur, duration)
-            c = make_kb_clip(bg_big, sentence, end - start,
-                             zoom_in=(i % 2 == 0)).set_audio(
-                audio.subclip(start, end))
-            clips.append(c)
 
-        final = concatenate_videoclips(clips).set_audio(audio.subclip(0, duration))
+        # Preferred background: real stock footage matched to the topic
+        base = None
+        try:
+            skip = {'shorts', 'viral', 'tech', 'ai', 'gridphantom'}
+            tags = [t for t in script.get('tags', []) if t.lower() not in skip]
+            query = f"{tags[0]} technology" if tags else "futuristic technology abstract"
+            bg_path = fetch_pexels_video(query)
+            if bg_path:
+                base = VideoFileClip(bg_path).without_audio()
+                scale = max(W / base.w, H / base.h)
+                base = base.resize(scale).crop(
+                    x_center=base.w * scale / 2, y_center=base.h * scale / 2,
+                    width=W, height=H)
+                if base.duration < duration:
+                    base = base.fx(vfx.loop, duration=duration)
+                else:
+                    base = base.subclip(0, duration)
+        except Exception as e:
+            logger.warning(f"Stock footage unavailable, falling back: {e}")
+            base = None
+
+        if base is not None:
+            overlays = []
+            for i, sentence in enumerate(sentences):
+                start = i * seg_dur
+                end = min((i + 1) * seg_dur, duration)
+                rgb, alpha = make_overlay(sentence)
+                oc = (ImageClip(rgb.astype('uint8'))
+                      .set_mask(ImageClip(alpha[:, :, 0], ismask=True))
+                      .set_start(start).set_duration(end - start))
+                overlays.append(oc)
+            final = CompositeVideoClip([base] + overlays).set_audio(
+                audio.subclip(0, duration))
+        else:
+            # Fallback: AI image with Ken-Burns motion
+            logger.info("Fetching background image...")
+            bg = get_background_image(image_prompt)
+            big_w, big_h = int(W * (1 + ZOOM)), int(H * (1 + ZOOM))
+            bg_big = np.asarray(bg.resize((big_w, big_h), Image.LANCZOS))
+
+            clips = []
+            for i, sentence in enumerate(sentences):
+                start = i * seg_dur
+                end = min((i + 1) * seg_dur, duration)
+                c = make_kb_clip(bg_big, sentence, end - start,
+                                 zoom_in=(i % 2 == 0)).set_audio(
+                    audio.subclip(start, end))
+                clips.append(c)
+            final = concatenate_videoclips(clips).set_audio(
+                audio.subclip(0, duration))
 
         logger.info(f"Exporting {duration:.1f}s video ({len(sentences)} sentences)...")
         final.write_videofile(
