@@ -18,7 +18,8 @@ def generate_with_fal(prompt: str) -> Image.Image:
     if not fal_key:
         raise ValueError("FAL_KEY not set")
 
-    url = "https://queue.fal.run/fal-ai/flux-pro/v1.1"
+    # Sync endpoint (fal.run) — queue.fal.run only returns a request_id for polling
+    url = "https://fal.run/fal-ai/flux-pro/v1.1"
     payload = {
         "prompt": prompt,
         "image_size": "portrait_9_16",
@@ -55,15 +56,15 @@ def generate_with_pollinations(prompt: str) -> Image.Image:
     return img
 
 
-def generate_with_unsplash(prompt: str) -> Image.Image:
-    """Last resort: real photo from Unsplash."""
-    keywords = prompt.split(',')[0].strip().replace(' ', '+')[:50]
-    url = f"https://source.unsplash.com/1080x1920/?{keywords}"
+def generate_with_picsum(prompt: str) -> Image.Image:
+    """Last resort: random real photo (source.unsplash.com was discontinued)."""
+    seed = abs(hash(prompt)) % 10000
+    url = f"https://picsum.photos/seed/{seed}/1080/1920"
     r = requests.get(url, timeout=15, headers={'User-Agent': 'GridPhantomBot/1.0'})
     r.raise_for_status()
     img = Image.open(BytesIO(r.content)).convert('RGB')
     img = img.resize((W, H), RESAMPLE)
-    logger.info(f"✅ Unsplash fallback: {img.size}")
+    logger.info(f"✅ Picsum fallback: {img.size}")
     return img
 
 
@@ -72,7 +73,7 @@ def get_background_image(prompt: str) -> Image.Image:
     for name, fn in [
         ("Fal.ai FLUX", generate_with_fal),
         ("Pollinations", generate_with_pollinations),
-        ("Unsplash", generate_with_unsplash),
+        ("Picsum", generate_with_picsum),
     ]:
         try:
             return fn(prompt)
