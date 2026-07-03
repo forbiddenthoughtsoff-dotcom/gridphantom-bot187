@@ -141,8 +141,13 @@ if __name__ == "__main__":
     schedule.every().day.at("22:00").do(run_bot_short)
     logger.info("⏰ 4x daily Shorts: 07 | 12 | 17 | 22 (EN)")
 
-    # First post immediately
-    threading.Thread(target=run_bot_short, daemon=True).start()
+    # Immediate post on startup only if explicitly enabled — otherwise every
+    # deploy/restart uploads an unscheduled extra video
+    if os.environ.get('POST_ON_START', '').lower() in ('1', 'true', 'yes'):
+        logger.info("🚀 POST_ON_START enabled — posting immediately")
+        threading.Thread(target=run_bot_short, daemon=True).start()
+    else:
+        logger.info("⏭️ Startup post disabled (set POST_ON_START=true to enable)")
 
     while True:
         schedule.run_pending()

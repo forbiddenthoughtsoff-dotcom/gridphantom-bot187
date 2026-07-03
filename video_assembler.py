@@ -14,14 +14,21 @@ W, H = 1080, 1920
 def load_font(size):
     for path in [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     ]:
         if os.path.exists(path):
             try:
                 return ImageFont.truetype(path, size)
             except Exception:
                 pass
-    return ImageFont.load_default()
+    # load_default() ignores size unless passed explicitly (Pillow >= 10.1);
+    # without it text renders ~10px no matter what size was requested
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        return ImageFont.load_default()
 
 
 def make_frame(bg: Image.Image, text: str) -> np.ndarray:
