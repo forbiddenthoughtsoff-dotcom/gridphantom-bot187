@@ -1,22 +1,26 @@
+import os
 import asyncio
 import edge_tts
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Language-aware voices (override via env if desired)
+VOICES = {
+    'en': os.environ.get('VOICE_EN', 'en-US-ChristopherNeural'),
+    'de': os.environ.get('VOICE_DE', 'de-DE-ConradNeural'),
+}
+
 
 class VoiceGenerator:
-    def __init__(self):
-        self.voice = 'de-DE-KatjaNeural'  # Natural female German voice
-
-    def generate(self, text: str, language: str = 'de', output_path: str = None) -> str:
+    def generate(self, text: str, language: str = 'en', output_path: str = None) -> str:
+        voice = VOICES.get(language, VOICES['en'])
         if not output_path:
-            output_path = '/tmp/narration_de.mp3'
-        asyncio.run(self._generate(text, output_path))
-        import os
-        logger.info(f"Audio generated: {output_path} ({os.path.getsize(output_path)} bytes)")
+            output_path = f'/tmp/narration_{language}.mp3'
+        asyncio.run(self._generate(text, voice, output_path))
+        logger.info(f"Audio generated [{language}/{voice}]: {output_path} ({os.path.getsize(output_path)} bytes)")
         return output_path
 
-    async def _generate(self, text: str, output_path: str):
-        communicate = edge_tts.Communicate(text, self.voice, rate='+5%')
+    async def _generate(self, text: str, voice: str, output_path: str):
+        communicate = edge_tts.Communicate(text, voice, rate='+5%')
         await communicate.save(output_path)

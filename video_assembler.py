@@ -102,7 +102,7 @@ class VideoAssembler:
         audio = AudioFileClip(audio_path)
         duration = min(audio.duration, 58)
 
-        image_prompt = script.get('image_prompt', 'beautiful attractive woman, cinematic')
+        image_prompt = script.get('image_prompt', 'abstract futuristic technology visual, circuit boards, glowing data streams, cinematic lighting, ultra detailed')
         sentences = script.get('sentences', [script.get('narration', '')])
         if not sentences:
             sentences = [script.get('narration', '')]

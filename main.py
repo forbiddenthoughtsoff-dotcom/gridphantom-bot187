@@ -57,10 +57,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger('GridPhantomBot')
 
-def run_pipeline(topic: dict = None, mode: str = 'short'):
+def run_pipeline(topic: dict = None, mode: str = 'short', language: str = 'en'):
     """Run full pipeline for one language and mode."""
     os.environ['VIDEO_MODE'] = mode
-    logger.info(f"🎬 Pipeline EN [{mode}]: {topic['title']}")
+    logger.info(f"🎬 Pipeline {language.upper()} [{mode}]: {topic['title']}")
     try:
         from script_generator import ScriptGenerator
         from voice_generator import VoiceGenerator
@@ -78,9 +78,9 @@ def run_pipeline(topic: dict = None, mode: str = 'short'):
 
         vid = YouTubeUploader().upload(video, script, language)
         if vid:
-            logger.info(f"✅ UPLOADED [en]: https://youtube.com/watch?v={vid}")
+            logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
         else:
-            logger.error(f"❌ Upload returned None for [en]")
+            logger.error(f"❌ Upload returned None for [{language}]")
 
         for p in [audio, video]:
             try: os.remove(p)
@@ -100,7 +100,7 @@ def run_bot_short():
         if not topics:
             logger.warning("No topics found")
             return
-        run_pipeline( topics[0], mode='short')
+        run_pipeline(topics[0], mode='short', language='en')
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
@@ -114,7 +114,7 @@ def run_bot_long():
         if not topics:
             logger.warning("No topics found")
             return
-        run_pipeline( topics[0], mode='long')
+        run_pipeline(topics[0], mode='long', language='en')
         logger.info("🏁 Post cycle complete")
     except Exception as e:
         logger.error(f"Post cycle error: {e}", exc_info=True)

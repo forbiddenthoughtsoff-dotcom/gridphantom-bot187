@@ -7,27 +7,24 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Du bist ein viraler Content-Ersteller für YouTube Shorts. Deine Videos zeigen eine wiederkehrende KI-Frau mit kraftvollen Sprüchen und harten Wahrheiten, die Männer zum Stoppen bringen.
+SYSTEM_PROMPT = """You are a viral content creator for a faceless YouTube Shorts channel about AI and technology news.
 
-Content-Stil:
-- Kraftvolle, provokante Sprüche über Leben, Erfolg, Geld, Beziehungen oder Macht
-- Die Art Wahrheit, die hart trifft und geteilt wird
-- 3-5 kurze knackige Sätze, jeder MAX 8 WÖRTER
-- Erster Satz ist der Hook — stoppt das Scrollen sofort
-- Ton: selbstbewusst, roh, echt — wie eine schöne Frau, die harte Wahrheiten sagt
-- IMMER DEUTSCH.
+Content style:
+- Punchy, factual takes on the given trending tech topic
+- The kind of insight that makes viewers stop scrolling and share
+- Short crisp sentences, each MAX 10 WORDS
+- First sentence is the hook — it must stop the scroll instantly
+- Tone: confident, sharp, informative — no hype, no fluff
+- Write ONLY in the requested language
 
-WICHTIG — das Hintergrundbild ist IMMER dieselbe wiederkehrende Figur:
-Eine wunderschöne junge Frau, etwa 20 Jahre alt, lange blonde Haare, schlanke Figur, atemberaubend schönes Gesicht, blaue Augen, makellose Haut. Nur Umgebung, Pose, Outfit und Stimmung ändern sich zwischen Videos — die Frau selbst bleibt gleich.
+For image_prompt: describe a cinematic, abstract tech visual matching the topic (circuit boards, data centers, glowing interfaces, futuristic cityscapes — NO people, NO faces). Always end with: "cinematic lighting, ultra detailed, photorealistic, 8k".
 
-Für image_prompt: Beginne IMMER mit der exakten Charakterbeschreibung (auf Englisch für die Bild-KI), dann variiere Szene/Stimmung passend zum Spruch. Beende IMMER mit: "cinematic Hollywood lighting, shot on ARRI Alexa, 85mm lens, shallow depth of field, professional color grading, ultra photorealistic, 8k, magazine cover quality".
-
-Gib NUR gültiges JSON aus, kein Markdown:
+Output ONLY valid JSON, no markdown:
 {
-  "title": "Kurzer knackiger Titel mit Emoji (max 55 Zeichen, Deutsch)",
-  "image_prompt": "Beautiful young woman around 20 years old, long blonde hair, slim figure, stunning gorgeous face, blue eyes, flawless skin, [scene/outfit/mood], cinematic Hollywood lighting, shot on ARRI Alexa, 85mm lens, shallow depth of field, professional color grading, ultra photorealistic, 8k, magazine cover quality",
-  "sentences": ["Hook", "Satz 2", "Satz 3", "Satz 4"],
-  "tags": ["shorts", "viral", "motivation", "mindset", "gridphantom"]
+  "title": "Short punchy title with emoji (max 55 chars, in the requested language)",
+  "image_prompt": "abstract tech visual description, cinematic lighting, ultra detailed, photorealistic, 8k",
+  "sentences": ["Hook", "Sentence 2", "Sentence 3"],
+  "tags": ["shorts", "ai", "tech", "technews", "gridphantom"]
 }"""
 
 
@@ -46,18 +43,25 @@ class ScriptGenerator:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
-    def generate(self, topic: dict = None, language: str = 'de') -> dict:
+    def generate(self, topic: dict = None, language: str = 'en') -> dict:
         mode = os.environ.get('VIDEO_MODE', 'short')
         if mode == 'short':
-            count = "2-3 Sätze — ultrakurz, unter 20 Sekunden gesprochen"
+            count = "2-3 sentences — ultra short, under 20 seconds spoken"
         else:
-            count = "4-6 Sätze — 45-60 Sekunden gesprochen"
+            count = "4-6 sentences — 45-60 seconds spoken"
 
-        user_prompt = f"""Erstelle einen viralen YouTube Short mit einem kraftvollen Spruch.
-Generiere {count}. Jeder Satz MAX 8 WÖRTER.
-Selbstbewusste, provokante Sprüche — was eine atemberaubende Frau sagt, das Männer zum Stoppen bringt.
-Erster Satz ist der Hook. Mach ihn hart.
-NUR DEUTSCH. Gib NUR gültiges JSON aus."""
+        lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'ENGLISH')
+        topic_title = (topic or {}).get('title', 'the latest AI and tech news')
+        topic_summary = (topic or {}).get('summary', '')
+
+        user_prompt = f"""Create a viral YouTube Short about this trending tech topic:
+
+TOPIC: {topic_title}
+{f"CONTEXT: {topic_summary}" if topic_summary else ""}
+
+Generate {count}. Each sentence MAX 10 WORDS.
+First sentence is the hook. Make it impossible to scroll past.
+Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
         message = self.client.messages.create(
             model="claude-sonnet-4-6",
@@ -74,6 +78,6 @@ NUR DEUTSCH. Gib NUR gültiges JSON aus."""
             script = json.loads(_sanitize_json(raw))
 
         script['narration'] = " ".join(script.get('sentences', []))
-        script['language'] = 'de'
-        logger.info(f"Script: {script.get('title','?')} ({len(script.get('sentences',[]))} Sätze)")
+        script['language'] = language
+        logger.info(f"Script [{language}]: {script.get('title','?')} ({len(script.get('sentences',[]))} sentences)")
         return script
