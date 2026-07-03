@@ -25,8 +25,10 @@ class YouTubeUploader:
             token_uri='https://oauth2.googleapis.com/token',
             client_id=creds_data.get('client_id'),
             client_secret=creds_data.get('client_secret'),
-            scopes=['https://www.googleapis.com/auth/youtube.upload',
-                    'https://www.googleapis.com/auth/youtube']
+            # Must match exactly what the refresh token was granted,
+            # otherwise Google rejects the refresh with invalid_scope
+            scopes=['https://www.googleapis.com/auth/youtube.force-ssl',
+                    'https://www.googleapis.com/auth/youtube.upload']
         )
 
         # Always refresh to ensure valid token
