@@ -1,5 +1,4 @@
 import feedparser
-import requests
 import logging
 from datetime import datetime, timedelta
 from config import Config

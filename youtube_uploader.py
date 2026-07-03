@@ -1,5 +1,4 @@
 import json
-import os
 import logging
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -91,21 +90,10 @@ class YouTubeUploader:
         video_id = response['id']
         video_url = f"https://youtube.com/watch?v={video_id}"
         logger.info(f"✅ Uploaded: {video_url}")
-
-        # Add chapters to description
-        self._update_chapters(video_id, script)
-
         return video_id
 
     def _build_description(self, script: dict, language: str) -> str:
         description = script.get('description', '')
-
-        # Add chapters
-        chapters = script.get('chapters', [])
-        if chapters:
-            description += "\n\n⏱️ Chapters:\n"
-            for ch in chapters:
-                description += f"{ch['time']} {ch['title']}\n"
 
         # Footer with brand + CTA
         if language == 'en':
@@ -128,14 +116,3 @@ class YouTubeUploader:
         description += "\n\n" + " ".join(f"#{t}" for t in all_tags[:12])
 
         return description[:5000]
-
-    def _update_chapters(self, video_id: str, script: dict):
-        """Add video chapters"""
-        try:
-            chapters = script.get('chapters', [])
-            if not chapters:
-                return
-            # Chapters are embedded in description already
-            pass
-        except Exception as e:
-            logger.error(f"Chapter update error: {e}")

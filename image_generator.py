@@ -1,7 +1,6 @@
 import requests
 import os
 import logging
-import random
 import urllib.parse
 from io import BytesIO
 from PIL import Image
