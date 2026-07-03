@@ -57,10 +57,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger('GridPhantomBot')
 
-def run_pipeline(topic: dict = None, mode: str = 'short', language: str = 'en'):
-    """Run full pipeline for one language and mode."""
-    os.environ['VIDEO_MODE'] = mode
-    logger.info(f"🎬 Pipeline {language.upper()} [{mode}]: {topic['title']}")
+def run_pipeline(topic: dict = None, language: str = 'en'):
+    """Run full pipeline for one language."""
+    logger.info(f"🎬 Pipeline {language.upper()}: {topic['title']}")
     try:
         from script_generator import ScriptGenerator
         from voice_generator import VoiceGenerator
@@ -88,7 +87,7 @@ def run_pipeline(topic: dict = None, mode: str = 'short', language: str = 'en'):
 
         return vid
     except Exception as e:
-        logger.error(f"❌ Pipeline failed [{language}/{mode}]: {e}", exc_info=True)
+        logger.error(f"❌ Pipeline failed [{language}]: {e}", exc_info=True)
         return None
 
 def run_bot_short():
@@ -100,24 +99,10 @@ def run_bot_short():
         if not topics:
             logger.warning("No topics found")
             return
-        run_pipeline(topics[0], mode='short', language='en')
+        run_pipeline(topics[0], language='en')
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
-
-def run_bot_long():
-    """Morning & evening: 1 longer English post each."""
-    logger.info(f"🤖 POST cycle — {datetime.now():%Y-%m-%d %H:%M}")
-    try:
-        from trend_finder import TrendFinder
-        topics = TrendFinder().get_trending_topics()
-        if not topics:
-            logger.warning("No topics found")
-            return
-        run_pipeline(topics[0], mode='long', language='en')
-        logger.info("🏁 Post cycle complete")
-    except Exception as e:
-        logger.error(f"Post cycle error: {e}", exc_info=True)
 
 def validate_config():
     required = ['ANTHROPIC_API_KEY', 'YOUTUBE_CLIENT_SECRETS']

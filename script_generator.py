@@ -1,4 +1,3 @@
-import os
 import json
 import re
 import logging
@@ -61,12 +60,7 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, topic: dict = None, language: str = 'en') -> dict:
-        mode = os.environ.get('VIDEO_MODE', 'short')
-        if mode == 'short':
-            count = "2-3 sentences — ultra short, under 20 seconds spoken"
-        else:
-            count = "4-6 sentences — 45-60 seconds spoken"
-
+        count = "2-3 sentences — ultra short, under 20 seconds spoken"
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'ENGLISH')
         topic_title = (topic or {}).get('title', 'the latest AI and tech news')
         topic_summary = (topic or {}).get('summary', '')
