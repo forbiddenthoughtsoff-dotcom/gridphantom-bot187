@@ -47,7 +47,7 @@ class TrendFinder:
             except Exception as e:
                 logger.error(f"Error fetching feed {feed_url}: {e}")
 
-        # Deduplicate and rank by freshness
+        # Deduplicate
         seen = set()
         unique_topics = []
         for t in topics:
@@ -55,5 +55,23 @@ class TrendFinder:
                 seen.add(t['title'])
                 unique_topics.append(t)
 
-        logger.info(f"Found {len(unique_topics)} trending topics")
-        return unique_topics[:10]  # Return top 10
+        # Rank by viral potential: hot entities + emotional trigger words
+        viral_weights = {
+            'openai': 5, 'chatgpt': 5, 'gpt': 4, 'apple': 4, 'iphone': 4,
+            'elon': 4, 'musk': 4, 'tesla': 4, 'google': 3, 'gemini': 3,
+            'nvidia': 3, 'meta': 3, 'microsoft': 3, 'anthropic': 3, 'claude': 3,
+            'banned': 5, 'leaked': 5, 'hack': 5, 'hacked': 5, 'lawsuit': 4,
+            'breakthrough': 4, 'first ever': 4, 'shocking': 4, 'secret': 4,
+            'billion': 3, 'million': 2, 'record': 3, 'fired': 4, 'shut down': 4,
+            'robot': 3, 'humanoid': 4, 'agi': 5, 'superintelligence': 5,
+            'free': 3, 'replaced': 4, 'jobs': 3, 'warning': 3, 'quantum': 3,
+        }
+
+        def viral_score(t):
+            text = (t['title'] + ' ' + t['summary']).lower()
+            return sum(w for kw, w in viral_weights.items() if kw in text)
+
+        unique_topics.sort(key=viral_score, reverse=True)
+        if unique_topics:
+            logger.info(f"Found {len(unique_topics)} topics | Top pick (score {viral_score(unique_topics[0])}): {unique_topics[0]['title'][:70]}")
+        return unique_topics[:10]  # Return top 10, best first

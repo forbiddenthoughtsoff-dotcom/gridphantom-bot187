@@ -107,15 +107,25 @@ class YouTubeUploader:
             for ch in chapters:
                 description += f"{ch['time']} {ch['title']}\n"
 
-        # Add footer
+        # Footer with brand + CTA
         if language == 'en':
-            description += "\n\n🤖 GridPhantom — AI & Tech, decoded daily.\n"
-            description += "🔔 Subscribe for daily AI news\n"
-            description += "\n#shorts #ai #tech #artificialintelligence #technology #aitools #technews #viral #trending #gridphantom"
+            description += "\n\n🤖 GridPhantom — AI & Tech, decoded daily."
+            description += "\n🔔 Subscribe so you never miss what's next: @GridPhantom187"
+            base_tags = ['shorts', 'ai', 'tech', 'technews', 'artificialintelligence']
         else:
-            description += "\n\n🤖 GridPhantom — KI & Tech, täglich erklärt.\n"
-            description += "🔔 Abonniere für tägliche KI-News\n"
-            description += "\n#shorts #ki #tech #künstlicheintelligenz #technologie #aitools #technews #viral #trending #gridphantom"
+            description += "\n\n🤖 GridPhantom — KI & Tech, täglich entschlüsselt."
+            description += "\n🔔 Abonnieren und nichts mehr verpassen: @GridPhantom187"
+            base_tags = ['shorts', 'ki', 'tech', 'technews', 'künstlicheintelligenz']
+
+        # Hashtags: topic-specific first (from script tags), then base — deduped, max 12
+        topic_tags = [t.strip().lower().replace(' ', '') for t in script.get('tags', [])
+                      if t and t.strip().lower() not in ('shorts', 'viral', 'tech')]
+        all_tags, seen = [], set()
+        for t in topic_tags + base_tags + ['viral', 'trending', 'gridphantom']:
+            if t and t not in seen:
+                seen.add(t)
+                all_tags.append(t)
+        description += "\n\n" + " ".join(f"#{t}" for t in all_tags[:12])
 
         return description[:5000]
 
