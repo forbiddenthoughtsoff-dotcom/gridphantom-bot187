@@ -40,6 +40,22 @@ class YouTubeUploader:
 
         return build('youtube', 'v3', credentials=creds)
 
+    def get_recent_titles(self, limit: int = 15) -> list:
+        """Titles of the channel's latest uploads — used so new scripts
+        take a fresh angle instead of repeating what was already posted."""
+        try:
+            ch = self.service.channels().list(
+                part='contentDetails', mine=True).execute()
+            uploads = ch['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+            items = self.service.playlistItems().list(
+                part='snippet', playlistId=uploads, maxResults=limit).execute()
+            titles = [i['snippet']['title'] for i in items.get('items', [])]
+            logger.info(f"Recent uploads for angle-dedup: {len(titles)}")
+            return titles
+        except Exception as e:
+            logger.warning(f"Could not fetch recent titles: {e}")
+            return []
+
     def upload(self, video_path: str, script: dict, language: str) -> str:
         """Upload video to YouTube with full metadata"""
 

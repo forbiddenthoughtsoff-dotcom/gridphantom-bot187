@@ -59,7 +59,8 @@ class ScriptGenerator:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
-    def generate(self, topic: dict = None, language: str = 'en') -> dict:
+    def generate(self, topic: dict = None, language: str = 'en',
+                 avoid_titles: list = None) -> dict:
         count = "2-3 sentences — ultra short, under 20 seconds spoken"
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'ENGLISH')
         topic_title = (topic or {}).get('title', 'the latest AI and tech news')
@@ -75,6 +76,15 @@ Pick the most viral-worthy angle of this topic — the angle that makes people s
 First sentence: use a VIRAL HOOK FORMULA. Make scrolling past impossible.
 Last sentence: payoff or open loop that provokes comments.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
+
+        if avoid_titles:
+            published = "\n".join(f"- {t}" for t in avoid_titles[:15])
+            user_prompt += f"""
+
+ALREADY PUBLISHED on this channel (NEVER repeat these angles, hooks or titles):
+{published}
+
+If the topic overlaps with any of these, you MUST find a genuinely DIFFERENT angle: new facts, a new perspective, a new consequence, a new question — like telling the next chapter of a story, never re-telling the same one."""
 
         message = self.client.messages.create(
             model="claude-sonnet-4-6",

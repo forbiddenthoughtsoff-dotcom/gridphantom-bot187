@@ -66,7 +66,11 @@ def run_pipeline(topic: dict = None, language: str = 'en'):
         from video_assembler import VideoAssembler
         from youtube_uploader import YouTubeUploader
 
-        script = ScriptGenerator().generate(topic, language)
+        uploader = YouTubeUploader()
+        recent_titles = uploader.get_recent_titles()
+
+        script = ScriptGenerator().generate(topic, language,
+                                            avoid_titles=recent_titles)
         logger.info(f"📝 Script: {script.get('title', '')}")
 
         audio = VoiceGenerator().generate(script['narration'], language)
@@ -75,7 +79,7 @@ def run_pipeline(topic: dict = None, language: str = 'en'):
         video = VideoAssembler().assemble(script, audio, topic)
         logger.info(f"🎥 Video done: {video}")
 
-        vid = YouTubeUploader().upload(video, script, language)
+        vid = uploader.upload(video, script, language)
         if vid:
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
         else:
