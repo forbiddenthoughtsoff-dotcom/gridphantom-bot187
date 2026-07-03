@@ -3,12 +3,13 @@ import logging
 import random
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy.editor import VideoClip, AudioFileClip, concatenate_videoclips
 from image_generator import get_background_image
 
 logger = logging.getLogger(__name__)
 
 W, H = 1080, 1920
+ZOOM = 0.10  # Ken-Burns zoom range per sentence (10%)
 
 
 def load_font(size):
@@ -31,18 +32,18 @@ def load_font(size):
         return ImageFont.load_default()
 
 
-def make_frame(bg: Image.Image, text: str) -> np.ndarray:
-    """HUGE bold white text centered. Text takes ~1/3 of frame."""
-    frame = bg.copy().convert('RGBA')
+def make_overlay(text: str):
+    """Static foreground layer (gradient + text + branding) as RGBA arrays.
+    Kept separate from the background so the background can move while
+    the text stays rock-steady and readable."""
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(layer)
 
-    # Dark gradient overlay bottom half — makes text readable on any background
-    grad = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(grad)
+    # Dark gradient bottom half — makes text readable on any background
     for y in range(int(H * 0.25), H):
         alpha = int(220 * (y - H * 0.25) / (H * 0.75))
         gd.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
-    frame = Image.alpha_composite(frame, grad).convert('RGB')
-    draw = ImageDraw.Draw(frame)
+    draw = gd
 
     # Balanced readable font - clear without dominating the image
     font_size = 80
@@ -86,16 +87,41 @@ def make_frame(bg: Image.Image, text: str) -> np.ndarray:
         for dx in [-shadow_offset, 0, shadow_offset]:
             for dy in [-shadow_offset, 0, shadow_offset]:
                 if dx or dy:
-                    draw.text((x+dx, y+dy), line, font=font, fill=(0, 0, 0))
-        draw.text((x, y), line, font=font, fill=(255, 255, 255))
+                    draw.text((x+dx, y+dy), line, font=font, fill=(0, 0, 0, 255))
+        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
 
     # Branding bottom
     fb = load_font(48)
     brand = "@GridPhantom187"
     bw = draw.textbbox((0, 0), brand, font=fb)[2]
-    draw.text(((W - bw)//2, H - 130), brand, font=fb, fill=(220, 220, 220))
+    draw.text(((W - bw)//2, H - 130), brand, font=fb, fill=(220, 220, 220, 255))
 
-    return np.array(frame)
+    arr = np.asarray(layer, dtype=np.float32)
+    rgb = arr[:, :, :3]
+    alpha = arr[:, :, 3:4] / 255.0
+    return rgb, alpha
+
+
+def make_kb_clip(bg_big: np.ndarray, text: str, duration: float,
+                 zoom_in: bool) -> VideoClip:
+    """Ken-Burns segment: background slowly zooms while the text overlay
+    stays static — motion holds attention better than a still frame."""
+    H2, W2 = bg_big.shape[:2]
+    rgb, alpha = make_overlay(text)
+    inv_alpha = 1.0 - alpha
+    overlay_pre = rgb * alpha
+
+    def frame(t):
+        p = min(t / duration, 1.0) if duration > 0 else 0.0
+        s = 1.0 + ZOOM * p if zoom_in else 1.0 + ZOOM * (1.0 - p)
+        cw, ch = int(W2 / s), int(H2 / s)
+        x0, y0 = (W2 - cw) // 2, (H2 - ch) // 2
+        crop = Image.fromarray(bg_big[y0:y0 + ch, x0:x0 + cw])
+        base = np.asarray(crop.resize((W, H), Image.BILINEAR),
+                          dtype=np.float32)
+        return (base * inv_alpha + overlay_pre).astype('uint8')
+
+    return VideoClip(frame, duration=duration)
 
 
 class VideoAssembler:
@@ -117,13 +143,17 @@ class VideoAssembler:
         logger.info("Fetching background image...")
         bg = get_background_image(image_prompt)
 
+        # Oversized background gives the Ken-Burns zoom room to move
+        big_w, big_h = int(W * (1 + ZOOM)), int(H * (1 + ZOOM))
+        bg_big = np.asarray(bg.resize((big_w, big_h), Image.LANCZOS))
+
         seg_dur = duration / len(sentences)
         clips = []
         for i, sentence in enumerate(sentences):
-            frame = make_frame(bg, sentence)
             start = i * seg_dur
             end = min((i + 1) * seg_dur, duration)
-            c = ImageClip(frame).set_duration(end - start).set_audio(
+            c = make_kb_clip(bg_big, sentence, end - start,
+                             zoom_in=(i % 2 == 0)).set_audio(
                 audio.subclip(start, end))
             clips.append(c)
 
