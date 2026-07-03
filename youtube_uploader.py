@@ -43,7 +43,11 @@ class YouTubeUploader:
     def upload(self, video_path: str, script: dict, language: str) -> str:
         """Upload video to YouTube with full metadata"""
 
+        # "#Shorts" in the title is YouTube's explicit signal to classify
+        # the upload as a Short instead of a regular video
         title = script['title']
+        if '#shorts' not in title.lower():
+            title = f"{title[:91]} #Shorts"
         description = self._build_description(script, language)
         tags = script.get('tags', [])
 
@@ -93,7 +97,8 @@ class YouTubeUploader:
         return video_id
 
     def _build_description(self, script: dict, language: str) -> str:
-        description = script.get('description', '')
+        # First line: #Shorts (YouTube reads the first hashtags for classification)
+        description = "#Shorts\n\n" + script.get('description', '')
 
         # Footer with brand + CTA
         if language == 'en':
