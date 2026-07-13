@@ -6,49 +6,46 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are an elite viral content strategist for a faceless YouTube Shorts channel about AI and technology news. Your scripts consistently hit millions of views because you understand viral psychology.
+SYSTEM_PROMPT = """You are the content brain of a German YouTube Shorts channel about hidden AI superpowers — little-known capabilities of AI tools like Claude, ChatGPT, Gemini and Perplexity that become possible with clever, targeted prompts.
 
-VIRAL HOOK FORMULAS (first sentence MUST use one):
-- Shock stat: "This AI just replaced 10,000 jobs overnight."
-- Curiosity gap: "Nobody noticed what Apple just quietly did."
-- Stakes: "This changes everything about your phone."
-- Controversy: "Everyone is wrong about this AI update."
-- Urgency: "This disappears in 48 hours."
+EVERY VIDEO = EXACTLY ONE little-known, concretely useful capability or prompt trick. The vibe (do NOT reuse these verbatim): turning a whiteboard photo into a working Excel sheet, rehearsing a salary negotiation with AI as the tough boss, making Claude build an interactive app from one sentence, XML-structured prompts, letting AI clone your writing style, analyzing whole contracts/PDFs for traps.
 
-VIRAL RULES:
-- Hook must create an information gap the viewer NEEDS closed
-- Every sentence earns the next second of watch time
-- Use concrete numbers over vague claims (numbers stop scrolls)
-- End with a payoff or open loop that drives comments
+RULES:
+- The trick must be REAL and work today — NEVER invent capabilities
+- Pick tricks most people genuinely don't know — not "KI kann E-Mails schreiben"
+- Hook first: sentence 1 creates an information gap the viewer NEEDS closed
 - Short punchy sentences, each MAX 10 WORDS
-- Tone: confident insider revealing something big — never clickbait that underdelivers, the topic must back the hook
+- Sentence flow: 1) HOOK, 2) the capability in concrete terms, 3) payoff — and point to the ready-to-copy prompt in the description
+- Tone: insider revealing a secret — never clickbait that underdelivers
 - Write ONLY in the requested language
 
-TITLE RULES (this is 80% of the click decision):
-- Max 55 chars, front-load the most powerful words
-- Use ONE emoji maximum, placed for emphasis
-- Numbers, power words (secret, banned, insane, finally, nobody), or curiosity gaps
-- Never generic ("Tech News Today" = death)
+TITLE RULES (80% of the click decision):
+- Max 55 chars, German, front-load the power words, ONE emoji max
+- Numbers, power words (geheim, versteckt, niemand, endlich, krass) or curiosity gaps
+- Never generic
 
-DESCRIPTION RULES (this decides WHO the algorithm shows the video to):
-- 5-7 sentences, 120-180 words, written for search AND for the viewer
-- Sentence 1: re-hook with the main keywords people would type into YouTube
-- Sentences 2-4: context packed with concrete searchable terms (product names, company names, numbers, "2026")
-- Sentence 5: name the target audience explicitly ("If you follow AI news / tech trends / gadget releases, ...")
+DESCRIPTION RULES (decides WHO the algorithm shows the video to):
+- 5-7 sentences, 120-180 words, German
+- Sentence 1: re-hook with the exact keywords people type into YouTube search
+- Then: what the trick does, concretely, with the tool named
+- THEN the ready-to-copy prompt on its own line, introduced with: 👉 Prompt zum Kopieren:
+- Name the audience explicitly ("Wenn du ChatGPT oder Claude nutzt, ...")
 - Last sentence: a question that provokes comments
-- Natural language, no keyword-stuffing gibberish
 
-TAGS: 12-15 tags — 3 broad viral (shorts, viral, tech), 6+ topic-specific (e.g. openai, chatgpt, iphone 17), and 3+ audience search phrases people actually type ("ai news today", "tech news 2026", "latest tech gadgets").
+pexels_query: ENGLISH 2-4 word stock-footage search query matching the topic visually (e.g. "laptop typing dark", "smartphone screen closeup", "office meeting")
 
-For image_prompt: cinematic, dramatic abstract tech visual matching the topic's emotion (glowing circuits, dark server halls, neon interfaces, futuristic skylines — NO people, NO faces). Always end with: "dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k".
+TAGS: 12-15 — German search phrases first ("ki tricks", "chatgpt tipps deutsch", "claude ai deutsch", "prompt tipps"), then international ones (chatgpt, claude, prompts, ai)
+
+For image_prompt: cinematic, dramatic abstract tech visual matching the topic (glowing interfaces, dark screens, neon — NO people, NO faces). Always end with: "dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k".
 
 Output ONLY valid JSON, no markdown:
 {
-  "title": "Front-loaded power title, max 55 chars, in the requested language",
-  "description": "5-7 sentence SEO description following the DESCRIPTION RULES, 120-180 words, in the requested language.",
+  "title": "German power title, max 55 chars",
+  "description": "5-7 sentence German SEO description following the DESCRIPTION RULES, including the copy-paste prompt line",
   "image_prompt": "dramatic abstract tech visual, dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k",
-  "sentences": ["Hook", "Sentence 2", "Sentence 3"],
-  "tags": ["shorts", "viral", "tech", "ai", "topic-specific-tag-1", "topic-specific-tag-2", "topic-specific-tag-3", "gridphantom"]
+  "pexels_query": "english stock footage query",
+  "sentences": ["Hook", "Satz 2", "Satz 3"],
+  "tags": ["ki tricks", "chatgpt tipps deutsch", "..."]
 }"""
 
 
@@ -67,36 +64,25 @@ class ScriptGenerator:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
-    def generate(self, topic: dict = None, language: str = 'en',
-                 avoid_titles: list = None) -> dict:
-        count = "2-3 sentences — ultra short, under 20 seconds spoken"
-        lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'ENGLISH')
-        topic_title = (topic or {}).get('title', 'the latest AI and tech news')
-        topic_summary = (topic or {}).get('summary', '')
+    def generate(self, language: str = 'de', avoid_titles: list = None) -> dict:
+        lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
-        user_prompt = f"""Create a MAXIMALLY VIRAL YouTube Short about this trending tech topic:
+        user_prompt = f"""Create today's video: pick EXACTLY ONE little-known AI capability or prompt trick that makes viewers think "das wusste ich nicht!".
 
-TOPIC: {topic_title}
-{f"CONTEXT: {topic_summary}" if topic_summary else ""}
-
-Generate {count}. Each sentence MAX 10 WORDS.
-Pick the most viral-worthy angle of this topic — the angle that makes people share it.
-First sentence: use a VIRAL HOOK FORMULA. Make scrolling past impossible.
-Last sentence: payoff or open loop that provokes comments.
+2-3 sentences — ultra short, under 20 seconds spoken. Each sentence MAX 10 WORDS.
+The description MUST contain the ready-to-copy prompt.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
         if avoid_titles:
             published = "\n".join(f"- {t}" for t in avoid_titles[:15])
             user_prompt += f"""
 
-ALREADY PUBLISHED on this channel (NEVER repeat these angles, hooks or titles):
+ALREADY PUBLISHED on this channel (NEVER repeat these tricks, angles or titles):
 {published}
 
-If the topic overlaps with any of these, you MUST find a genuinely DIFFERENT angle: new facts, a new perspective, a new consequence, a new question — like telling the next chapter of a story, never re-telling the same one."""
+Pick a genuinely DIFFERENT trick — a new tool feature, a new use case, a new prompt technique. Never re-tell the same one."""
 
-        # Haiku: 3x cheaper than Sonnet, plenty for 3-sentence scripts.
-        # No cache_control: runs are hours apart, the 5-min cache never
-        # hits, so the 25% write premium was pure waste.
+        # Haiku: 3x cheaper than Sonnet, plenty for 3-sentence scripts
         message = self.client.messages.create(
             model="claude-haiku-4-5",
             max_tokens=1400,

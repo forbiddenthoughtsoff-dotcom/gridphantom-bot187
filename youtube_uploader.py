@@ -81,7 +81,7 @@ class YouTubeUploader:
                 'title': title[:100],
                 'description': description,
                 'tags': tags[:30],
-                'categoryId': '28',  # Science & Technology
+                'categoryId': '27',  # Education — passt zum KI-Tipps-Content
                 'defaultLanguage': language,
                 'defaultAudioLanguage': language,
             },
@@ -133,14 +133,16 @@ class YouTubeUploader:
                          'artificialintelligence', 'technology', 'openai',
                          'chatgpt', 'futuretech', 'innovation', 'technewstoday']
         else:
-            description += ("\n\n🤖 GridPhantom — KI & Tech News, täglich "
-                            "entschlüsselt in unter 60 Sekunden.")
-            description += "\n🔔 Abonnieren und nichts mehr verpassen: @GridPhantom187"
-            description += ("\n💬 Schreib in die Kommentare, welche Tech-Story "
-                            "wir als Nächstes bringen sollen!")
-            base_tags = ['shorts', 'ki', 'tech', 'technews', 'kinews',
-                         'künstlicheintelligenz', 'technologie', 'zukunft',
-                         'innovation']
+            description += ("\n\n🤖 GridPhantom — versteckte KI-Superkräfte, "
+                            "die kaum jemand kennt. Jeden Tag ein neuer Trick "
+                            "um 07, 12, 17 & 22 Uhr.")
+            description += "\n🔔 Abonnieren und keinen KI-Trick mehr verpassen: @GridPhantom187"
+            description += ("\n💬 Schreib in die Kommentare, welchen KI-Trick "
+                            "wir als Nächstes zeigen sollen!")
+            base_tags = ['shorts', 'ki', 'kitricks', 'kitipps', 'chatgpt',
+                         'claude', 'prompts', 'prompttipps',
+                         'künstlicheintelligenz', 'chatgpttippsdeutsch',
+                         'kideutsch', 'lernenmitki']
 
         # Hashtags: topic-specific first (from script tags), then base — deduped.
         # YouTube reads the first 3 for display, uses all for search; hard
