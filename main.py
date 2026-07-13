@@ -96,19 +96,32 @@ def run_pipeline(topic: dict = None, language: str = 'en'):
         logger.error(f"❌ Pipeline failed [{language}]: {e}", exc_info=True)
         return None
 
-def run_bot_short():
-    """Midday: 1 short English video for reach."""
-    logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}")
+def run_bot_short(is_retry: bool = False):
+    """Scheduled slot: 1 short English video for reach."""
+    logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
+                + (" (retry)" if is_retry else ""))
+    vid = None
     try:
         from trend_finder import TrendFinder
         topics = TrendFinder().get_trending_topics()
         if not topics:
             logger.warning("No topics found")
             return
-        run_pipeline(topics[0], language='en')
+        vid = run_pipeline(topics[0], language='en')
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
+
+    # Don't silently lose the slot on a transient failure (API hiccup,
+    # rate limit, empty credits that get topped up) — retry once
+    if vid is None and not is_retry:
+        logger.warning("⏳ Slot failed — retrying once in 30 minutes")
+
+        def _retry():
+            run_bot_short(is_retry=True)
+            return schedule.CancelJob
+
+        schedule.every(30).minutes.do(_retry)
 
 def run_engagement():
     """Reply to new viewer comments across recent videos."""
