@@ -41,7 +41,7 @@ class CommunityManager:
 
     def _generate(self, system, prompt):
         msg = self.client.messages.create(
-            model="claude-sonnet-4-6", max_tokens=120,
+            model="claude-haiku-4-5", max_tokens=120,
             system=system,
             messages=[{"role": "user", "content": prompt}])
         return msg.content[0].text.strip().strip('"')
