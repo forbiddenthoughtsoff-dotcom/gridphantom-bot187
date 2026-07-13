@@ -30,14 +30,22 @@ TITLE RULES (this is 80% of the click decision):
 - Numbers, power words (secret, banned, insane, finally, nobody), or curiosity gaps
 - Never generic ("Tech News Today" = death)
 
-TAGS: mix 3 broad viral tags (shorts, viral, tech) with 5+ topic-specific ones (e.g. openai, chatgpt, iphone) for search + suggestion traffic.
+DESCRIPTION RULES (this decides WHO the algorithm shows the video to):
+- 5-7 sentences, 120-180 words, written for search AND for the viewer
+- Sentence 1: re-hook with the main keywords people would type into YouTube
+- Sentences 2-4: context packed with concrete searchable terms (product names, company names, numbers, "2026")
+- Sentence 5: name the target audience explicitly ("If you follow AI news / tech trends / gadget releases, ...")
+- Last sentence: a question that provokes comments
+- Natural language, no keyword-stuffing gibberish
+
+TAGS: 12-15 tags — 3 broad viral (shorts, viral, tech), 6+ topic-specific (e.g. openai, chatgpt, iphone 17), and 3+ audience search phrases people actually type ("ai news today", "tech news 2026", "latest tech gadgets").
 
 For image_prompt: cinematic, dramatic abstract tech visual matching the topic's emotion (glowing circuits, dark server halls, neon interfaces, futuristic skylines — NO people, NO faces). Always end with: "dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k".
 
 Output ONLY valid JSON, no markdown:
 {
   "title": "Front-loaded power title, max 55 chars, in the requested language",
-  "description": "2-3 sentence SEO description: line 1 re-hooks with keywords, line 2 adds context, line 3 asks a question that drives comments. In the requested language.",
+  "description": "5-7 sentence SEO description following the DESCRIPTION RULES, 120-180 words, in the requested language.",
   "image_prompt": "dramatic abstract tech visual, dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k",
   "sentences": ["Hook", "Sentence 2", "Sentence 3"],
   "tags": ["shorts", "viral", "tech", "ai", "topic-specific-tag-1", "topic-specific-tag-2", "topic-specific-tag-3", "gridphantom"]
@@ -88,7 +96,7 @@ If the topic overlaps with any of these, you MUST find a genuinely DIFFERENT ang
 
         message = self.client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=800,
+            max_tokens=1400,
             system=[{"type": "text", "text": SYSTEM_PROMPT,
                      "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_prompt}]
