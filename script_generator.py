@@ -25,12 +25,14 @@ TITLE RULES (80% of the click decision):
 - Never generic
 
 DESCRIPTION RULES (decides WHO the algorithm shows the video to):
-- 5-7 sentences, 120-180 words, German
-- Sentence 1: re-hook with the exact keywords people type into YouTube search
-- Then: what the trick does, concretely, with the tool named
+- 8-10 sentences, 200-280 words, German (longer descriptions rank higher on YouTube)
+- Sentence 1: re-hook with exact keywords people search ("Claude PDF", "AI Verhandlung", etc.)
+- Sentences 2-3: what the trick does concretely + real example / actual use case
+- Sentence 4: WHY this matters / specific benefit to viewer (saves time, money, frustration)
+- Sentences 5-7: step-by-step breakdown (3-5 actionable steps)
 - THEN the ready-to-copy prompt on its own line, introduced with: 👉 Prompt zum Kopieren:
-- Name the audience explicitly ("Wenn du ChatGPT oder Claude nutzt, ...")
-- Last sentence: a question that provokes comments
+- Next: Name the audience explicitly ("Wenn du ChatGPT oder Claude nutzt, ...")
+- Last sentence: engaging question that provokes comments + reply
 
 pexels_query: ENGLISH 2-4 word stock-footage search query matching the topic visually (e.g. "laptop typing dark", "smartphone screen closeup", "office meeting")
 
@@ -41,7 +43,7 @@ For image_prompt: cinematic, dramatic abstract tech visual matching the topic (g
 Output ONLY valid JSON, no markdown:
 {
   "title": "German power title, max 55 chars",
-  "description": "5-7 sentence German SEO description following the DESCRIPTION RULES, including the copy-paste prompt line",
+  "description": "8-10 sentence, 200-280 word German SEO description following the DESCRIPTION RULES, with keywords, example, benefit, steps, and copy-paste prompt",
   "image_prompt": "dramatic abstract tech visual, dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k",
   "pexels_query": "english stock footage query",
   "sentences": ["Hook", "Satz 2", "Satz 3"],
