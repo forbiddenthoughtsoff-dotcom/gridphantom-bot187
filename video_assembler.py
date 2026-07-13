@@ -160,7 +160,7 @@ class VideoAssembler:
         self.output_dir = "/tmp/videos"
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def assemble(self, script: dict, audio_path: str, topic: dict) -> str:
+    def assemble(self, script: dict, audio_path: str) -> str:
         output_path = f"{self.output_dir}/video_en_{random.randint(1000,9999)}.mp4"
 
         audio = AudioFileClip(audio_path)
@@ -173,12 +173,11 @@ class VideoAssembler:
 
         seg_dur = duration / len(sentences)
 
-        # Preferred background: real stock footage matched to the topic
+        # Preferred background: real stock footage — the script supplies an
+        # English search query (Pexels search works poorly in German)
         base = None
         try:
-            skip = {'shorts', 'viral', 'tech', 'ai', 'gridphantom'}
-            tags = [t for t in script.get('tags', []) if t.lower() not in skip]
-            query = f"{tags[0]} technology" if tags else "futuristic technology abstract"
+            query = script.get('pexels_query') or "futuristic technology abstract"
             bg_path = fetch_pexels_video(query)
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()

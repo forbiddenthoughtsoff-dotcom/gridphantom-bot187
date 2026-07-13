@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Language-aware voices (override via env if desired)
 VOICES = {
     'en': os.environ.get('VOICE_EN', 'en-US-ChristopherNeural'),
-    'de': os.environ.get('VOICE_DE', 'de-DE-ConradNeural'),
+    'de': os.environ.get('VOICE_DE', 'de-DE-KatjaNeural'),
 }
 
 

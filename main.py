@@ -57,9 +57,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger('GridPhantomBot')
 
-def run_pipeline(topic: dict = None, language: str = 'en'):
-    """Run full pipeline for one language."""
-    logger.info(f"🎬 Pipeline {language.upper()}: {topic['title']}")
+def run_pipeline(language: str = 'de'):
+    """Run full pipeline: KI-Trick des Tages."""
+    logger.info(f"🎬 Pipeline {language.upper()}: KI-Trick generieren")
     try:
         from script_generator import ScriptGenerator
         from voice_generator import VoiceGenerator
@@ -69,14 +69,14 @@ def run_pipeline(topic: dict = None, language: str = 'en'):
         uploader = YouTubeUploader()
         recent_titles = uploader.get_recent_titles()
 
-        script = ScriptGenerator().generate(topic, language,
+        script = ScriptGenerator().generate(language,
                                             avoid_titles=recent_titles)
         logger.info(f"📝 Script: {script.get('title', '')}")
 
         audio = VoiceGenerator().generate(script['narration'], language)
         logger.info(f"🎙️ Voice done: {audio}")
 
-        video = VideoAssembler().assemble(script, audio, topic)
+        video = VideoAssembler().assemble(script, audio)
         logger.info(f"🎥 Video done: {video}")
 
         vid = uploader.upload(video, script, language)
@@ -97,17 +97,12 @@ def run_pipeline(topic: dict = None, language: str = 'en'):
         return None
 
 def run_bot_short(is_retry: bool = False):
-    """Scheduled slot: 1 short English video for reach."""
+    """Scheduled slot: 1 German KI-Trick Short."""
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
                 + (" (retry)" if is_retry else ""))
     vid = None
     try:
-        from trend_finder import TrendFinder
-        topics = TrendFinder().get_trending_topics()
-        if not topics:
-            logger.warning("No topics found")
-            return
-        vid = run_pipeline(topics[0], language='en')
+        vid = run_pipeline(language='de')
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
@@ -153,7 +148,7 @@ if __name__ == "__main__":
     schedule.every().day.at("12:00").do(run_bot_short)
     schedule.every().day.at("17:00").do(run_bot_short)
     schedule.every().day.at("22:00").do(run_bot_short)
-    logger.info("⏰ 4x daily Shorts: 07 | 12 | 17 | 22 (EN)")
+    logger.info("⏰ 4x daily KI-Trick Shorts: 07 | 12 | 17 | 22 (DE)")
 
     # Community management: answer viewer comments every 2 hours
     schedule.every(2).hours.do(run_engagement)
