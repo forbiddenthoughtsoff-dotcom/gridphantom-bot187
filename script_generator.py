@@ -94,11 +94,13 @@ ALREADY PUBLISHED on this channel (NEVER repeat these angles, hooks or titles):
 
 If the topic overlaps with any of these, you MUST find a genuinely DIFFERENT angle: new facts, a new perspective, a new consequence, a new question — like telling the next chapter of a story, never re-telling the same one."""
 
+        # Haiku: 3x cheaper than Sonnet, plenty for 3-sentence scripts.
+        # No cache_control: runs are hours apart, the 5-min cache never
+        # hits, so the 25% write premium was pure waste.
         message = self.client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5",
             max_tokens=1400,
-            system=[{"type": "text", "text": SYSTEM_PROMPT,
-                     "cache_control": {"type": "ephemeral"}}],
+            system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
         )
 
