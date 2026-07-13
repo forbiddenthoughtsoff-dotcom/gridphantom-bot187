@@ -69,9 +69,12 @@ class YouTubeUploader:
         description = self._build_description(script, language)
         tags = script.get('tags', [])
 
-        # Add GridPhantom branding tags
+        # Branding + audience-targeting search tags
         tags.extend(['GridPhantom', 'AI', 'Technology', 'Tech News',
-                     'Artificial Intelligence', 'Future Tech'])
+                     'Artificial Intelligence', 'Future Tech',
+                     'ai news today', 'tech news 2026', 'ai explained',
+                     'latest technology', 'tech shorts', 'daily tech news',
+                     'ai update', 'technology news'])
 
         body = {
             'snippet': {
@@ -120,22 +123,36 @@ class YouTubeUploader:
 
         # Footer with brand + CTA
         if language == 'en':
-            description += "\n\n🤖 GridPhantom — AI & Tech, decoded daily."
+            description += ("\n\n🤖 GridPhantom — AI & Tech news, decoded daily "
+                            "in under 60 seconds. New Shorts every day at "
+                            "7am, 12pm, 5pm & 10pm (CET).")
             description += "\n🔔 Subscribe so you never miss what's next: @GridPhantom187"
-            base_tags = ['shorts', 'ai', 'tech', 'technews', 'artificialintelligence']
+            description += ("\n💬 Tell us in the comments what tech story "
+                            "we should cover next!")
+            base_tags = ['shorts', 'ai', 'tech', 'technews', 'ainews',
+                         'artificialintelligence', 'technology', 'openai',
+                         'chatgpt', 'futuretech', 'innovation', 'technewstoday']
         else:
-            description += "\n\n🤖 GridPhantom — KI & Tech, täglich entschlüsselt."
+            description += ("\n\n🤖 GridPhantom — KI & Tech News, täglich "
+                            "entschlüsselt in unter 60 Sekunden.")
             description += "\n🔔 Abonnieren und nichts mehr verpassen: @GridPhantom187"
-            base_tags = ['shorts', 'ki', 'tech', 'technews', 'künstlicheintelligenz']
+            description += ("\n💬 Schreib in die Kommentare, welche Tech-Story "
+                            "wir als Nächstes bringen sollen!")
+            base_tags = ['shorts', 'ki', 'tech', 'technews', 'kinews',
+                         'künstlicheintelligenz', 'technologie', 'zukunft',
+                         'innovation']
 
-        # Hashtags: topic-specific first (from script tags), then base — deduped, max 12
+        # Hashtags: topic-specific first (from script tags), then base — deduped.
+        # YouTube reads the first 3 for display, uses all for search; hard
+        # platform limit is 60, we stay well under it
         topic_tags = [t.strip().lower().replace(' ', '') for t in script.get('tags', [])
                       if t and t.strip().lower() not in ('shorts', 'viral', 'tech')]
         all_tags, seen = [], set()
-        for t in topic_tags + base_tags + ['viral', 'trending', 'gridphantom']:
+        for t in topic_tags + base_tags + ['viral', 'trending', 'fyp',
+                                           'gridphantom']:
             if t and t not in seen:
                 seen.add(t)
                 all_tags.append(t)
-        description += "\n\n" + " ".join(f"#{t}" for t in all_tags[:12])
+        description += "\n\n" + " ".join(f"#{t}" for t in all_tags[:25])
 
         return description[:5000]
