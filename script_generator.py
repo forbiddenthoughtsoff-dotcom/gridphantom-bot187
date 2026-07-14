@@ -24,7 +24,7 @@ HOOK (sentence 1 — decides if they stay past second 2):
 VOICE & TONE (this is spoken out loud — write for the EAR):
 - Natural, spoken German — like you're telling a friend a secret over a beer, NOT ad copy.
 - Contractions and flow ("das ist", "geht's", "kannst du") — never stiff or corporate.
-- Vary sentence length for rhythm: a punchy 5-word line next to a flowing 14-word one. Do NOT cap every sentence at 10 words — that's what made it sound robotic.
+- Vary sentence length for rhythm: a short punchy line next to a longer flowing one. Write full, grammatical German sentences — length follows the meaning, never an arbitrary word cap.
 - No hype words that underdeliver, no "unglaublich/revolutionär" filler. Confidence, not clickbait.
 - Sentence flow: 1) HOOK (the surprising result), 2) the concrete move / how it works, 3) payoff + "den fertigen Prompt findest du in der Beschreibung".
 - Write ONLY in the requested language.
@@ -81,7 +81,7 @@ class ScriptGenerator:
 
         user_prompt = f"""Create today's video: pick EXACTLY ONE little-known AI trick with a SPECIFIC MECHANISM that makes viewers think "das probiere ich sofort aus!".
 
-3 sentences, ~20-30 seconds spoken. Write for the EAR: natural spoken German, varied rhythm — NOT every line capped at 10 words. Hook = the surprising result.
+3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way you'd actually say it out loud. Hook = the surprising result.
 The description MUST contain the ready-to-copy prompt after "👉 Prompt zum Kopieren:".
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
