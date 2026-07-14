@@ -28,7 +28,7 @@ VOICE & TONE (this is spoken out loud — write for the EAR):
 - No hype words that underdeliver, no "unglaublich/revolutionär" filler. Confidence, not clickbait.
 - Sentence flow: 1) HOOK (the surprising result), 2) the concrete move / how it works, 3) payoff + "den fertigen Prompt findest du in der Beschreibung".
 - Write ONLY in the requested language.
-- SWISS SPELLING: NEVER use the character "ß" — always write "ss" instead (Strasse not Straße, weiss not weiß, heisst not heißt). This applies to title, narration, description, tags — everything.
+- CHARACTER RULE, nothing more: NEVER use the character "ß" — always write "ss" instead (Strasse not Straße, weiss not weiß, heisst not heißt). This applies to title, narration, description, tags — everything. IMPORTANT: this changes ONLY that one character. The language itself stays STANDARD HIGH GERMAN (Hochdeutsch) — absolutely NO Swiss German dialect, no "Grüezi", no Helvetisms, no dialect vocabulary.
 
 TITLE RULES (80% of the click decision):
 - Max 55 chars, German, front-load the power words, ONE emoji max
