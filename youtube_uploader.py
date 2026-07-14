@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 from google.oauth2.credentials import Credentials
