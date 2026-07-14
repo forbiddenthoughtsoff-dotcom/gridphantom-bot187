@@ -16,8 +16,16 @@ W, H = 1080, 1920
 ZOOM = 0.10  # Ken-Burns zoom range per sentence (10%)
 
 
+_FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+
+
 def load_font(size):
+    # Bundled fonts FIRST — guaranteed to exist on any container, so German
+    # umlauts (ä ö ü ß) always render instead of falling back to PIL's default
+    # bitmap font, which draws them as empty boxes (□).
     for path in [
+        os.path.join(_FONTS_DIR, "DejaVuSans-Bold.ttf"),
+        os.path.join(_FONTS_DIR, "DejaVuSans.ttf"),
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -28,8 +36,10 @@ def load_font(size):
                 return ImageFont.truetype(path, size)
             except Exception:
                 pass
-    # load_default() ignores size unless passed explicitly (Pillow >= 10.1);
-    # without it text renders ~10px no matter what size was requested
+    # Should never happen now that fonts are bundled — but if it does, make it
+    # LOUD instead of silently shipping boxes to production.
+    logger.error("No TrueType font found — umlauts WILL render as boxes! "
+                 "Check that fonts/ is present in the deployment.")
     try:
         return ImageFont.load_default(size=size)
     except TypeError:
