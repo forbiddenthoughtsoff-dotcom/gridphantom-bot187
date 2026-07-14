@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import requests
 import os
 import logging
@@ -68,9 +69,8 @@ def generate_with_picsum(prompt: str) -> Image.Image:
 
 
 def get_background_image(prompt: str) -> Image.Image:
-    """Try Fal.ai → Pollinations → Unsplash → dark gradient."""
+    """Try Pollinations (free) → Picsum → dark gradient. Fal.ai removed (too expensive $0.15/image)."""
     for name, fn in [
-        ("Fal.ai FLUX", generate_with_fal),
         ("Pollinations", generate_with_pollinations),
         ("Picsum", generate_with_picsum),
     ]:

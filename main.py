@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Set timezone to Zurich so schedule times match local expectations
 import os as _os, time as _time
 _os.environ['TZ'] = 'Europe/Zurich'

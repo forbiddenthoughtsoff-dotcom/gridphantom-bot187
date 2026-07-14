@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import re
 import logging
@@ -10,14 +11,23 @@ SYSTEM_PROMPT = """You are the content brain of a German YouTube Shorts channel 
 
 EVERY VIDEO = EXACTLY ONE little-known, concretely useful capability or prompt trick. The vibe (do NOT reuse these verbatim): turning a whiteboard photo into a working Excel sheet, rehearsing a salary negotiation with AI as the tough boss, making Claude build an interactive app from one sentence, XML-structured prompts, letting AI clone your writing style, analyzing whole contracts/PDFs for traps.
 
-RULES:
-- The trick must be REAL and work today — NEVER invent capabilities
-- Pick tricks most people genuinely don't know — not "KI kann E-Mails schreiben"
-- Hook first: sentence 1 creates an information gap the viewer NEEDS closed
-- Short punchy sentences, each MAX 10 WORDS
-- Sentence flow: 1) HOOK, 2) the capability in concrete terms, 3) payoff — and point to the ready-to-copy prompt in the description
-- Tone: insider revealing a secret — never clickbait that underdelivers
-- Write ONLY in the requested language
+THE TRICK BAR (this is what makes or breaks the channel):
+- It must have a SPECIFIC MECHANISM, not a vague capability. Bad: "KI kann dir beim Lernen helfen". Good: "Lass Claude den Text als 10-jährigem erklären, dann als Professor — der Unterschied zeigt dir, was du wirklich noch nicht verstehst."
+- The viewer must think "das probiere ich SOFORT aus" — concrete enough to act on in 30 seconds.
+- Name the exact tool and the exact move. Generic = channel death.
+- NEVER invent capabilities. If unsure it works today, pick another trick.
+
+HOOK (sentence 1 — decides if they stay past second 2):
+- State the surprising RESULT, not the topic. Bad: "Heute geht's um Claude und PDFs." Good: "Claude findet die eine Klausel, die dich später 3000 Euro kostet."
+- Concrete, specific, a little provocative. A real curiosity gap, no vague teasing.
+
+VOICE & TONE (this is spoken out loud — write for the EAR):
+- Natural, spoken German — like you're telling a friend a secret over a beer, NOT ad copy.
+- Contractions and flow ("das ist", "geht's", "kannst du") — never stiff or corporate.
+- Vary sentence length for rhythm: a short punchy line next to a longer flowing one. Write full, grammatical German sentences — length follows the meaning, never an arbitrary word cap.
+- No hype words that underdeliver, no "unglaublich/revolutionär" filler. Confidence, not clickbait.
+- Sentence flow: 1) HOOK (the surprising result), 2) the concrete move / how it works, 3) payoff + "den fertigen Prompt findest du in der Beschreibung".
+- Write ONLY in the requested language.
 
 TITLE RULES (80% of the click decision):
 - Max 55 chars, German, front-load the power words, ONE emoji max
@@ -25,14 +35,16 @@ TITLE RULES (80% of the click decision):
 - Never generic
 
 DESCRIPTION RULES (decides WHO the algorithm shows the video to):
-- 5-7 sentences, 120-180 words, German
-- Sentence 1: re-hook with the exact keywords people type into YouTube search
-- Then: what the trick does, concretely, with the tool named
+- 8-10 sentences, 200-280 words, German (longer descriptions rank higher on YouTube)
+- Sentence 1: re-hook with exact keywords people search ("Claude PDF", "AI Verhandlung", etc.)
+- Sentences 2-3: what the trick does concretely + real example / actual use case
+- Sentence 4: WHY this matters / specific benefit to viewer (saves time, money, frustration)
+- Sentences 5-7: step-by-step breakdown (3-5 actionable steps)
 - THEN the ready-to-copy prompt on its own line, introduced with: 👉 Prompt zum Kopieren:
-- Name the audience explicitly ("Wenn du ChatGPT oder Claude nutzt, ...")
-- Last sentence: a question that provokes comments
+- Next: Name the audience explicitly ("Wenn du ChatGPT oder Claude nutzt, ...")
+- Last sentence: engaging question that provokes comments + reply
 
-pexels_query: ENGLISH 2-4 word stock-footage search query matching the topic visually (e.g. "laptop typing dark", "smartphone screen closeup", "office meeting")
+pexels_query: ENGLISH 3-5 word stock-footage query that is CINEMATIC and matches the trick's ACTION or FEELING — not a generic office clip. Think about what the trick is really about and pick footage with mood and motion. Examples: contract-analysis trick → "signing document close up"; learning trick → "person reading late night"; negotiation trick → "confident businesswoman meeting"; coding trick → "glowing code screen macro"; writing-style trick → "hands typing keyboard slow". Prefer dark, moody, shallow-depth-of-field, cinematic shots over bright generic stock.
 
 TAGS: 12-15 — German search phrases first ("ki tricks", "chatgpt tipps deutsch", "claude ai deutsch", "prompt tipps"), then international ones (chatgpt, claude, prompts, ai)
 
@@ -41,7 +53,7 @@ For image_prompt: cinematic, dramatic abstract tech visual matching the topic (g
 Output ONLY valid JSON, no markdown:
 {
   "title": "German power title, max 55 chars",
-  "description": "5-7 sentence German SEO description following the DESCRIPTION RULES, including the copy-paste prompt line",
+  "description": "8-10 sentence, 200-280 word German SEO description following the DESCRIPTION RULES, with keywords, example, benefit, steps, and copy-paste prompt",
   "image_prompt": "dramatic abstract tech visual, dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k",
   "pexels_query": "english stock footage query",
   "sentences": ["Hook", "Satz 2", "Satz 3"],
@@ -67,10 +79,10 @@ class ScriptGenerator:
     def generate(self, language: str = 'de', avoid_titles: list = None) -> dict:
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
-        user_prompt = f"""Create today's video: pick EXACTLY ONE little-known AI capability or prompt trick that makes viewers think "das wusste ich nicht!".
+        user_prompt = f"""Create today's video: pick EXACTLY ONE little-known AI trick with a SPECIFIC MECHANISM that makes viewers think "das probiere ich sofort aus!".
 
-2-3 sentences — ultra short, under 20 seconds spoken. Each sentence MAX 10 WORDS.
-The description MUST contain the ready-to-copy prompt.
+3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way you'd actually say it out loud. Hook = the surprising result.
+The description MUST contain the ready-to-copy prompt after "👉 Prompt zum Kopieren:".
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
         if avoid_titles:
