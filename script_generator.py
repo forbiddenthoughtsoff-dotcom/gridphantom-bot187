@@ -28,6 +28,7 @@ VOICE & TONE (this is spoken out loud — write for the EAR):
 - No hype words that underdeliver, no "unglaublich/revolutionär" filler. Confidence, not clickbait.
 - Sentence flow: 1) HOOK (the surprising result), 2) the concrete move / how it works, 3) payoff + "den fertigen Prompt findest du in der Beschreibung".
 - Write ONLY in the requested language.
+- SWISS SPELLING: NEVER use the character "ß" — always write "ss" instead (Strasse not Straße, weiss not weiß, heisst not heißt). This applies to title, narration, description, tags — everything.
 
 TITLE RULES (80% of the click decision):
 - Max 55 chars, German, front-load the power words, ONE emoji max
@@ -59,6 +60,18 @@ Output ONLY valid JSON, no markdown:
   "sentences": ["Hook", "Satz 2", "Satz 3"],
   "tags": ["ki tricks", "chatgpt tipps deutsch", "..."]
 }"""
+
+
+def _swissify(obj):
+    """Swiss spelling: replace ß with ss in every string, recursively.
+    Hard guarantee — applies even if the model ignores the prompt rule."""
+    if isinstance(obj, str):
+        return obj.replace('ß', 'ss')
+    if isinstance(obj, list):
+        return [_swissify(x) for x in obj]
+    if isinstance(obj, dict):
+        return {k: _swissify(v) for k, v in obj.items()}
+    return obj
 
 
 def _sanitize_json(raw: str) -> str:
@@ -108,6 +121,7 @@ Pick a genuinely DIFFERENT trick — a new tool feature, a new use case, a new p
         except json.JSONDecodeError:
             script = json.loads(_sanitize_json(raw))
 
+        script = _swissify(script)
         script['narration'] = " ".join(script.get('sentences', []))
         script['language'] = language
         logger.info(f"Script [{language}]: {script.get('title','?')} ({len(script.get('sentences',[]))} sentences)")

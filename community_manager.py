@@ -45,7 +45,8 @@ class CommunityManager:
             model="claude-haiku-4-5", max_tokens=120,
             system=system,
             messages=[{"role": "user", "content": prompt}])
-        return msg.content[0].text.strip().strip('"')
+        # Swiss spelling: no ß, always ss
+        return msg.content[0].text.strip().strip('"').replace('ß', 'ss')
 
     def respond_to_comments(self) -> int:
         """Reply to every viewer comment that has no channel reply yet."""
