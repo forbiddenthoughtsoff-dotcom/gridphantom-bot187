@@ -59,8 +59,8 @@ logging.basicConfig(
 logger = logging.getLogger('GridPhantomBot')
 
 def run_pipeline(language: str = 'de'):
-    """Run full pipeline: KI-Trick des Tages."""
-    logger.info(f"🎬 Pipeline {language.upper()}: KI-Trick generieren")
+    """Run full pipeline: GTA Short des Tages."""
+    logger.info(f"🎬 Pipeline {language.upper()}: GTA Short generieren")
     try:
         from script_generator import ScriptGenerator
         from voice_generator import VoiceGenerator
@@ -98,7 +98,7 @@ def run_pipeline(language: str = 'de'):
         return None
 
 def run_bot_short(is_retry: bool = False):
-    """Scheduled slot: 1 German KI-Trick Short."""
+    """Scheduled slot: 1 German GTA Short."""
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
                 + (" (retry)" if is_retry else ""))
     vid = None
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     schedule.every().day.at("12:00").do(run_bot_short)
     schedule.every().day.at("17:00").do(run_bot_short)
     schedule.every().day.at("22:00").do(run_bot_short)
-    logger.info("⏰ 4x daily KI-Trick Shorts: 07 | 12 | 17 | 22 (DE)")
+    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE)")
 
     # Community management: answer viewer comments every 2 hours
     schedule.every(2).hours.do(run_engagement)

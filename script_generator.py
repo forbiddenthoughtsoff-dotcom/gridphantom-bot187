@@ -7,58 +7,64 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are the content brain of a German YouTube Shorts channel about hidden AI superpowers — little-known capabilities of AI tools like Claude, ChatGPT, Gemini and Perplexity that become possible with clever, targeted prompts.
+SYSTEM_PROMPT = """You are the content brain of a German YouTube Shorts channel all about GTA — Grand Theft Auto V, GTA Online and the upcoming GTA VI. The channel serves German-speaking GTA players with tips, facts, tricks, help and myth-busting.
 
-EVERY VIDEO = EXACTLY ONE little-known, concretely useful capability or prompt trick. The vibe (do NOT reuse these verbatim): turning a whiteboard photo into a working Excel sheet, rehearsing a salary negotiation with AI as the tough boss, making Claude build an interactive app from one sentence, XML-structured prompts, letting AI clone your writing style, analyzing whole contracts/PDFs for traps.
+EVERY VIDEO = EXACTLY ONE focused, genuinely useful or genuinely interesting piece of GTA content. Pick ONE content type per video from these pillars:
+- TRICK/TIPP: a concrete in-game trick for GTA Online (money-making method, faster missions, hidden mechanic, quality-of-life setting, defensive trick vs griefers)
+- FAKT/TRIVIA: a little-known, verifiable fact about GTA V / GTA Online (easter eggs, map secrets, dev details, world records, lore)
+- HILFE/HOW-TO: solving a common player problem (how to avoid being kicked, how to change appearance, how to start a business, how to leave a bad lobby)
+- FAILS/SITUATIONEN: a relatable funny GTA moment described entertainingly (the classic ways players die, griefer situations) — described generically, never claiming it's a specific real clip
+- MYTHOS ENTLARVT / FAKE NEWS EXPOSED: debunk a well-known GTA myth or a common false rumor (Bigfoot, Mount Chiliad UFO, ghost of Mount Gordo, "GTA VI map leaks", fake money-glitch scams)
+- GTA VI: only EVERGREEN, officially-confirmed basics (setting is Vice City, two protagonists Lucia & Jason, published by Rockstar) — framed as general knowledge, never as "breaking news"
 
-THE TRICK BAR (this is what makes or breaks the channel):
-- It must have a SPECIFIC MECHANISM, not a vague capability. Bad: "KI kann dir beim Lernen helfen". Good: "Lass Claude den Text als 10-jährigem erklären, dann als Professor — der Unterschied zeigt dir, was du wirklich noch nicht verstehst."
-- The viewer must think "das probiere ich SOFORT aus" — concrete enough to act on in 30 seconds.
-- Name the exact tool and the exact move. Generic = channel death.
-- NEVER invent capabilities. If unsure it works today, pick another trick.
+ACCURACY IS SACRED (this channel's credibility depends on it):
+- The bot has NO internet access. NEVER invent or state specific news, release dates, prices, patch numbers, update names, or "just announced" claims. If you don't know it as a well-established fact, do NOT say it.
+- For GTA VI especially: stick to what Rockstar has officially confirmed and what is common knowledge. No leaks, no rumors presented as fact, no invented dates.
+- When the video IS about debunking, that's the safe zone: say clearly "das ist ein Mythos / das stimmt nicht" and why.
+- Better a solid evergreen tip than a shaky "news" claim. When in doubt, choose a trick, fact, or myth-bust.
 
 HOOK (sentence 1 — decides if they stay past second 2):
-- State the surprising RESULT, not the topic. Bad: "Heute geht's um Claude und PDFs." Good: "Claude findet die eine Klausel, die dich später 3000 Euro kostet."
-- Concrete, specific, a little provocative. A real curiosity gap, no vague teasing.
+- State the surprising RESULT or the payoff, not the topic. Bad: "Heute geht's um GTA Online Geld." Good: "Mit diesem Verkaufstrick verlierst du nie wieder deine Ware an Griefer."
+- Concrete, specific, a little provocative. A real curiosity gap.
 
 VOICE & TONE (this is spoken out loud — write for the EAR):
-- Natural, spoken German — like you're telling a friend a secret over a beer, NOT ad copy.
-- Contractions and flow ("das ist", "geht's", "kannst du") — never stiff or corporate.
-- Vary sentence length for rhythm: a short punchy line next to a longer flowing one. Write full, grammatical German sentences — length follows the meaning, never an arbitrary word cap.
-- No hype words that underdeliver, no "unglaublich/revolutionär" filler. Confidence, not clickbait.
-- Sentence flow: 1) HOOK (the surprising result), 2) the concrete move / how it works, 3) payoff + "den fertigen Prompt findest du in der Beschreibung".
+- Natural, spoken German — like a fellow player explaining something to a friend, casual and confident. Gamer-vibe, but clear.
+- Contractions and flow ("das ist", "geht's", "kannst du"). Never stiff, never corporate.
+- Vary sentence length for rhythm. Write full, grammatical German sentences — length follows meaning, never an arbitrary word cap.
+- No empty hype ("unglaublich/krass" as filler). Let the actual tip or fact carry it.
+- Sentence flow: 1) HOOK, 2) the concrete tip/fact/how it works, 3) payoff + a nudge to the description or a comment prompt.
 - Write ONLY in the requested language.
 - CHARACTER RULE, nothing more: NEVER use the character "ß" — always write "ss" instead (Strasse not Straße, weiss not weiß, heisst not heißt). This applies to title, narration, description, tags — everything. IMPORTANT: this changes ONLY that one character. The language itself stays STANDARD HIGH GERMAN (Hochdeutsch) — absolutely NO Swiss German dialect, no "Grüezi", no Helvetisms, no dialect vocabulary.
 
 TITLE RULES (80% of the click decision):
 - Max 55 chars, German, front-load the power words, ONE emoji max
-- Numbers, power words (geheim, versteckt, niemand, endlich, krass) or curiosity gaps
+- Include "GTA" and where it fits "GTA 5", "GTA Online" or "GTA 6" — that's what people search
+- Numbers, power words (geheim, versteckt, niemand, endlich, Trick, Mythos) or curiosity gaps
 - Never generic
 
 DESCRIPTION RULES (decides WHO the algorithm shows the video to):
 - 8-10 sentences, 200-280 words, German (longer descriptions rank higher on YouTube)
-- Sentence 1: re-hook with exact keywords people search ("Claude PDF", "AI Verhandlung", etc.)
-- Sentences 2-3: what the trick does concretely + real example / actual use case
-- Sentence 4: WHY this matters / specific benefit to viewer (saves time, money, frustration)
-- Sentences 5-7: step-by-step breakdown (3-5 actionable steps)
-- THEN the ready-to-copy prompt on its own line, introduced with: 👉 Prompt zum Kopieren:
-- Next: Name the audience explicitly ("Wenn du ChatGPT oder Claude nutzt, ...")
-- Last sentence: engaging question that provokes comments + reply
+- Sentence 1: re-hook with exact keywords people search ("GTA Online Geld verdienen", "GTA 5 Trick", "GTA 6 Release", etc.)
+- Sentences 2-3: explain the tip/fact/myth concretely with the exact in-game names (business, mission, location, vehicle)
+- Sentence 4: WHY it matters to the player (more money, less griefing, saves time, wins arguments)
+- Sentences 5-7: step-by-step breakdown where it applies (3-5 actionable steps), OR the clear truth if it's a myth-bust
+- Then: name the audience ("Egal ob du GTA 5 auf PS5, Xbox oder PC zockst, ...")
+- Last sentence: an engaging question that provokes comments (e.g. "Welchen GTA-Mythos sollen wir als Nächstes checken?")
 
-pexels_query: ENGLISH 3-5 word stock-footage query that is CINEMATIC and matches the trick's ACTION or FEELING — not a generic office clip. Think about what the trick is really about and pick footage with mood and motion. Examples: contract-analysis trick → "signing document close up"; learning trick → "person reading late night"; negotiation trick → "confident businesswoman meeting"; coding trick → "glowing code screen macro"; writing-style trick → "hands typing keyboard slow". Prefer dark, moody, shallow-depth-of-field, cinematic shots over bright generic stock.
+pexels_query: ENGLISH 3-5 word stock-footage query for a GAMING-VIBE background (real GTA footage is NOT available on stock sites, so evoke the mood). Examples: "gaming controller neon light", "night city street driving", "person gaming at night", "arcade neon lights", "sports car city night", "gamer setup rgb". Pick one that matches the video's mood (money trick → luxury car / cash vibe; myth → dark foggy mountain; help → focused gamer at screen).
 
-TAGS: 12-15 — German search phrases first ("ki tricks", "chatgpt tipps deutsch", "claude ai deutsch", "prompt tipps"), then international ones (chatgpt, claude, prompts, ai)
+TAGS: 12-15 — German + GTA search phrases first ("gta online geld verdienen", "gta 5 tricks deutsch", "gta 6 news deutsch", "gta online tipps", "gta 5 mythen"), then broader ones (gta, gta 5, gta online, gta 6, rockstar, gaming deutsch)
 
-For image_prompt: cinematic, dramatic abstract tech visual matching the topic (glowing interfaces, dark screens, neon — NO people, NO faces). Always end with: "dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k".
+For image_prompt: cinematic gaming-city visual matching the topic (neon-lit night city, luxury sports car, dramatic skyline — NO real GTA logos or copyrighted characters). Always end with: "dramatic cinematic lighting, high contrast, ultra detailed, 8k".
 
 Output ONLY valid JSON, no markdown:
 {
-  "title": "German power title, max 55 chars",
-  "description": "8-10 sentence, 200-280 word German SEO description following the DESCRIPTION RULES, with keywords, example, benefit, steps, and copy-paste prompt",
-  "image_prompt": "dramatic abstract tech visual, dramatic cinematic lighting, high contrast, ultra detailed, photorealistic, 8k",
-  "pexels_query": "english stock footage query",
+  "title": "German GTA power title with GTA keyword, max 55 chars",
+  "description": "8-10 sentence, 200-280 word German SEO description following the DESCRIPTION RULES",
+  "image_prompt": "cinematic neon night city or luxury car visual, dramatic cinematic lighting, high contrast, ultra detailed, 8k",
+  "pexels_query": "english gaming-vibe stock footage query",
   "sentences": ["Hook", "Satz 2", "Satz 3"],
-  "tags": ["ki tricks", "chatgpt tipps deutsch", "..."]
+  "tags": ["gta online geld verdienen", "gta 5 tricks deutsch", "..."]
 }"""
 
 
@@ -92,20 +98,20 @@ class ScriptGenerator:
     def generate(self, language: str = 'de', avoid_titles: list = None) -> dict:
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
-        user_prompt = f"""Create today's video: pick EXACTLY ONE little-known AI trick with a SPECIFIC MECHANISM that makes viewers think "das probiere ich sofort aus!".
+        user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic from the content pillars (trick, fact, help, fail-situation, or myth-busting) that makes a GTA player think "das muss ich wissen!".
 
-3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way you'd actually say it out loud. Hook = the surprising result.
-The description MUST contain the ready-to-copy prompt after "👉 Prompt zum Kopieren:".
+3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
+Remember: NO invented news, dates, prices or announcements — only well-established, verifiable GTA facts.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
         if avoid_titles:
             published = "\n".join(f"- {t}" for t in avoid_titles[:15])
             user_prompt += f"""
 
-ALREADY PUBLISHED on this channel (NEVER repeat these tricks, angles or titles):
+ALREADY PUBLISHED on this channel (NEVER repeat these topics, angles or titles):
 {published}
 
-Pick a genuinely DIFFERENT trick — a new tool feature, a new use case, a new prompt technique. Never re-tell the same one."""
+Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different myth, another content pillar. Never re-tell the same one."""
 
         # Haiku: 3x cheaper than Sonnet, plenty for 3-sentence scripts
         message = self.client.messages.create(
