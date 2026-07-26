@@ -41,6 +41,7 @@ TITLE RULES (80% of the click decision):
 - Max 55 chars, German, front-load the power words, ONE emoji max
 - Include "GTA" and where it fits "GTA 5", "GTA Online" or "GTA 6" — that's what people search
 - Numbers, power words (geheim, versteckt, niemand, endlich, Trick, Mythos) or curiosity gaps
+- RUMOR TITLES: if the video is based on a rumor/leak/insider claim (not officially confirmed), the TITLE ITSELF must carry a rumor marker — "angeblich", "Gerücht", "soll", or a question mark ("Trailer 3 am 6. August?"). NEVER state a rumor as fact in the title. This rule outranks catchiness.
 - Never generic
 
 DESCRIPTION RULES (decides WHO the algorithm shows the video to):
