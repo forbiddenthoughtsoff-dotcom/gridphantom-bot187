@@ -18,10 +18,11 @@ EVERY VIDEO = EXACTLY ONE focused, genuinely useful or genuinely interesting pie
 - GTA VI: only EVERGREEN, officially-confirmed basics (setting is Vice City, two protagonists Lucia & Jason, published by Rockstar) — framed as general knowledge, never as "breaking news"
 
 ACCURACY IS SACRED (this channel's credibility depends on it):
-- The bot has NO internet access. NEVER invent or state specific news, release dates, prices, patch numbers, update names, or "just announced" claims. If you don't know it as a well-established fact, do NOT say it.
-- For GTA VI especially: stick to what Rockstar has officially confirmed and what is common knowledge. No leaks, no rumors presented as fact, no invented dates.
+- You may be given a list of REAL, CURRENT news headlines fetched live from news sources. When you make a NEWS/UPDATE video, ground it STRICTLY in those provided headlines — never add facts, numbers or dates that are not in the provided text.
+- If NO news list is provided, do NOT invent news, dates, prices, patch numbers or "just announced" claims. Then pick an evergreen pillar (trick, fact, help, myth-bust).
+- CRUCIAL — distinguish confirmed from rumor: if a headline is an official Rockstar announcement, you may state it as fact. If it is an insider claim, leak, speculation or "soll/angeblich/Gerücht", you MUST frame it clearly as a rumor ("laut Gerüchten", "ein Insider behauptet", "noch nicht offiziell bestätigt"). NEVER present a rumor as confirmed fact.
+- For GTA VI officially-confirmed basics (Vice City, Lucia & Jason, Rockstar) you may always state as fact.
 - When the video IS about debunking, that's the safe zone: say clearly "das ist ein Mythos / das stimmt nicht" and why.
-- Better a solid evergreen tip than a shaky "news" claim. When in doubt, choose a trick, fact, or myth-bust.
 
 HOOK (sentence 1 — decides if they stay past second 2):
 - State the surprising RESULT or the payoff, not the topic. Bad: "Heute geht's um GTA Online Geld." Good: "Mit diesem Verkaufstrick verlierst du nie wieder deine Ware an Griefer."
@@ -95,14 +96,30 @@ class ScriptGenerator:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
-    def generate(self, language: str = 'de', avoid_titles: list = None) -> dict:
+    def generate(self, language: str = 'de', avoid_titles: list = None,
+                 news_items: list = None) -> dict:
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
-        user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic from the content pillars (trick, fact, help, fail-situation, or myth-busting) that makes a GTA player think "das muss ich wissen!".
+        user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
 
 3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
-Remember: NO invented news, dates, prices or announcements — only well-established, verifiable GTA facts.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
+
+        if news_items:
+            news_block = "\n".join(
+                f"- [{n.get('published','')}] {n.get('title','')}"
+                f" (Quelle: {n.get('source','?')})"
+                for n in news_items[:8])
+            user_prompt += f"""
+
+REAL CURRENT GTA NEWS (fetched live today — this is your factual ground truth):
+{news_block}
+
+Decide: if ONE of these headlines is genuinely newsworthy and fits a Short (a real update, announcement, or noteworthy development), make a NEWS/UPDATE video grounded STRICTLY in that headline — do not add facts beyond it, and clearly mark anything that is a rumor/leak/insider claim as such (not as confirmed fact). Otherwise, if none is strong enough, make an evergreen video instead (trick, fact, help, or myth-bust). Never fabricate details not present in the headline."""
+        else:
+            user_prompt += """
+
+No live news available right now — make an EVERGREEN video (trick, fact, help, or myth-bust). Do NOT invent news, dates or announcements."""
 
         if avoid_titles:
             published = "\n".join(f"- {t}" for t in avoid_titles[:15])

@@ -66,12 +66,21 @@ def run_pipeline(language: str = 'de'):
         from voice_generator import VoiceGenerator
         from video_assembler import VideoAssembler
         from youtube_uploader import YouTubeUploader
+        from news_fetcher import fetch_recent_news
 
         uploader = YouTubeUploader()
         recent_titles = uploader.get_recent_titles()
 
+        # Live GTA news to ground the script (falls back to evergreen if empty)
+        try:
+            news_items = fetch_recent_news()
+        except Exception as e:
+            logger.warning(f"News fetch failed, evergreen fallback: {e}")
+            news_items = []
+
         script = ScriptGenerator().generate(language,
-                                            avoid_titles=recent_titles)
+                                            avoid_titles=recent_titles,
+                                            news_items=news_items)
         logger.info(f"📝 Script: {script.get('title', '')}")
 
         audio = VoiceGenerator().generate(script['narration'], language)
