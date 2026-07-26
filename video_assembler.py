@@ -177,7 +177,7 @@ class VideoAssembler:
         audio = AudioFileClip(audio_path)
         duration = min(audio.duration, 58)
 
-        image_prompt = script.get('image_prompt', 'abstract futuristic technology visual, circuit boards, glowing data streams, cinematic lighting, ultra detailed')
+        image_prompt = script.get('image_prompt', 'neon-lit night city skyline with a luxury sports car, dramatic cinematic lighting, high contrast, ultra detailed, 8k')
         sentences = script.get('sentences', [script.get('narration', '')])
         if not sentences:
             sentences = [script.get('narration', '')]
@@ -188,7 +188,7 @@ class VideoAssembler:
         # English search query (Pexels search works poorly in German)
         base = None
         try:
-            query = script.get('pexels_query') or "futuristic technology abstract"
+            query = script.get('pexels_query') or "night city street driving neon"
             bg_path = fetch_pexels_video(query)
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()

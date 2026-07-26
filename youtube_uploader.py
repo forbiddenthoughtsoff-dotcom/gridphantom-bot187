@@ -71,18 +71,17 @@ class YouTubeUploader:
         tags = script.get('tags', [])
 
         # Branding + audience-targeting search tags
-        tags.extend(['GridPhantom', 'AI', 'Technology', 'Tech News',
-                     'Artificial Intelligence', 'Future Tech',
-                     'ai news today', 'tech news 2026', 'ai explained',
-                     'latest technology', 'tech shorts', 'daily tech news',
-                     'ai update', 'technology news'])
+        tags.extend(['GridPhantom', 'GTA', 'GTA 5', 'GTA V', 'GTA Online',
+                     'GTA 6', 'GTA VI', 'Grand Theft Auto', 'Rockstar Games',
+                     'gta tricks', 'gta tipps deutsch', 'gta online deutsch',
+                     'gta 5 deutsch', 'gaming shorts'])
 
         body = {
             'snippet': {
                 'title': title[:100],
                 'description': description,
                 'tags': tags[:30],
-                'categoryId': '27',  # Education — passt zum KI-Tipps-Content
+                'categoryId': '20',  # Gaming
                 'defaultLanguage': language,
                 'defaultAudioLanguage': language,
             },
@@ -124,32 +123,31 @@ class YouTubeUploader:
 
         # Footer with brand + CTA
         if language == 'en':
-            description += ("\n\n🤖 GridPhantom — AI & Tech news, decoded daily "
-                            "in under 60 seconds. New Shorts every day at "
-                            "7am, 12pm, 5pm & 10pm (CET).")
-            description += "\n🔔 Subscribe so you never miss what's next: @GridPhantom187"
-            description += ("\n💬 Tell us in the comments what tech story "
+            description += ("\n\n🎮 GridPhantom — daily GTA Shorts: tricks, facts, "
+                            "help & myths for GTA 5, GTA Online & GTA 6. "
+                            "New Shorts every day at 7am, 12pm, 5pm & 10pm (CET).")
+            description += "\n🔔 Subscribe for your daily GTA fix: @GridPhantom187"
+            description += ("\n💬 Tell us in the comments which GTA topic "
                             "we should cover next!")
-            base_tags = ['shorts', 'ai', 'tech', 'technews', 'ainews',
-                         'artificialintelligence', 'technology', 'openai',
-                         'chatgpt', 'futuretech', 'innovation', 'technewstoday']
+            base_tags = ['shorts', 'gta', 'gta5', 'gtav', 'gtaonline',
+                         'gta6', 'gtavi', 'grandtheftauto', 'rockstar',
+                         'gtatricks', 'gaming', 'gtaclips']
         else:
-            description += ("\n\n🤖 GridPhantom — versteckte KI-Superkräfte, "
-                            "die kaum jemand kennt. Jeden Tag ein neuer Trick "
-                            "um 07, 12, 17 & 22 Uhr.")
-            description += "\n🔔 Abonnieren und keinen KI-Trick mehr verpassen: @GridPhantom187"
-            description += ("\n💬 Schreib in die Kommentare, welchen KI-Trick "
+            description += ("\n\n🎮 GridPhantom — täglich GTA Shorts: Tricks, Fakten, "
+                            "Hilfe & Mythen zu GTA 5, GTA Online & GTA 6. "
+                            "Jeden Tag um 07, 12, 17 & 22 Uhr.")
+            description += "\n🔔 Abonnieren für deine tägliche GTA-Dosis: @GridPhantom187"
+            description += ("\n💬 Schreib in die Kommentare, welches GTA-Thema "
                             "wir als Nächstes zeigen sollen!")
-            base_tags = ['shorts', 'ki', 'kitricks', 'kitipps', 'chatgpt',
-                         'claude', 'prompts', 'prompttipps',
-                         'künstlicheintelligenz', 'chatgpttippsdeutsch',
-                         'kideutsch', 'lernenmitki']
+            base_tags = ['shorts', 'gta', 'gta5', 'gta5deutsch', 'gtaonline',
+                         'gta6', 'gtavi', 'gtatricksdeutsch', 'gtatippsdeutsch',
+                         'grandtheftauto', 'rockstargames', 'gamingdeutsch']
 
         # Hashtags: topic-specific first (from script tags), then base — deduped.
         # YouTube reads the first 3 for display, uses all for search; hard
         # platform limit is 60, we stay well under it
         topic_tags = [t.strip().lower().replace(' ', '') for t in script.get('tags', [])
-                      if t and t.strip().lower() not in ('shorts', 'viral', 'tech')]
+                      if t and t.strip().lower() not in ('shorts', 'viral')]
         all_tags, seen = [], set()
         for t in topic_tags + base_tags + ['viral', 'trending', 'fyp',
                                            'gridphantom']:
