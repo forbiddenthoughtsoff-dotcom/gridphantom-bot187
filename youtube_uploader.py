@@ -59,6 +59,26 @@ class YouTubeUploader:
             logger.warning(f"Could not fetch recent titles: {e}")
             return []
 
+    def find_related_video(self, query: str) -> str:
+        """Direct link to a topical YouTube video for the description, so
+        viewers don't have to search. Prefers the official Rockstar Games
+        channel (trailers/announcements), else the top search result."""
+        try:
+            res = self.service.search().list(
+                part='snippet', q=f"{query} GTA", type='video',
+                maxResults=5, relevanceLanguage='de').execute()
+            items = res.get('items', [])
+            if not items:
+                return ''
+            for it in items:
+                if it['snippet'].get('channelTitle', '').strip().lower() \
+                        == 'rockstar games':
+                    return f"https://youtu.be/{it['id']['videoId']}"
+            return f"https://youtu.be/{items[0]['id']['videoId']}"
+        except Exception as e:
+            logger.warning(f"Related-video search failed (non-fatal): {e}")
+            return ''
+
     def upload(self, video_path: str, script: dict, language: str) -> str:
         """Upload video to YouTube with full metadata"""
 
@@ -67,6 +87,10 @@ class YouTubeUploader:
         title = script['title']
         if '#shorts' not in title.lower():
             title = f"{title[:91]} #Shorts"
+
+        related = self.find_related_video(script.get('title', ''))
+        if related:
+            script['related_video_url'] = related
         description = self._build_description(script, language)
         tags = script.get('tags', [])
 
@@ -120,6 +144,12 @@ class YouTubeUploader:
     def _build_description(self, script: dict, language: str) -> str:
         # First line: #Shorts (YouTube reads the first hashtags for classification)
         description = "#Shorts\n\n" + script.get('description', '')
+
+        # Direct link to a topical video — saves viewers the search
+        if script.get('related_video_url'):
+            label = ("▶️ Watch the full video here: " if language == 'en'
+                     else "▶️ Passendes Video direkt hier: ")
+            description += f"\n\n{label}{script['related_video_url']}"
 
         # Footer with brand + CTA
         if language == 'en':
