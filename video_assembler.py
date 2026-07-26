@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import json
 import logging
 import random
 import requests
@@ -138,6 +139,49 @@ def make_kb_clip(bg_big: np.ndarray, text: str, duration: float,
     return VideoClip(frame, duration=duration)
 
 
+GAMEPLAY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "gameplay")
+
+
+def pick_gameplay_clip(script: dict) -> str:
+    """Pick the owner's own GTA gameplay clip that best matches the video's
+    topic, via tag overlap with gameplay/manifest.json. Returns a local mp4
+    path or None. Only the channel owner's OWN recordings live here —
+    never downloaded third-party footage (copyright)."""
+    manifest_path = os.path.join(GAMEPLAY_DIR, "manifest.json")
+    if not os.path.exists(manifest_path):
+        return None
+    try:
+        entries = json.load(open(manifest_path, encoding="utf-8"))
+    except Exception as e:
+        logger.warning(f"Gameplay manifest unreadable: {e}")
+        return None
+
+    haystack = " ".join([
+        script.get("title", ""), script.get("pexels_query", ""),
+        " ".join(script.get("tags", [])),
+        " ".join(script.get("sentences", []))]).lower()
+
+    scored = []
+    for e in entries:
+        path = os.path.join(GAMEPLAY_DIR, e.get("file", ""))
+        if not os.path.exists(path):
+            continue
+        score = sum(1 for t in e.get("tags", []) if t.lower() in haystack)
+        scored.append((score, path))
+    if not scored:
+        return None
+
+    best = max(s for s, _ in scored)
+    # Topic match wins; with no match, any own-gameplay clip still beats
+    # generic stock — pick randomly for variety.
+    candidates = [p for s, p in scored if s == best]
+    choice = random.choice(candidates)
+    logger.info(f"🎮 Own gameplay clip: {os.path.basename(choice)} "
+                f"(match score {best})")
+    return choice
+
+
 def fetch_pexels_video(query: str) -> str:
     """Free stock video background from Pexels (needs PEXELS_API_KEY).
     Returns a local mp4 path or None."""
@@ -184,12 +228,14 @@ class VideoAssembler:
 
         seg_dur = duration / len(sentences)
 
-        # Preferred background: real stock footage — the script supplies an
-        # English search query (Pexels search works poorly in German)
+        # Background priority: 1) owner's own GTA gameplay clip matched to
+        # the topic, 2) Pexels stock footage, 3) AI image with Ken Burns
         base = None
         try:
-            query = script.get('pexels_query') or "night city street driving neon"
-            bg_path = fetch_pexels_video(query)
+            bg_path = pick_gameplay_clip(script)
+            if not bg_path:
+                query = script.get('pexels_query') or "night city street driving neon"
+                bg_path = fetch_pexels_video(query)
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()
                 scale = max(W / base.w, H / base.h)

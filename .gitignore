@@ -24,3 +24,7 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Own gameplay library clips are shipped with the repo
+!gameplay/*.mp4
+!gameplay/manifest.json
