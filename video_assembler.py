@@ -117,6 +117,60 @@ def make_overlay(text: str):
     return rgb, alpha
 
 
+def make_caption_layer(text: str):
+    """Pro-style pop-in caption: big bold centered text with a hard black
+    stroke — the look of professional gaming Shorts. Returns (rgb, alpha)."""
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    size = 112
+    max_w = int(W * 0.92)
+    font = load_font(size)
+    while size > 56:
+        font = load_font(size)
+        stroke = max(6, size // 11)
+        bbox = d.textbbox((0, 0), text, font=font, stroke_width=stroke)
+        if bbox[2] - bbox[0] <= max_w:
+            break
+        size -= 8
+    stroke = max(6, size // 11)
+    bbox = d.textbbox((0, 0), text, font=font, stroke_width=stroke)
+    x = (W - (bbox[2] - bbox[0])) // 2 - bbox[0]
+    y = int(H * 0.62)
+    d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
+           stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
+
+    arr = np.asarray(layer, dtype=np.float32)
+    return arr[:, :, :3], arr[:, :, 3:4] / 255.0
+
+
+def make_brand_layer():
+    """Small static channel handle at the bottom."""
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    fb = load_font(44)
+    brand = "@GridPhantom187"
+    bw = d.textbbox((0, 0), brand, font=fb, stroke_width=4)[2]
+    d.text(((W - bw) // 2, H - 120), brand, font=fb,
+           fill=(235, 235, 235, 255), stroke_width=4, stroke_fill=(0, 0, 0, 255))
+    arr = np.asarray(layer, dtype=np.float32)
+    return arr[:, :, :3], arr[:, :, 3:4] / 255.0
+
+
+def group_words(words: list, max_words: int = 3) -> list:
+    """Group word timings into short caption chunks (pro Shorts pacing):
+    2-3 words per pop-in, breaking early at punctuation."""
+    groups, cur = [], []
+    for w in words:
+        cur.append(w)
+        token = w.get("text", "").strip()
+        if len(cur) >= max_words or token.endswith(('.', '!', '?', ',', ':')):
+            groups.append(cur)
+            cur = []
+    if cur:
+        groups.append(cur)
+    return groups
+
+
 def make_kb_clip(bg_big: np.ndarray, text: str, duration: float,
                  zoom_in: bool) -> VideoClip:
     """Ken-Burns segment: background slowly zooms while the text overlay
@@ -250,16 +304,49 @@ class VideoAssembler:
             logger.warning(f"Stock footage unavailable, falling back: {e}")
             base = None
 
+        # Word-level timings (written by VoiceGenerator) enable pro-style
+        # pop-in captions synced to the voice — the professional-Shorts look.
+        words = None
+        try:
+            words_path = audio_path + '.words.json'
+            if os.path.exists(words_path):
+                words = json.load(open(words_path, encoding='utf-8')) or None
+        except Exception as e:
+            logger.warning(f"Word timings unreadable, sentence overlays: {e}")
+
         if base is not None:
             overlays = []
-            for i, sentence in enumerate(sentences):
-                start = i * seg_dur
-                end = min((i + 1) * seg_dur, duration)
-                rgb, alpha = make_overlay(sentence)
-                oc = (ImageClip(rgb.astype('uint8'))
-                      .set_mask(ImageClip(alpha[:, :, 0], ismask=True))
-                      .set_start(start).set_duration(end - start))
-                overlays.append(oc)
+            if words:
+                brand_rgb, brand_a = make_brand_layer()
+                overlays.append(
+                    ImageClip(brand_rgb.astype('uint8'))
+                    .set_mask(ImageClip(brand_a[:, :, 0], ismask=True))
+                    .set_start(0).set_duration(duration))
+                groups = group_words(words)
+                for i, g in enumerate(groups):
+                    start = min(g[0]['start'], duration)
+                    if i + 1 < len(groups):
+                        end = min(groups[i + 1][0]['start'], duration)
+                    else:
+                        end = min(g[-1]['end'] + 0.8, duration)
+                    if end <= start:
+                        continue
+                    text = " ".join(w['text'] for w in g)
+                    rgb, alpha = make_caption_layer(text)
+                    overlays.append(
+                        ImageClip(rgb.astype('uint8'))
+                        .set_mask(ImageClip(alpha[:, :, 0], ismask=True))
+                        .set_start(start).set_duration(end - start))
+                logger.info(f"💬 Word-synced captions: {len(groups)} pop-ins")
+            else:
+                for i, sentence in enumerate(sentences):
+                    start = i * seg_dur
+                    end = min((i + 1) * seg_dur, duration)
+                    rgb, alpha = make_overlay(sentence)
+                    overlays.append(
+                        ImageClip(rgb.astype('uint8'))
+                        .set_mask(ImageClip(alpha[:, :, 0], ismask=True))
+                        .set_start(start).set_duration(end - start))
             final = CompositeVideoClip([base] + overlays).set_audio(
                 audio.subclip(0, duration))
         else:
