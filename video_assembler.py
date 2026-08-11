@@ -117,10 +117,20 @@ def make_overlay(text: str):
     return rgb, alpha
 
 
+# Captions are rendered as a narrow BAND, not a full frame: with 20+ pop-in
+# groups per video, full-frame float layers blew container memory and the
+# render got OOM-killed mid-slot (crash-restarts at 22:01 / 07:00). A band is
+# ~6x smaller; uint8 rgb + float32 mask keep it lean.
+CAPTION_BAND_H = 340
+CAPTION_Y = int(H * 0.60)
+BRAND_BAND_H = 150
+BRAND_Y = H - BRAND_BAND_H
+
+
 def make_caption_layer(text: str):
-    """Pro-style pop-in caption: big bold centered text with a hard black
-    stroke — the look of professional gaming Shorts. Returns (rgb, alpha)."""
-    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    """Pro-style pop-in caption band: big bold centered text with a hard
+    black stroke. Returns (rgb uint8 [band,W,3], alpha float32 [band,W])."""
+    layer = Image.new('RGBA', (W, CAPTION_BAND_H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     size = 112
     max_w = int(W * 0.92)
@@ -135,25 +145,25 @@ def make_caption_layer(text: str):
     stroke = max(6, size // 11)
     bbox = d.textbbox((0, 0), text, font=font, stroke_width=stroke)
     x = (W - (bbox[2] - bbox[0])) // 2 - bbox[0]
-    y = int(H * 0.62)
+    y = (CAPTION_BAND_H - (bbox[3] - bbox[1])) // 2 - bbox[1]
     d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
            stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
 
-    arr = np.asarray(layer, dtype=np.float32)
-    return arr[:, :, :3], arr[:, :, 3:4] / 255.0
+    arr = np.asarray(layer, dtype=np.uint8)
+    return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
 
 
 def make_brand_layer():
-    """Small static channel handle at the bottom."""
-    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    """Small static channel handle band for the bottom of the frame."""
+    layer = Image.new('RGBA', (W, BRAND_BAND_H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     fb = load_font(44)
     brand = "@GridPhantom187"
     bw = d.textbbox((0, 0), brand, font=fb, stroke_width=4)[2]
-    d.text(((W - bw) // 2, H - 120), brand, font=fb,
+    d.text(((W - bw) // 2, 30), brand, font=fb,
            fill=(235, 235, 235, 255), stroke_width=4, stroke_fill=(0, 0, 0, 255))
-    arr = np.asarray(layer, dtype=np.float32)
-    return arr[:, :, :3], arr[:, :, 3:4] / 255.0
+    arr = np.asarray(layer, dtype=np.uint8)
+    return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
 
 
 def group_words(words: list, max_words: int = 3) -> list:
@@ -319,8 +329,9 @@ class VideoAssembler:
             if words:
                 brand_rgb, brand_a = make_brand_layer()
                 overlays.append(
-                    ImageClip(brand_rgb.astype('uint8'))
-                    .set_mask(ImageClip(brand_a[:, :, 0], ismask=True))
+                    ImageClip(brand_rgb)
+                    .set_mask(ImageClip(brand_a, ismask=True))
+                    .set_position((0, BRAND_Y))
                     .set_start(0).set_duration(duration))
                 groups = group_words(words)
                 for i, g in enumerate(groups):
@@ -334,8 +345,9 @@ class VideoAssembler:
                     text = " ".join(w['text'] for w in g)
                     rgb, alpha = make_caption_layer(text)
                     overlays.append(
-                        ImageClip(rgb.astype('uint8'))
-                        .set_mask(ImageClip(alpha[:, :, 0], ismask=True))
+                        ImageClip(rgb)
+                        .set_mask(ImageClip(alpha, ismask=True))
+                        .set_position((0, CAPTION_Y))
                         .set_start(start).set_duration(end - start))
                 logger.info(f"💬 Word-synced captions: {len(groups)} pop-ins")
             else:
