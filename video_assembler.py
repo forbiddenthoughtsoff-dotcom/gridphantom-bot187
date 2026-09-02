@@ -166,18 +166,35 @@ def make_brand_layer():
     return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
 
 
-def group_words(words: list, max_words: int = 3) -> list:
-    """Group word timings into short caption chunks (pro Shorts pacing):
-    2-3 words per pop-in, breaking early at punctuation."""
-    groups, cur = [], []
-    for w in words:
+def build_caption_groups(narration: str, tts_words: list,
+                         max_words: int = 3) -> list:
+    """Caption chunks built from the ORIGINAL narration text, timed by the
+    TTS word boundaries. Never render the TTS tokens themselves: the speech
+    engine normalizes text ("GTA 6" can become "GTA sechs", "60fps" gets
+    mangled), which showed up on screen as apparent spelling errors.
+    Returns [{'text', 'start', 'end'}] with proportional timing mapping."""
+    orig = narration.split()
+    if not orig or not tts_words:
+        return []
+
+    chunks, cur = [], []
+    for w in orig:
         cur.append(w)
-        token = w.get("text", "").strip()
-        if len(cur) >= max_words or token.endswith(('.', '!', '?', ',', ':')):
-            groups.append(cur)
+        if len(cur) >= max_words or w.rstrip('"\'»«')[-1:] in '.!?,:':
+            chunks.append(cur)
             cur = []
     if cur:
-        groups.append(cur)
+        chunks.append(cur)
+
+    n, m = len(orig), len(tts_words)
+    groups, idx = [], 0
+    for c in chunks:
+        ti = min(m - 1, int(idx * m / n))
+        te = min(m - 1, max(ti, int((idx + len(c)) * m / n) - 1))
+        groups.append({'text': ' '.join(c),
+                       'start': tts_words[ti]['start'],
+                       'end': tts_words[te]['end']})
+        idx += len(c)
     return groups
 
 
@@ -333,17 +350,17 @@ class VideoAssembler:
                     .set_mask(ImageClip(brand_a, ismask=True))
                     .set_position((0, BRAND_Y))
                     .set_start(0).set_duration(duration))
-                groups = group_words(words)
+                narration = script.get('narration') or " ".join(sentences)
+                groups = build_caption_groups(narration, words)
                 for i, g in enumerate(groups):
-                    start = min(g[0]['start'], duration)
+                    start = min(g['start'], duration)
                     if i + 1 < len(groups):
-                        end = min(groups[i + 1][0]['start'], duration)
+                        end = min(groups[i + 1]['start'], duration)
                     else:
-                        end = min(g[-1]['end'] + 0.8, duration)
+                        end = min(g['end'] + 0.8, duration)
                     if end <= start:
                         continue
-                    text = " ".join(w['text'] for w in g)
-                    rgb, alpha = make_caption_layer(text)
+                    rgb, alpha = make_caption_layer(g['text'])
                     overlays.append(
                         ImageClip(rgb)
                         .set_mask(ImageClip(alpha, ismask=True))

@@ -15,10 +15,11 @@ VOICES = {
     'de': os.environ.get('VOICE_DE', 'de-DE-SeraphinaMultilingualNeural'),
 }
 
-# Natural pacing: no artificial speed-up (the old +5% made it sound rushed).
-# A hair of pitch keeps it lively without the robotic tone.
+# Natural pacing: no artificial speed-up and no artificial pitch shift —
+# any synthetic offset makes the voice sound more robotic, not livelier.
+# Naturalness comes from the voice itself plus well-punctuated script text.
 RATE = os.environ.get('TTS_RATE', '+0%')
-PITCH = os.environ.get('TTS_PITCH', '+2Hz')
+PITCH = os.environ.get('TTS_PITCH', '+0Hz')
 
 
 class VoiceGenerator:
