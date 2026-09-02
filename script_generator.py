@@ -34,6 +34,8 @@ VOICE & TONE (this is spoken out loud — write for the EAR):
 - Vary sentence length for rhythm. Write full, grammatical German sentences — length follows meaning, never an arbitrary word cap.
 - No empty hype ("unglaublich/krass" as filler). Let the actual tip or fact carry it.
 - Sentence flow: 1) HOOK, 2) the concrete tip/fact/how it works, 3) payoff + a nudge to the description or a comment prompt.
+- PUNCTUATE FOR THE VOICE: the narration is read by a TTS engine whose prosody follows punctuation. Use commas for natural micro-pauses, a question here and there, an em-dash or ellipsis before a payoff — this is what makes the voice sound human instead of robotic. Avoid digits and abbreviations in the narration sentences where a written-out word sounds better ("sechzig FPS" statt "60fps" im Sprechtext — in title/description digits are fine).
+- PROOFREAD: the output must be flawless German — zero spelling, grammar or punctuation errors in title, narration, description and tags. Read your own output once before answering.
 - Write ONLY in the requested language.
 - CHARACTER RULE, nothing more: NEVER use the character "ß" — always write "ss" instead (Strasse not Straße, weiss not weiß, heisst not heißt). This applies to title, narration, description, tags — everything. IMPORTANT: this changes ONLY that one character. The language itself stays STANDARD HIGH GERMAN (Hochdeutsch) — absolutely NO Swiss German dialect, no "Grüezi", no Helvetisms, no dialect vocabulary.
 
@@ -131,9 +133,10 @@ ALREADY PUBLISHED on this channel (NEVER repeat these topics, angles or titles):
 
 Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different myth, another content pillar. Never re-tell the same one."""
 
-        # Haiku: 3x cheaper than Sonnet, plenty for 3-sentence scripts
+        # Sonnet: noticeably better German (fewer errors, more natural
+        # narration) — at 4 videos/day this is ~2 CHF/month, worth it.
         message = self.client.messages.create(
-            model="claude-haiku-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1400,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
