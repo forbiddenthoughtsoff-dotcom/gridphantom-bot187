@@ -31,6 +31,10 @@ VOICES = {
 RATE = os.environ.get('TTS_RATE', '+0%')
 PITCH = os.environ.get('TTS_PITCH', '+0Hz')
 
+# Which engine produced the last narration ('elevenlabs' | 'edge') — the
+# uploader adds the ElevenLabs attribution line required on the free tier.
+LAST_ENGINE = 'edge'
+
 
 def _chars_to_words(chars, starts, ends):
     """Collapse ElevenLabs character-level alignment into word timings."""
@@ -69,15 +73,18 @@ class VoiceGenerator:
         except FileNotFoundError:
             pass
 
+        global LAST_ENGINE
         if ELEVEN_KEY and ELEVEN_VOICE:
             try:
                 self._elevenlabs(text, language, output_path)
+                LAST_ENGINE = 'elevenlabs'
                 logger.info(f"Audio generated [{language}/ElevenLabs {ELEVEN_MODEL}]: "
                             f"{output_path} ({os.path.getsize(output_path)} bytes)")
                 return output_path
             except Exception as e:
                 logger.warning(f"ElevenLabs failed, falling back to edge-tts: {e}")
 
+        LAST_ENGINE = 'edge'
         voice = VOICES.get(language, VOICES['en'])
         asyncio.run(self._edge(text, voice, output_path))
         logger.info(f"Audio generated [{language}/{voice}]: {output_path} "

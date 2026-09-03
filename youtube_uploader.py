@@ -182,6 +182,10 @@ class YouTubeUploader:
         if script.get('music_credit'):
             label = "🎵 Music: " if language == 'en' else "🎵 Musik: "
             description += f"\n{label}{script['music_credit']}"
+        # Voice attribution (required on ElevenLabs' free tier)
+        if script.get('voice_credit'):
+            label = "🎙️ Voice: " if language == 'en' else "🎙️ Stimme: "
+            description += f"\n{label}{script['voice_credit']}"
 
         # Footer with brand + CTA
         if language == 'en':
