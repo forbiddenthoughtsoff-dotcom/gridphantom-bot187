@@ -95,6 +95,9 @@ def run_pipeline(language: str = 'de'):
 
         audio = VoiceGenerator().generate(script['narration'], language)
         logger.info(f"🎙️ Voice done: {audio}")
+        import voice_generator as _vg
+        if _vg.LAST_ENGINE == 'elevenlabs':
+            script['voice_credit'] = 'ElevenLabs (elevenlabs.io)'
 
         video = VideoAssembler().assemble(script, audio)
         logger.info(f"🎥 Video done: {video}")
