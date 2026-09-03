@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 ELEVEN_KEY = os.environ.get('ELEVENLABS_API_KEY', '').strip()
-ELEVEN_VOICE = os.environ.get('ELEVENLABS_VOICE_ID', '').strip()
+# VOICE_ID_DE is the variable name from the channel's original June setup
+ELEVEN_VOICE = (os.environ.get('ELEVENLABS_VOICE_ID', '').strip()
+                or os.environ.get('VOICE_ID_DE', '').strip())
 # flash_v2_5: half the credit cost, native German, fast — fits the Starter plan
 ELEVEN_MODEL = os.environ.get('ELEVENLABS_MODEL', 'eleven_flash_v2_5')
 
