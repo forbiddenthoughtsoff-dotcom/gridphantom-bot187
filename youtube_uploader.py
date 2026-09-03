@@ -46,17 +46,44 @@ class YouTubeUploader:
     def get_recent_titles(self, limit: int = 15) -> list:
         """Titles of the channel's latest uploads — used so new scripts
         take a fresh angle instead of repeating what was already posted."""
+        return [p['title'] for p in self.get_recent_performance(limit)]
+
+    def get_recent_performance(self, limit: int = 25) -> list:
+        """Recent uploads with view/like stats and a fairness-normalized
+        rate (views per hour since publish) — the channel's own feedback
+        loop: the generator learns from what actually performs."""
         try:
+            from datetime import datetime, timezone
             ch = self.service.channels().list(
                 part='contentDetails', mine=True).execute()
             uploads = ch['items'][0]['contentDetails']['relatedPlaylists']['uploads']
             items = self.service.playlistItems().list(
-                part='snippet', playlistId=uploads, maxResults=limit).execute()
-            titles = [i['snippet']['title'] for i in items.get('items', [])]
-            logger.info(f"Recent uploads for angle-dedup: {len(titles)}")
-            return titles
+                part='snippet,contentDetails', playlistId=uploads,
+                maxResults=limit).execute().get('items', [])
+            ids = [i['contentDetails']['videoId'] for i in items]
+            if not ids:
+                return []
+            stats = self.service.videos().list(
+                part='snippet,statistics', id=','.join(ids)).execute()
+            now = datetime.now(timezone.utc)
+            out = []
+            for v in stats.get('items', []):
+                pub = datetime.fromisoformat(
+                    v['snippet']['publishedAt'].replace('Z', '+00:00'))
+                age_h = max((now - pub).total_seconds() / 3600.0, 1.0)
+                views = int(v['statistics'].get('viewCount', 0))
+                likes = int(v['statistics'].get('likeCount', 0))
+                out.append({
+                    'title': v['snippet']['title'],
+                    'views': views, 'likes': likes,
+                    'age_hours': round(age_h, 1),
+                    # rate only meaningful once a video had time to spread
+                    'rate': views / age_h if age_h >= 6 else 0.0,
+                })
+            logger.info(f"Recent uploads for angle-dedup + learning: {len(out)}")
+            return out
         except Exception as e:
-            logger.warning(f"Could not fetch recent titles: {e}")
+            logger.warning(f"Could not fetch recent performance: {e}")
             return []
 
     def find_related_video(self, query: str) -> str:
