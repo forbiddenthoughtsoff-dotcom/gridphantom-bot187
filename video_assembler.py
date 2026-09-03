@@ -222,6 +222,49 @@ def make_kb_clip(bg_big: np.ndarray, text: str, duration: float,
 
 GAMEPLAY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "gameplay")
+MUSIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "music")
+MUSIC_VOLUME = 0.20  # bed level before sidechain ducking under the voice
+
+
+def add_music_bed(video_path: str, duration: float):
+    """Production value: mix a royalty-free music bed under the narration,
+    sidechain-ducked so the voice always stays on top (like a produced
+    Short, not a TTS readout). Returns (video_path, credit_or_None).
+    Fails soft — on any problem the dry mix is kept."""
+    manifest = os.path.join(MUSIC_DIR, "manifest.json")
+    if not os.path.exists(manifest):
+        return video_path, None
+    try:
+        import subprocess
+        import imageio_ffmpeg
+        tracks = [t for t in json.load(open(manifest, encoding="utf-8"))
+                  if os.path.exists(os.path.join(MUSIC_DIR, t.get("file", "")))]
+        if not tracks:
+            return video_path, None
+        track = random.choice(tracks)
+        music = os.path.join(MUSIC_DIR, track["file"])
+        ff = imageio_ffmpeg.get_ffmpeg_exe()
+        out = video_path[:-4] + "_music.mp4"
+        fade_out = max(duration - 1.5, 0.0)
+        filt = (f"[1:a]atrim=0:{duration:.2f},afade=t=in:st=0:d=1,"
+                f"afade=t=out:st={fade_out:.2f}:d=1.5,volume={MUSIC_VOLUME}[m];"
+                f"[0:a]asplit=2[v1][v2];"
+                f"[m][v1]sidechaincompress=threshold=0.03:ratio=8:attack=5:release=350[duck];"
+                f"[duck][v2]amix=inputs=2:duration=first:dropout_transition=0,volume=1.3[a]")
+        cmd = [ff, "-y", "-i", video_path, "-stream_loop", "-1", "-i", music,
+               "-filter_complex", filt, "-map", "0:v", "-map", "[a]",
+               "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+               "-t", f"{duration:.2f}", out]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=240)
+        if r.returncode != 0 or not os.path.exists(out):
+            logger.warning(f"Music bed failed, keeping dry mix: {r.stderr[-300:]}")
+            return video_path, None
+        os.replace(out, video_path)
+        logger.info(f"🎵 Music bed: {track.get('title')} (ducked under voice)")
+        return video_path, track.get("credit")
+    except Exception as e:
+        logger.warning(f"Music bed skipped: {e}")
+        return video_path, None
 
 
 def pick_gameplay_clip(script: dict) -> str:
@@ -407,6 +450,12 @@ class VideoAssembler:
             audio.close(); final.close()
         except Exception:
             pass
+
+        # Production pass: music bed under the voice (credit goes into the
+        # description via script['music_credit'])
+        output_path, credit = add_music_bed(output_path, duration)
+        if credit:
+            script['music_credit'] = credit
 
         logger.info(f"Video assembled: {output_path}")
         return output_path

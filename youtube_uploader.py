@@ -178,6 +178,11 @@ class YouTubeUploader:
                      else "▶️ Passendes Video direkt hier: ")
             description += f"\n\n{label}{script['related_video_url']}"
 
+        # Music attribution (CC BY requires credit)
+        if script.get('music_credit'):
+            label = "🎵 Music: " if language == 'en' else "🎵 Musik: "
+            description += f"\n{label}{script['music_credit']}"
+
         # Footer with brand + CTA
         if language == 'en':
             description += ("\n\n🎮 GridPhantom — daily GTA Shorts: tricks, facts, "
