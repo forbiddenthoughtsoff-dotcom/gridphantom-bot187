@@ -69,7 +69,16 @@ def run_pipeline(language: str = 'de'):
         from news_fetcher import fetch_recent_news
 
         uploader = YouTubeUploader()
-        recent_titles = uploader.get_recent_titles()
+        recent = uploader.get_recent_performance()
+        recent_titles = [r['title'] for r in recent]
+        # Feedback loop: the channel's best-performing recent videos
+        # (views/hour) teach the generator which angles and hooks work
+        top_performers = sorted(
+            [r for r in recent if r['rate'] > 0],
+            key=lambda r: r['rate'], reverse=True)[:5]
+        if top_performers:
+            logger.info("📈 Top performers: " + " | ".join(
+                f"{t['title'][:40]} ({t['views']}v)" for t in top_performers))
 
         # Live GTA news to ground the script (falls back to evergreen if empty)
         try:
@@ -80,7 +89,8 @@ def run_pipeline(language: str = 'de'):
 
         script = ScriptGenerator().generate(language,
                                             avoid_titles=recent_titles,
-                                            news_items=news_items)
+                                            news_items=news_items,
+                                            top_performers=top_performers)
         logger.info(f"📝 Script: {script.get('title', '')}")
 
         audio = VoiceGenerator().generate(script['narration'], language)

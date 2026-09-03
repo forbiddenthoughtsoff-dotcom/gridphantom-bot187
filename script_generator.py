@@ -100,7 +100,7 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, language: str = 'de', avoid_titles: list = None,
-                 news_items: list = None) -> dict:
+                 news_items: list = None, top_performers: list = None) -> dict:
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
         user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
@@ -123,6 +123,17 @@ Decide: if ONE of these headlines is genuinely newsworthy and fits a Short (a re
             user_prompt += """
 
 No live news available right now — make an EVERGREEN video (trick, fact, help, or myth-bust). Do NOT invent news, dates or announcements."""
+
+        if top_performers:
+            tp = "\n".join(
+                f"- {t.get('title','')}  ({t.get('views',0)} views, "
+                f"{t.get('likes',0)} likes)" for t in top_performers[:5])
+            user_prompt += f"""
+
+WHAT WORKS ON THIS CHANNEL (its best-performing recent videos by views per hour — the audience has voted):
+{tp}
+
+Learn from these: their angle (concrete fact + clear payoff for the player), hook style, specificity and title structure. Raise the bar — match or beat this quality. Do NOT repeat their topics (they are also in the already-published list below)."""
 
         if avoid_titles:
             published = "\n".join(f"- {t}" for t in avoid_titles[:15])
