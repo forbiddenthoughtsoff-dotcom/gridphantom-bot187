@@ -361,6 +361,15 @@ class VideoAssembler:
         try:
             bg_path = pick_gameplay_clip(script)
             if not bg_path:
+                # GTA 6 topics: real footage from Rockstar's official
+                # trailers (owner-approved), cut into a multi-segment montage
+                try:
+                    from trailer_library import is_gta6_topic, build_trailer_montage
+                    if is_gta6_topic(script):
+                        bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)
+                except Exception as e:
+                    logger.warning(f"Trailer footage unavailable: {e}")
+            if not bg_path:
                 # Topic-matched footage: the script's subject query first,
                 # then its broader alternatives, then a neutral fallback
                 queries = [script.get('pexels_query')]
