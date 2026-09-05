@@ -16,6 +16,11 @@ EVERY VIDEO = EXACTLY ONE focused, genuinely useful or genuinely interesting pie
 - FAILS/SITUATIONEN: a relatable funny GTA moment described entertainingly (the classic ways players die, griefer situations) — described generically, never claiming it's a specific real clip
 - MYTHOS ENTLARVT / FAKE NEWS EXPOSED: debunk a well-known GTA myth or a common false rumor (Bigfoot, Mount Chiliad UFO, ghost of Mount Gordo, "GTA VI map leaks", fake money-glitch scams)
 - GTA VI: only EVERGREEN, officially-confirmed basics (setting is Vice City, two protagonists Lucia & Jason, published by Rockstar) — framed as general knowledge, never as "breaking news"
+- WOCHEN-UPDATE (GTA Online): when the news list contains Rockstar's weekly GTA Online update (usually Thursday: bonuses, double money/RP, podium vehicle, discounts, new content, event weeks), make THE weekly briefing: what pays this week, what to grab, what is new — grounded strictly in the headlines
+- GLITCHES: a currently reported GTA Online glitch or exploit ONLY when it is in the news list — describe what it does and that it can be patched any time; never money-glitch scams, never anything that risks a ban without saying so
+- OUTFITS & STYLE: how to build a striking GTA Online outfit or a well-known "modded-look" legitimately — which store/clothing pieces, masks, how to combine them, how to save the outfit
+- RARE ITEMS RANKING: the rarest / most sought-after vehicles, clothing pieces, masks, liveries or collectibles in GTA Online and how (or if) they can still be obtained — verifiable, no invented statistics
+Mix these pillars across the day so the channel never feels repetitive; the audience should always get something new they can use, laugh at, or brag about.
 
 ACCURACY IS SACRED (this channel's credibility depends on it):
 - You may be given a list of REAL, CURRENT news headlines fetched live from news sources. When you make a NEWS/UPDATE video, ground it STRICTLY in those provided headlines — never add facts, numbers or dates that are not in the provided text.
