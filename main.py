@@ -172,6 +172,11 @@ if __name__ == "__main__":
     schedule.every().day.at("17:00").do(run_bot_short)
     schedule.every().day.at("22:00").do(run_bot_short)
     logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE)")
+    try:
+        from trailer_library import ensure_trailers_async
+        ensure_trailers_async()  # background prefetch of official GTA VI trailers
+    except Exception as e:
+        logger.warning(f"Trailer prefetch not started: {e}")
 
     # Community management: answer viewer comments every 2 hours
     schedule.every(2).hours.do(run_engagement)
