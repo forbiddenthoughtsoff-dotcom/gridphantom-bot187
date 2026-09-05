@@ -156,12 +156,22 @@ def run_bot_short(is_retry: bool = False, brief: dict = None):
     """Scheduled slot: 1 German GTA Short (brief = owner's assignment)."""
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
                 + (" (retry)" if is_retry else ""))
+    # Whole cycle owns the CPU: the background clip sync must not start a
+    # transcode next to script/voice/montage/render on this small box
+    try:
+        from gameplay_sync import RENDER_BUSY as busy
+        busy.set()
+    except Exception:
+        busy = None
     vid = None
     try:
         vid = run_pipeline(language='de', brief=brief)
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
+    finally:
+        if busy is not None:
+            busy.clear()
 
     # Don't silently lose the slot on a transient failure (API hiccup,
     # rate limit, empty credits that get topped up) — retry once
@@ -210,32 +220,38 @@ if __name__ == "__main__":
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
+    # Community management: answer viewer comments every 2 hours
+    schedule.every(2).hours.do(run_engagement)
+    logger.info("💬 Engagement: comment replies every 2h")
+
+    # Immediate post on startup only if explicitly enabled — otherwise every
+    # deploy/restart uploads an unscheduled extra video. Started BEFORE the
+    # clip sync so the cycle's busy flag is up before any transcode begins.
+    if os.environ.get('POST_ON_START', '').lower() in ('1', 'true', 'yes'):
+        brief = owner_brief()
+        logger.info("🚀 POST_ON_START enabled — posting immediately"
+                    + (f" (owner assignment: {brief['brief'][:60]}...)" if brief else ""))
+        try:
+            from gameplay_sync import RENDER_BUSY
+            RENDER_BUSY.set()  # claimed here, cleared by run_bot_short
+        except Exception:
+            pass
+        threading.Thread(target=run_bot_short, kwargs={'brief': brief},
+                         daemon=True).start()
+    else:
+        logger.info("⏭️ Startup post disabled (set POST_ON_START=true to enable)")
+
     try:
         from gameplay_sync import sync_async, sources
         srcs = sources()
         if srcs:
-            sync_async()  # owner's own PS5 clips
+            sync_async()  # owner's own PS5 clips (waits while a cycle runs)
             schedule.every(2).hours.do(sync_async)
             logger.info(f"🎮 Gameplay sync every 2h: {', '.join(srcs)}")
         else:
             logger.info("🎮 Gameplay sync off (set PSN_NPSSO or GAMEPLAY_DRIVE_FOLDER)")
     except Exception as e:
         logger.warning(f"Gameplay sync not started: {e}")
-
-    # Community management: answer viewer comments every 2 hours
-    schedule.every(2).hours.do(run_engagement)
-    logger.info("💬 Engagement: comment replies every 2h")
-
-    # Immediate post on startup only if explicitly enabled — otherwise every
-    # deploy/restart uploads an unscheduled extra video
-    if os.environ.get('POST_ON_START', '').lower() in ('1', 'true', 'yes'):
-        brief = owner_brief()
-        logger.info("🚀 POST_ON_START enabled — posting immediately"
-                    + (f" (owner assignment: {brief['brief'][:60]}...)" if brief else ""))
-        threading.Thread(target=run_bot_short, kwargs={'brief': brief},
-                         daemon=True).start()
-    else:
-        logger.info("⏭️ Startup post disabled (set POST_ON_START=true to enable)")
 
     while True:
         schedule.run_pending()
