@@ -526,7 +526,7 @@ class VideoAssembler:
         audio = AudioFileClip(audio_path)
         # Shorts may run up to 3 minutes; owner assignments speak 60-70 s.
         # The old 58 s cap would have cut the narration mid-sentence.
-        duration = min(audio.duration, 100)
+        duration = min(audio.duration, 120)
 
         image_prompt = script.get('image_prompt', 'neon-lit night city skyline with a luxury sports car, dramatic cinematic lighting, high contrast, ultra detailed, 8k')
         sentences = script.get('sentences', [script.get('narration', '')])

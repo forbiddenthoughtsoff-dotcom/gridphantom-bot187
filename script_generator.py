@@ -39,7 +39,7 @@ VOICE & TONE (this is spoken out loud — write for the EAR):
 - Vary sentence length for rhythm. Write full, grammatical German sentences — length follows meaning, never an arbitrary word cap.
 - No empty hype ("unglaublich/krass" as filler). Let the actual tip or fact carry it.
 - Sentence flow: 1) HOOK, 2) the concrete tip/fact/how it works, 3) payoff + a nudge to the description or a comment prompt.
-- PUNCTUATE FOR THE VOICE: the narration is read by a TTS engine whose prosody follows punctuation. Use commas for natural micro-pauses, a question here and there, an em-dash or ellipsis before a payoff — this is what makes the voice sound human instead of robotic. Avoid digits and abbreviations in the narration sentences where a written-out word sounds better ("sechzig FPS" statt "60fps" im Sprechtext — in title/description digits are fine).
+- PUNCTUATE FOR THE VOICE: the narration is read by a TTS engine whose prosody follows punctuation. Use commas for natural micro-pauses, a question here and there, an em-dash or ellipsis before a payoff — this is what makes the voice sound human instead of robotic. Avoid abbreviations and unit mashups in the narration where a written-out word sounds better ("sechzig FPS" statt "60fps"). Years, dates and prices stay digits everywhere ("2026", "19. November 2026", "84,99 Euro") — the voice reads them correctly, and spelled-out years have produced wrong years.
 - PROOFREAD: the output must be flawless German — zero spelling, grammar or punctuation errors in title, narration, description and tags. Read your own output once before answering.
 - Write ONLY in the requested language.
 - CHARACTER RULE, nothing more: NEVER use the character "ß" — always write "ss" instead (Strasse not Straße, weiss not weiß, heisst not heißt). This applies to title, narration, description, tags — everything. IMPORTANT: this changes ONLY that one character. The language itself stays STANDARD HIGH GERMAN (Hochdeutsch) — absolutely NO Swiss German dialect, no "Grüezi", no Helvetisms, no dialect vocabulary.
@@ -131,7 +131,8 @@ class ScriptGenerator:
 
 {topic_brief}
 
-Write 6 to 8 full, natural German sentences, ~45-55 seconds spoken: a sharp hook first, then every relevant fact in a logical order (what, when, where, how much, what is confirmed vs. only rumoured), and one closing sentence that makes people comment. Use ONLY the facts given in the assignment and in the news list below; where something is not officially confirmed, say so explicitly. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would say it out loud.
+Write 6 to 8 full, natural German sentences, HARD LIMIT 150 words in total (~70 seconds spoken — count them): a sharp hook first, then every relevant fact in a logical order (what, when, where, how much, what is confirmed vs. only rumoured), and one closing sentence that makes people comment. Use ONLY the facts given in the assignment and in the news list below; where something is not officially confirmed, say so explicitly. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would say it out loud.
+NUMBERS: years, dates and prices ALWAYS as digits, also in the narration ("19. November 2026", "84,99 Euro", "1. Oktober 2013") — the voice engine reads them correctly and spelled-out years have produced wrong years. The description is normal written German (digits, no spoken-style spelling), 3-5 sentences, not a copy of the narration.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
         else:
             user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
