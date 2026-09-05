@@ -24,14 +24,15 @@ TRAILERS = [
         'url': ('https://archive.org/download/youtube-VQRLujxTm3c/'
                 '20250506%20-%20Grand%20Theft%20Auto%20VI%20Trailer%202%20'
                 '%5BVQRLujxTm3c%5D.mp4'),
-        'skip_head': 4.0, 'skip_tail': 14.0,
+        # the "Rockstar Games presents" card sits in the first ~10 s
+        'skip_head': 12.0, 'skip_tail': 14.0,
     },
     {
         'name': 'gta6_trailer1_4k',
         'url': ('https://archive.org/download/'
                 'grand-theft-auto-vi-trailer-1-4k-60fps_202405/'
                 'Grand%20Theft%20Auto%20VI%20Trailer%201%20%284k%29.mp4'),
-        'skip_head': 4.0, 'skip_tail': 14.0,
+        'skip_head': 12.0, 'skip_tail': 14.0,
     },
 ]
 
