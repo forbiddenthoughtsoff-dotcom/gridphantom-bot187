@@ -134,8 +134,11 @@ def build_trailer_montage(duration: float, n_segments: int = 3) -> str:
         seg_len = duration / n
         parts = []
         used = {}
+        # One source per montage, the lightest first (the 1080p trailer is
+        # listed before the 4K one): decoding 4K for every second segment
+        # ran at 0.5 fps on the small production box
         for i in range(n):
-            t = trailers[i % len(trailers)] if len(trailers) > 1 else trailers[0]
+            t = trailers[0]
             src = _path(t)
             total = _probe_duration(src)
             lo, hi = t['skip_head'], max(t['skip_head'] + seg_len,
@@ -149,7 +152,7 @@ def build_trailer_montage(duration: float, n_segments: int = 3) -> str:
             out = os.path.join(TRAILER_DIR, f'seg_{os.getpid()}_{i}.mp4')
             cmd = [ff, '-y', '-ss', f'{start:.2f}', '-i', src, '-t', f'{seg_len:.2f}',
                    '-an', '-vf', 'crop=ih*9/16:ih,scale=1080:1920,fps=24',
-                   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+                   '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
                    '-pix_fmt', 'yuv420p', out]
             # the box is small: one 20 s segment took >180 s once while a
             # background proxy job was still running — generous timeout
