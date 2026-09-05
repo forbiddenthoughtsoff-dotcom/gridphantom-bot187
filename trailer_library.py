@@ -35,8 +35,9 @@ TRAILERS = [
     },
 ]
 
+# "rockstar" is deliberately NOT a key: it appears in nearly every GTA script
 GTA6_KEYS = ('gta 6', 'gta6', 'gta vi', 'vice city', 'leonida', 'lucia',
-             'jason', 'trailer 3', 'trailer 2', 'rockstar')
+             'jason', 'trailer 3', 'trailer 2')
 
 _lock = threading.Lock()
 _started = False
@@ -98,9 +99,15 @@ def available_trailers():
 
 
 def is_gta6_topic(script: dict) -> bool:
-    hay = " ".join([script.get('title', ''), " ".join(script.get('tags', [])),
-                    " ".join(script.get('sentences', []))]).lower()
-    return any(k in hay for k in GTA6_KEYS)
+    """GTA 6 is the video's subject when the title says so, or when the
+    body keeps coming back to it. A GTA Online script that mentions GTA 6
+    once in passing keeps its own footage."""
+    title = script.get('title', '').lower()
+    if any(k in title for k in GTA6_KEYS):
+        return True
+    body = " ".join([" ".join(script.get('tags', [])),
+                     " ".join(script.get('sentences', []))]).lower()
+    return sum(body.count(k) for k in GTA6_KEYS) >= 2
 
 
 def _probe_duration(path):
