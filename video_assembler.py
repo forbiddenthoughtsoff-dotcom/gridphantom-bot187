@@ -318,6 +318,9 @@ def fetch_pexels_video(query: str) -> str:
         headers={'Authorization': key}, timeout=20)
     r.raise_for_status()
     videos = r.json().get('videos', [])
+    # Pexels returns relevance-sorted results: keep the top hits so the
+    # footage actually shows the subject, shuffle only among those for variety
+    videos = videos[:6]
     random.shuffle(videos)
     for v in videos:
         files = sorted(v.get('video_files', []),
@@ -358,8 +361,17 @@ class VideoAssembler:
         try:
             bg_path = pick_gameplay_clip(script)
             if not bg_path:
-                query = script.get('pexels_query') or "night city street driving neon"
-                bg_path = fetch_pexels_video(query)
+                # Topic-matched footage: the script's subject query first,
+                # then its broader alternatives, then a neutral fallback
+                queries = [script.get('pexels_query')]
+                alts = script.get('pexels_alternatives') or []
+                if isinstance(alts, list):
+                    queries.extend(alts[:3])
+                queries.append("night city street driving neon")
+                for q in [q for q in queries if q and str(q).strip()]:
+                    bg_path = fetch_pexels_video(str(q).strip())
+                    if bg_path:
+                        break
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()
                 scale = max(W / base.w, H / base.h)
