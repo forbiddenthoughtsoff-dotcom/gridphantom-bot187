@@ -505,6 +505,22 @@ class VideoAssembler:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def assemble(self, script: dict, audio_path: str) -> str:
+        """Render with the 'render busy' flag raised so the background clip
+        sync pauses its ffmpeg jobs (the container has ~1 GB; a proxy job
+        next to a render got both OOM-killed)."""
+        flag = None
+        try:
+            from gameplay_sync import RENDER_BUSY as flag
+            flag.set()
+        except Exception:
+            flag = None
+        try:
+            return self._assemble(script, audio_path)
+        finally:
+            if flag is not None:
+                flag.clear()
+
+    def _assemble(self, script: dict, audio_path: str) -> str:
         output_path = f"{self.output_dir}/video_en_{random.randint(1000,9999)}.mp4"
 
         audio = AudioFileClip(audio_path)

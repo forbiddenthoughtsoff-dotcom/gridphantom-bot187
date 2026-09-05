@@ -39,6 +39,18 @@ STOP_WORDS = {'grand', 'theft', 'auto', 'the', 'und', 'mit', 'der', 'die',
               'screen', 'recording', 'share', 'factory'}
 
 _lock = threading.Lock()
+# Set by the video assembler while a render runs: the container has ~1 GB,
+# and a background ffmpeg proxy next to the render got both OOM-killed.
+RENDER_BUSY = threading.Event()
+
+
+def _wait_render_idle(t0: float, time_budget: float) -> bool:
+    """Block while a render is in progress; False when the budget ran out."""
+    while RENDER_BUSY.is_set():
+        if time.time() - t0 > time_budget:
+            return False
+        time.sleep(5)
+    return True
 
 
 def folder_id() -> str:
@@ -114,11 +126,13 @@ def make_proxy(src: str, dst: str, timeout: int = 900) -> bool:
     of the source first (that is where GTA draws its in-game subtitles,
     which would sit right under our captions), then scale to cover and
     centre crop — works for 16:9, 4K, and already-vertical sources alike."""
-    cmd = [_ffmpeg(), '-y', '-i', src, '-an',
+    # thread caps keep one proxy job around 200 MB instead of 450 MB
+    cmd = [_ffmpeg(), '-y', '-threads', '2', '-i', src, '-an',
            '-vf', ('crop=iw:ih*0.9:0:0,'
                    'scale=1080:1920:force_original_aspect_ratio=increase'
                    ':flags=lanczos,crop=1080:1920,fps=24'),
            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
+           '-x264-params', 'threads=2:lookahead-threads=1:rc-lookahead=10',
            '-pix_fmt', 'yuv420p', '-movflags', '+faststart', dst]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -149,13 +163,13 @@ def analyze_highlights(raw: str, duration: float, window: float = 8.0,
         # signalstats per frame: YDIF = motion, SATAVG = colourfulness (menus,
         # loading screens and map overlays are grey/dark), YAVG = brightness
         vpart = f"[0:v]scale=160:-2,fps=4,signalstats,metadata=print:file={meta}[v]"
-        cmd = [ff, '-hide_banner', '-nostats', '-i', raw, '-filter_complex',
-               vpart + ";[0:a]ebur128=peak=none[a]", '-map', '[v]', '-map', '[a]',
-               '-f', 'null', '-']
+        cmd = [ff, '-hide_banner', '-nostats', '-threads', '2', '-i', raw,
+               '-filter_complex', vpart + ";[0:a]ebur128=peak=none[a]",
+               '-map', '[v]', '-map', '[a]', '-f', 'null', '-']
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
         if r.returncode != 0:  # e.g. no audio stream: motion only
-            cmd = [ff, '-hide_banner', '-nostats', '-i', raw, '-filter_complex',
-                   vpart, '-map', '[v]', '-f', 'null', '-']
+            cmd = [ff, '-hide_banner', '-nostats', '-threads', '2', '-i', raw,
+                   '-filter_complex', vpart, '-map', '[v]', '-f', 'null', '-']
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
         n = int(duration) + 1
         aud = [None] * n
@@ -356,6 +370,8 @@ def _sync_drive(entries: list, fid: str, t0: float, time_budget: float,
     for f in new[:max_new]:
         if len(entries) >= MAX_CLIPS or not _budget_left(t0, time_budget):
             break
+        if not _wait_render_idle(t0, time_budget):
+            break
         name = os.path.basename(str(f.path))
         safe = re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80]
         raw = os.path.join(RUNTIME_DIR, f'raw_{f.id}_{safe}')
@@ -387,6 +403,8 @@ def _sync_psn(entries: list, t0: float, time_budget: float, max_new: int):
     random.shuffle(new)
     for i in new[:max_new]:
         if len(entries) >= MAX_CLIPS or not _budget_left(t0, time_budget):
+            break
+        if not _wait_render_idle(t0, time_budget):
             break
         uid = f"psn:{i.get('id')}"
         safe = re.sub(r'[^A-Za-z0-9_-]+', '_', str(i.get('id')))[:60]
