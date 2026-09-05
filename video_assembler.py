@@ -127,27 +127,67 @@ BRAND_BAND_H = 150
 BRAND_Y = H - BRAND_BAND_H
 
 
-def make_caption_layer(text: str):
-    """Pro-style pop-in caption band: big bold centered text with a hard
-    black stroke. Returns (rgb uint8 [band,W,3], alpha float32 [band,W])."""
-    layer = Image.new('RGBA', (W, CAPTION_BAND_H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    size = 112
-    max_w = int(W * 0.92)
-    font = load_font(size)
-    while size > 56:
+def _fit_lines(d, text: str, max_w: int, start: int, floor: int):
+    """Largest font size in [floor, start] (steps of 8) at which every line
+    of `text` fits max_w including the stroke. Returns
+    (font, size, stroke, lines, fits)."""
+    lines = text.split('\n')
+    size = start
+    while True:
         font = load_font(size)
         stroke = max(6, size // 11)
-        bbox = d.textbbox((0, 0), text, font=font, stroke_width=stroke)
-        if bbox[2] - bbox[0] <= max_w:
-            break
+        widest = 0
+        for ln in lines:
+            b = d.textbbox((0, 0), ln, font=font, stroke_width=stroke)
+            widest = max(widest, b[2] - b[0])
+        if widest <= max_w:
+            return font, size, stroke, lines, True
+        if size - 8 < floor:
+            return font, size, stroke, lines, False
         size -= 8
-    stroke = max(6, size // 11)
-    bbox = d.textbbox((0, 0), text, font=font, stroke_width=stroke)
-    x = (W - (bbox[2] - bbox[0])) // 2 - bbox[0]
-    y = (CAPTION_BAND_H - (bbox[3] - bbox[1])) // 2 - bbox[1]
-    d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
-           stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
+
+
+def _split_two_lines(text: str):
+    """Break a caption at the word boundary that balances both lines."""
+    words = text.split()
+    if len(words) < 2:
+        return None
+    best, best_diff = None, None
+    for i in range(1, len(words)):
+        a, b = ' '.join(words[:i]), ' '.join(words[i:])
+        diff = abs(len(a) - len(b))
+        if best_diff is None or diff < best_diff:
+            best, best_diff = a + '\n' + b, diff
+    return best
+
+
+def make_caption_layer(text: str):
+    """Pro-style pop-in caption band: big bold centered text with a hard
+    black stroke. Long German compounds ("Minispielen und Beschaeftigungen")
+    used to overflow the frame — the text is now fitted: shrink a little,
+    then break into two balanced lines, then shrink further. Nothing is ever
+    cut off at the frame edge.
+    Returns (rgb uint8 [band,W,3], alpha float32 [band,W])."""
+    layer = Image.new('RGBA', (W, CAPTION_BAND_H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    max_w = int(W * 0.92)
+    font, size, stroke, lines, ok = _fit_lines(d, text, max_w, 112, 72)
+    if not ok:
+        two = _split_two_lines(text)
+        if two:
+            font, size, stroke, lines, ok = _fit_lines(d, two, max_w, 96, 56)
+        if not ok:  # a single very long word: keep shrinking, never clip
+            font, size, stroke, lines, ok = _fit_lines(
+                d, '\n'.join(lines), max_w, size, 32)
+
+    line_h = int(size * 1.12)
+    y0 = (CAPTION_BAND_H - line_h * len(lines)) // 2
+    for i, ln in enumerate(lines):
+        bbox = d.textbbox((0, 0), ln, font=font, stroke_width=stroke)
+        x = (W - (bbox[2] - bbox[0])) // 2 - bbox[0]
+        y = y0 + i * line_h + (line_h - (bbox[3] - bbox[1])) // 2 - bbox[1]
+        d.text((x, y), ln, font=font, fill=(255, 255, 255, 255),
+               stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
 
     arr = np.asarray(layer, dtype=np.uint8)
     return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
@@ -167,7 +207,7 @@ def make_brand_layer():
 
 
 def build_caption_groups(narration: str, tts_words: list,
-                         max_words: int = 3) -> list:
+                         max_words: int = 3, max_chars: int = 22) -> list:
     """Caption chunks built from the ORIGINAL narration text, timed by the
     TTS word boundaries. Never render the TTS tokens themselves: the speech
     engine normalizes text ("GTA 6" can become "GTA sechs", "60fps" gets
@@ -179,6 +219,15 @@ def build_caption_groups(narration: str, tts_words: list,
 
     chunks, cur = [], []
     for w in orig:
+        # long compounds: flush early so a group stays one readable line
+        joined = len(' '.join(cur + [w]))
+        if cur and joined > max_chars:
+            # ...but don't strand a tiny function word ("eine", "und") on
+            # its own beat if the pair still fits on two lines
+            orphan = len(cur) == 1 and len(cur[0]) <= 4
+            if not (orphan and joined <= max_chars + 6):
+                chunks.append(cur)
+                cur = []
         cur.append(w)
         if len(cur) >= max_words or w.rstrip('"\'»«')[-1:] in '.!?,:':
             chunks.append(cur)
