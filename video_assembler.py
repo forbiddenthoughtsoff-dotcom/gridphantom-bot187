@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import random
+import subprocess
 import requests
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -339,6 +340,102 @@ def _gameplay_entries() -> list:
     return [e for e in entries if e.get('path') and os.path.exists(e['path'])]
 
 
+def _script_haystack(script: dict) -> str:
+    return " ".join([
+        script.get("title", ""), script.get("pexels_query", ""),
+        " ".join(script.get("tags", [])),
+        " ".join(script.get("sentences", []))]).lower()
+
+
+def _topic_score(entry: dict, haystack: str) -> int:
+    return sum(1 for t in entry.get("tags", []) if str(t).lower() in haystack)
+
+
+def build_gameplay_montage(script: dict, duration: float, n_segments: int = 3,
+                           require_match: bool = False) -> str:
+    """Highlight cut from the owner's own clips: the strongest action
+    windows (game-audio loudness + motion, analysed at sync time) across the
+    whole library, one hard cut per sentence, strongest window first as the
+    hook. Spreads across different clips before reusing one. Topic-tagged
+    clips take precedence; with require_match only tagged clips qualify.
+    Returns a silent 1080x1920 mp4 path or None (caller falls back)."""
+    entries = [e for e in _gameplay_entries() if e.get('highlights')]
+    if not entries:
+        return None
+    try:
+        haystack = _script_haystack(script)
+        pool = []
+        for e in entries:
+            topic = _topic_score(e, haystack)
+            if require_match and topic == 0:
+                continue
+            for h in e['highlights']:
+                pool.append({'topic': topic, 'score': float(h.get('score', 0.0)),
+                             'path': e['path'], 'start': float(h['start']),
+                             'end': float(h['end']),
+                             'dur': float(e.get('duration') or 0.0)})
+        if not pool:
+            return None
+        pool.sort(key=lambda p: (p['topic'], p['score']), reverse=True)
+        n = max(1, min(n_segments, 6))
+        chosen, per_clip = [], {}
+        for limit in (1, 2, 99):  # variety: spread across clips first
+            for p in pool:
+                if len(chosen) >= n:
+                    break
+                if p in chosen or per_clip.get(p['path'], 0) >= limit:
+                    continue
+                chosen.append(p)
+                per_clip[p['path']] = per_clip.get(p['path'], 0) + 1
+            if len(chosen) >= n:
+                break
+        seg_len = duration / len(chosen)
+        import imageio_ffmpeg
+        ff = imageio_ffmpeg.get_ffmpeg_exe()
+        out_dir = '/tmp/gameplay_montage'
+        os.makedirs(out_dir, exist_ok=True)
+        parts = []
+        for i, p in enumerate(chosen):
+            clip_dur = p['dur'] if p['dur'] > 0 else p['end'] + 1.0
+            length = min(seg_len, clip_dur)
+            center = (p['start'] + p['end']) / 2.0
+            start = max(0.0, min(center - length / 2.0, clip_dur - length))
+            out = os.path.join(out_dir, f'seg_{os.getpid()}_{i}.mp4')
+            cmd = [ff, '-y', '-ss', f'{start:.2f}', '-i', p['path'],
+                   '-t', f'{length:.2f}', '-an', '-r', '24',
+                   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+                   '-pix_fmt', 'yuv420p', out]
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+            if r.returncode == 0 and os.path.exists(out):
+                parts.append(out)
+            else:
+                logger.warning(f"Gameplay segment failed: {r.stderr[-160:]}")
+        if not parts:
+            return None
+        lst = os.path.join(out_dir, f'concat_{os.getpid()}.txt')
+        with open(lst, 'w') as f:
+            for part in parts:
+                f.write(f"file '{part}'\n")
+        montage = os.path.join(out_dir, f'montage_{os.getpid()}.mp4')
+        r = subprocess.run([ff, '-y', '-f', 'concat', '-safe', '0', '-i', lst,
+                            '-c', 'copy', montage],
+                           capture_output=True, text=True, timeout=120)
+        for part in parts:
+            try:
+                os.remove(part)
+            except OSError:
+                pass
+        if r.returncode != 0 or not os.path.exists(montage):
+            logger.warning(f"Gameplay concat failed: {r.stderr[-160:]}")
+            return None
+        logger.info(f"🎮 Own gameplay highlight cut: {len(parts)} segments from "
+                    f"{len(per_clip)} clip(s), library {len(entries)}")
+        return montage
+    except Exception as e:
+        logger.warning(f"Gameplay highlight cut skipped: {e}")
+        return None
+
+
 def pick_gameplay_clip(script: dict, require_match: bool = False) -> str:
     """Pick the owner's own GTA gameplay clip that best matches the video's
     topic via tag overlap. Returns a local mp4 path or None. Only the
@@ -350,13 +447,8 @@ def pick_gameplay_clip(script: dict, require_match: bool = False) -> str:
     if not entries:
         return None
 
-    haystack = " ".join([
-        script.get("title", ""), script.get("pexels_query", ""),
-        " ".join(script.get("tags", [])),
-        " ".join(script.get("sentences", []))]).lower()
-
-    scored = [(sum(1 for t in e.get("tags", []) if str(t).lower() in haystack),
-               e['path']) for e in entries]
+    haystack = _script_haystack(script)
+    scored = [(_topic_score(e, haystack), e['path']) for e in entries]
     best = max(s for s, _ in scored)
     if require_match and best == 0:
         return None
@@ -432,14 +524,17 @@ class VideoAssembler:
             # GTA 6 topics: an own clip only when it is tagged for the topic
             # (e.g. "gta6" in the file name) — otherwise Rockstar's official
             # trailer beats GTA 5 gameplay
-            bg_path = pick_gameplay_clip(script, require_match=gta6)
+            n_seg = len(sentences) or 3
+            bg_path = (build_gameplay_montage(script, duration, n_seg, require_match=gta6)
+                       or pick_gameplay_clip(script, require_match=gta6))
             if not bg_path and gta6 and build_trailer_montage:
                 try:
                     bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
-            if not bg_path and gta6:
-                bg_path = pick_gameplay_clip(script)  # own footage still beats stock
+            if not bg_path and gta6:  # own footage still beats stock
+                bg_path = (build_gameplay_montage(script, duration, n_seg)
+                           or pick_gameplay_clip(script))
             if not bg_path:
                 # Topic-matched footage: the script's subject query first,
                 # then its broader alternatives, then a neutral fallback

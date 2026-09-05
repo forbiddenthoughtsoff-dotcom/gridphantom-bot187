@@ -48,6 +48,21 @@ Community dokumentiert; ein Passwort wird nie gespeichert oder verwendet).
    verarbeitet sie wie unten beschrieben (vertikales Proxy, zufälliger
    Ausschnitt).
 
+### Highlight-Schnitt
+
+Jeder neue Clip wird beim Abholen analysiert: Lautstärke des Spielsounds
+(Schüsse, Motoren, Crashs) und Bewegung im Bild ergeben pro Sekunde einen
+Action-Wert; die stärksten 8-Sekunden-Fenster werden als Highlights im
+Manifest gespeichert. Beim Rendern baut `build_gameplay_montage()` daraus
+den Hintergrund: ein harter Schnitt pro Satz, stärkstes Highlight zuerst als
+Hook, verteilt über mehrere Clips. Nur wenn keine Highlights vorliegen, wird
+ein einzelner Clip mit zufälligem Ausschnitt genommen.
+
+Weil `/tmp` bei jedem Deploy leer ist und die Cloud hunderte Clips halten
+kann, zieht der Bot pro Durchlauf eine zufällige Stichprobe (24 im
+Hintergrund, 1 direkt vor jedem Video) statt alles; so hat jeder Container
+einen anderen, abwechslungsreichen Vorrat.
+
 ## Alternative: Google Drive (PS App → Teilen)
 
 Der Weg über Google Drive braucht nur das Handy:
