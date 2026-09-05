@@ -8,3 +8,4 @@ requests==2.32.3
 Pillow==11.0.0
 numpy==1.26.4
 schedule==1.2.2
+gdown==6.1.1

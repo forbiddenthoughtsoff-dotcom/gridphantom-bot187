@@ -99,6 +99,14 @@ def run_pipeline(language: str = 'de'):
         if _vg.LAST_ENGINE == 'elevenlabs':
             script['voice_credit'] = 'ElevenLabs (elevenlabs.io)'
 
+        # Owner's PS5 clips: pick up anything dropped into the shared Drive
+        # folder minutes ago (no-op unless GAMEPLAY_DRIVE_FOLDER is set)
+        try:
+            from gameplay_sync import sync as sync_gameplay
+            sync_gameplay(time_budget=120)
+        except Exception as e:
+            logger.warning(f"Gameplay sync skipped: {e}")
+
         video = VideoAssembler().assemble(script, audio)
         logger.info(f"🎥 Video done: {video}")
 
@@ -177,6 +185,16 @@ if __name__ == "__main__":
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
+    try:
+        from gameplay_sync import sync_async, folder_id
+        if folder_id():
+            sync_async()  # owner's own PS5 clips from the shared Drive folder
+            schedule.every(2).hours.do(sync_async)
+            logger.info("🎮 Gameplay sync: shared Drive folder, every 2h")
+        else:
+            logger.info("🎮 Gameplay sync off (set GAMEPLAY_DRIVE_FOLDER to a shared folder)")
+    except Exception as e:
+        logger.warning(f"Gameplay sync not started: {e}")
 
     # Community management: answer viewer comments every 2 hours
     schedule.every(2).hours.do(run_engagement)

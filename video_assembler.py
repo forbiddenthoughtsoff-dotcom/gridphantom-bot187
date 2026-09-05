@@ -316,18 +316,38 @@ def add_music_bed(video_path: str, duration: float):
         return video_path, None
 
 
-def pick_gameplay_clip(script: dict) -> str:
-    """Pick the owner's own GTA gameplay clip that best matches the video's
-    topic, via tag overlap with gameplay/manifest.json. Returns a local mp4
-    path or None. Only the channel owner's OWN recordings live here —
-    never downloaded third-party footage (copyright)."""
+def _gameplay_entries() -> list:
+    """Own clips from the repo manifest (gameplay/manifest.json) plus the
+    runtime clips synced from the owner's shared Drive folder
+    (gameplay_sync). Each entry gets an absolute 'path'; missing files are
+    dropped."""
+    entries = []
     manifest_path = os.path.join(GAMEPLAY_DIR, "manifest.json")
-    if not os.path.exists(manifest_path):
-        return None
+    if os.path.exists(manifest_path):
+        try:
+            for e in json.load(open(manifest_path, encoding="utf-8")):
+                e = dict(e)
+                e['path'] = os.path.join(GAMEPLAY_DIR, e.get('file', ''))
+                entries.append(e)
+        except Exception as e:
+            logger.warning(f"Gameplay manifest unreadable: {e}")
     try:
-        entries = json.load(open(manifest_path, encoding="utf-8"))
+        from gameplay_sync import runtime_entries
+        entries.extend(runtime_entries())
     except Exception as e:
-        logger.warning(f"Gameplay manifest unreadable: {e}")
+        logger.warning(f"Runtime gameplay library unavailable: {e}")
+    return [e for e in entries if e.get('path') and os.path.exists(e['path'])]
+
+
+def pick_gameplay_clip(script: dict, require_match: bool = False) -> str:
+    """Pick the owner's own GTA gameplay clip that best matches the video's
+    topic via tag overlap. Returns a local mp4 path or None. Only the
+    channel owner's OWN recordings live here — never downloaded third-party
+    footage (copyright). With require_match a clip is only returned when at
+    least one tag matches (GTA 6 topics: the official trailer beats
+    untagged GTA 5 gameplay)."""
+    entries = _gameplay_entries()
+    if not entries:
         return None
 
     haystack = " ".join([
@@ -335,23 +355,17 @@ def pick_gameplay_clip(script: dict) -> str:
         " ".join(script.get("tags", [])),
         " ".join(script.get("sentences", []))]).lower()
 
-    scored = []
-    for e in entries:
-        path = os.path.join(GAMEPLAY_DIR, e.get("file", ""))
-        if not os.path.exists(path):
-            continue
-        score = sum(1 for t in e.get("tags", []) if t.lower() in haystack)
-        scored.append((score, path))
-    if not scored:
-        return None
-
+    scored = [(sum(1 for t in e.get("tags", []) if str(t).lower() in haystack),
+               e['path']) for e in entries]
     best = max(s for s, _ in scored)
+    if require_match and best == 0:
+        return None
     # Topic match wins; with no match, any own-gameplay clip still beats
     # generic stock — pick randomly for variety.
     candidates = [p for s, p in scored if s == best]
     choice = random.choice(candidates)
     logger.info(f"🎮 Own gameplay clip: {os.path.basename(choice)} "
-                f"(match score {best})")
+                f"(match score {best}, library {len(entries)})")
     return choice
 
 
@@ -404,20 +418,28 @@ class VideoAssembler:
 
         seg_dur = duration / len(sentences)
 
-        # Background priority: 1) owner's own GTA gameplay clip matched to
-        # the topic, 2) Pexels stock footage, 3) AI image with Ken Burns
+        # Background priority: 1) own gameplay clip tagged for the topic,
+        # 2) official GTA VI trailer montage (GTA 6 topics), 3) any own
+        # gameplay clip, 4) topic-matched Pexels stock, 5) AI image + Ken Burns
         base = None
         try:
-            bg_path = pick_gameplay_clip(script)
-            if not bg_path:
-                # GTA 6 topics: real footage from Rockstar's official
-                # trailers (owner-approved), cut into a multi-segment montage
+            gta6, build_trailer_montage = False, None
+            try:
+                from trailer_library import is_gta6_topic, build_trailer_montage
+                gta6 = is_gta6_topic(script)
+            except Exception as e:
+                logger.warning(f"Trailer library unavailable: {e}")
+            # GTA 6 topics: an own clip only when it is tagged for the topic
+            # (e.g. "gta6" in the file name) — otherwise Rockstar's official
+            # trailer beats GTA 5 gameplay
+            bg_path = pick_gameplay_clip(script, require_match=gta6)
+            if not bg_path and gta6 and build_trailer_montage:
                 try:
-                    from trailer_library import is_gta6_topic, build_trailer_montage
-                    if is_gta6_topic(script):
-                        bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)
+                    bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
+            if not bg_path and gta6:
+                bg_path = pick_gameplay_clip(script)  # own footage still beats stock
             if not bg_path:
                 # Topic-matched footage: the script's subject query first,
                 # then its broader alternatives, then a neutral fallback
@@ -439,7 +461,10 @@ class VideoAssembler:
                 if base.duration < duration:
                     base = base.fx(vfx.loop, duration=duration)
                 else:
-                    base = base.subclip(0, duration)
+                    # random window, not always the first seconds: a long
+                    # own clip yields a fresh cut every time it is used
+                    start = random.uniform(0, max(base.duration - duration - 0.5, 0))
+                    base = base.subclip(start, start + duration)
         except Exception as e:
             logger.warning(f"Stock footage unavailable, falling back: {e}")
             base = None
