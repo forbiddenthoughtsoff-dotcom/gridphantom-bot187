@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Owner's own PS5 gameplay clips, pulled from a shared Google Drive folder.
+"""Owner's own PS5 gameplay clips — runtime library with two sources.
 
-The PlayStation ecosystem has no public API for captures, so the owner's
-workflow is deliberately phone-only: PS App -> capture -> Share -> "Save to
-Drive" into ONE folder that is shared as "anyone with the link" (viewer).
-GAMEPLAY_DRIVE_FOLDER holds that folder's URL or id.
+1. PlayStation cloud gallery (psn_captures.py, PSN_NPSSO): the captures the
+   PS5 auto-uploads to the PS App, fetched directly. Zero effort per clip.
+2. Shared Google Drive folder (GAMEPLAY_DRIVE_FOLDER): PS App -> capture ->
+   Share -> "Save to Drive" into ONE folder shared as "anyone with the link".
 
 Every new video in the folder is downloaded once into /tmp (never into the
 repo), turned into a lean vertical proxy (1080x1920, 24 fps, silent, centre
@@ -137,61 +137,121 @@ def _register(entries: list, drive_id: str, name: str, proxy: str) -> dict:
     return entry
 
 
+def sources() -> list:
+    """Configured clip sources, for the startup log."""
+    out = []
+    try:
+        import psn_captures
+        if psn_captures.enabled():
+            out.append('PlayStation cloud gallery')
+    except Exception:
+        pass
+    if folder_id():
+        out.append('Google Drive folder')
+    return out
+
+
+def _budget_left(t0: float, time_budget: float) -> bool:
+    if time.time() - t0 > time_budget:
+        logger.info("Gameplay sync paused (time budget) — continues next run")
+        return False
+    return True
+
+
+def _ingest(entries: list, uid: str, name: str, raw: str, proxy: str):
+    """raw download -> vertical proxy -> manifest; the raw file is always
+    removed, only the lean proxy stays."""
+    try:
+        if not os.path.exists(raw) or os.path.getsize(raw) < MIN_RAW_BYTES:
+            logger.warning(f"Gameplay download empty ({name})")
+            return
+        if make_proxy(raw, proxy):
+            _register(entries, uid, name, proxy)
+    finally:
+        try:
+            os.remove(raw)
+        except OSError:
+            pass
+
+
+def _sync_drive(entries: list, fid: str, t0: float, time_budget: float):
+    try:
+        import gdown
+    except ImportError:
+        logger.warning("gdown not installed — Drive gameplay sync disabled")
+        return
+    known = {e.get('drive_id') for e in entries}
+    try:
+        files = gdown.download_folder(id=fid, output=RUNTIME_DIR, quiet=True,
+                                      use_cookies=False, skip_download=True)
+    except Exception as e:
+        logger.warning(f"Drive folder listing failed: {e}")
+        return
+    videos = [f for f in (files or [])
+              if str(getattr(f, 'path', '')).lower().endswith(VIDEO_EXT)]
+    new = [f for f in videos if f.id not in known]
+    if new:
+        logger.info(f"🎮 Drive folder: {len(videos)} clips, {len(new)} new")
+    for f in new:
+        if len(entries) >= MAX_CLIPS or not _budget_left(t0, time_budget):
+            break
+        name = os.path.basename(str(f.path))
+        safe = re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80]
+        raw = os.path.join(RUNTIME_DIR, f'raw_{f.id}_{safe}')
+        proxy = os.path.join(RUNTIME_DIR, f'clip_{f.id}.mp4')
+        try:
+            gdown.download(id=f.id, output=raw, quiet=True, use_cookies=False)
+        except Exception as e:
+            logger.warning(f"Gameplay download failed ({name}): {e}")
+            continue
+        _ingest(entries, f.id, name, raw, proxy)
+
+
+def _sync_psn(entries: list, t0: float, time_budget: float):
+    import psn_captures as psn
+    known = {e.get('drive_id') for e in entries}
+    try:
+        items, sign = psn.list_captures()
+    except Exception as e:
+        logger.error(f"PlayStation gallery unavailable: {e}")
+        return
+    videos = [i for i in items if psn.is_gta_video(i)]
+    new = [i for i in videos if f"psn:{i.get('id')}" not in known]
+    logger.info(f"🎮 PlayStation gallery: {len(items)} captures, "
+                f"{len(videos)} GTA videos, {len(new)} new")
+    for i in new:
+        if len(entries) >= MAX_CLIPS or not _budget_left(t0, time_budget):
+            break
+        uid = f"psn:{i.get('id')}"
+        safe = re.sub(r'[^A-Za-z0-9_-]+', '_', str(i.get('id')))[:60]
+        raw = os.path.join(RUNTIME_DIR, f'raw_psn_{safe}.mp4')
+        proxy = os.path.join(RUNTIME_DIR, f'clip_psn_{safe}.mp4')
+        if not psn.download(i, sign, raw):
+            continue
+        _ingest(entries, uid, psn.display_name(i), raw, proxy)
+
+
 def sync(time_budget: float = 240.0, lock_wait: float = 30.0) -> list:
-    """Download + proxy every new video in the shared folder. Returns the
-    usable runtime entries. No-op unless GAMEPLAY_DRIVE_FOLDER is set."""
+    """Pull every new clip from all configured sources into the runtime
+    library. Returns the usable entries. No-op when nothing is configured."""
     fid = folder_id()
-    if not fid:
+    try:
+        import psn_captures
+        psn_on = psn_captures.enabled()
+    except Exception:
+        psn_on = False
+    if not fid and not psn_on:
         return []
     if not _lock.acquire(timeout=lock_wait):
         return runtime_entries()  # another sync is busy; use what exists
     try:
-        try:
-            import gdown
-        except ImportError:
-            logger.warning("gdown not installed — gameplay sync disabled")
-            return runtime_entries()
         os.makedirs(RUNTIME_DIR, exist_ok=True)
         entries = runtime_entries()
-        known = {e.get('drive_id') for e in entries}
-        try:
-            files = gdown.download_folder(id=fid, output=RUNTIME_DIR, quiet=True,
-                                          use_cookies=False, skip_download=True)
-        except Exception as e:
-            logger.warning(f"Drive folder listing failed: {e}")
-            return entries
-        videos = [f for f in (files or [])
-                  if str(getattr(f, 'path', '')).lower().endswith(VIDEO_EXT)]
-        new = [f for f in videos if f.id not in known]
-        if new:
-            logger.info(f"🎮 Gameplay folder: {len(videos)} clips, {len(new)} new")
         t0 = time.time()
-        for f in new:
-            if len(entries) >= MAX_CLIPS:
-                break
-            if time.time() - t0 > time_budget:
-                logger.info("Gameplay sync paused (time budget) — continues next run")
-                break
-            name = os.path.basename(str(f.path))
-            safe = re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80]
-            raw = os.path.join(RUNTIME_DIR, f'raw_{f.id}_{safe}')
-            proxy = os.path.join(RUNTIME_DIR, f'clip_{f.id}.mp4')
-            try:
-                gdown.download(id=f.id, output=raw, quiet=True, use_cookies=False)
-            except Exception as e:
-                logger.warning(f"Gameplay download failed ({name}): {e}")
-                continue
-            try:
-                if not os.path.exists(raw) or os.path.getsize(raw) < MIN_RAW_BYTES:
-                    logger.warning(f"Gameplay download empty ({name})")
-                    continue
-                if make_proxy(raw, proxy):
-                    _register(entries, f.id, name, proxy)
-            finally:
-                try:
-                    os.remove(raw)  # keep only the lean proxy
-                except OSError:
-                    pass
+        if psn_on:
+            _sync_psn(entries, t0, time_budget)
+        if fid:
+            _sync_drive(entries, fid, t0, time_budget)
         return entries
     except Exception as e:
         logger.warning(f"Gameplay sync skipped: {e}")
@@ -202,7 +262,7 @@ def sync(time_budget: float = 240.0, lock_wait: float = 30.0) -> list:
 
 def sync_async():
     """Background sync (startup + periodic); never blocks the caller."""
-    if not folder_id():
+    if not sources():
         return
     threading.Thread(target=sync, kwargs={'time_budget': 1800.0},
                      daemon=True, name='gameplay-sync').start()
