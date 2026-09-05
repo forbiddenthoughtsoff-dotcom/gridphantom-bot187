@@ -81,9 +81,10 @@ def build_still_montage(paths: list, duration: float, n_segments: int = 4) -> st
                   f"zoompan=z='{z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
                   f":d=1:s={W}x{H}:fps={FPS},setsar=1,format=yuv420p")
             out = os.path.join(STILL_DIR, f'seg_{os.getpid()}_{i}.mp4')
-            cmd = [ff, '-y', '-loop', '1', '-framerate', str(FPS), '-i', src,
-                   '-filter_complex', vf, '-t', f'{seg:.2f}', '-an',
-                   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', out]
+            cmd = [ff, '-y', '-threads', '2', '-loop', '1', '-framerate', str(FPS),
+                   '-i', src, '-filter_complex', vf, '-t', f'{seg:.2f}', '-an',
+                   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+                   '-x264-params', 'threads=2:lookahead-threads=1:rc-lookahead=10', out]
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             if r.returncode != 0 or not os.path.exists(out):
                 logger.warning(f"Still segment failed: {r.stderr[-200:]}")
