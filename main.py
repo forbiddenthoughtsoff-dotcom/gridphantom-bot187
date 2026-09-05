@@ -186,13 +186,14 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
     try:
-        from gameplay_sync import sync_async, folder_id
-        if folder_id():
-            sync_async()  # owner's own PS5 clips from the shared Drive folder
+        from gameplay_sync import sync_async, sources
+        srcs = sources()
+        if srcs:
+            sync_async()  # owner's own PS5 clips
             schedule.every(2).hours.do(sync_async)
-            logger.info("🎮 Gameplay sync: shared Drive folder, every 2h")
+            logger.info(f"🎮 Gameplay sync every 2h: {', '.join(srcs)}")
         else:
-            logger.info("🎮 Gameplay sync off (set GAMEPLAY_DRIVE_FOLDER to a shared folder)")
+            logger.info("🎮 Gameplay sync off (set PSN_NPSSO or GAMEPLAY_DRIVE_FOLDER)")
     except Exception as e:
         logger.warning(f"Gameplay sync not started: {e}")
 

@@ -29,10 +29,28 @@ Der Bot matcht die Tags gegen Titel, Sätze und Tags des generierten Skripts
 und nimmt den Clip mit der besten Übereinstimmung (bei Gleichstand zufällig).
 Ist der Ordner leer, fällt er automatisch auf Pexels-Stock zurück.
 
-## Automatisch von der PS5 / PS App (Google Drive)
+## Direkt aus der PlayStation-Cloud (PS App, ohne Umweg)
 
-Es gibt keine offizielle Schnittstelle zu den Aufnahmen der PS App. Der Weg
-über Google Drive braucht nur das Handy:
+Die PS5 lädt Aufnahmen automatisch in die PlayStation-Cloud (14 Tage, Videos
+bis 3 Minuten). Der Bot holt sie dort direkt ab (`psn_captures.py`), über
+dieselbe Schnittstelle, die die PS App benutzt (inoffiziell, von der
+Community dokumentiert; ein Passwort wird nie gespeichert oder verwendet).
+
+1. Einmalig: Am Handy im Browser auf playstation.com einloggen, danach
+   https://ca.account.sony.com/api/v1/ssocookie öffnen und den 64-stelligen
+   Wert hinter `npsso` kopieren.
+2. Diesen Wert beim Bot als `PSN_NPSSO` hinterlegen. Das Token hält etwa
+   zwei Monate; läuft es ab, steht im Log `PSN NPSSO rejected` und ein neuer
+   Wert wird eingetragen.
+3. Ab dann: Auf der PS5 einfach Clips aufnehmen (Create-Taste). Der Bot
+   prüft die Cloud beim Start, alle 2 Stunden und vor jedem Video, nimmt nur
+   GTA-Videos (Screenshots und andere Spiele werden ignoriert) und
+   verarbeitet sie wie unten beschrieben (vertikales Proxy, zufälliger
+   Ausschnitt).
+
+## Alternative: Google Drive (PS App → Teilen)
+
+Der Weg über Google Drive braucht nur das Handy:
 
 1. Einmalig: In Google Drive einen Ordner `GridPhantom Gameplay` anlegen und
    per Link freigeben ("Jeder, der über den Link verfügt" – Betrachter).
