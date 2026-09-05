@@ -186,9 +186,11 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
 
         # Sonnet: noticeably better German (fewer errors, more natural
         # narration) — at 4 videos/day this is ~2 CHF/month, worth it.
+        # Assignments run 6-8 sentences plus metadata: 1400 tokens truncated
+        # the JSON once (live), which surfaced as a JSONDecodeError.
         message = self.client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1400,
+            max_tokens=2600 if topic_brief else 1400,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
         )
