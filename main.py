@@ -103,7 +103,7 @@ def run_pipeline(language: str = 'de'):
         # folder minutes ago (no-op unless GAMEPLAY_DRIVE_FOLDER is set)
         try:
             from gameplay_sync import sync as sync_gameplay
-            sync_gameplay(time_budget=120)
+            sync_gameplay(time_budget=90, max_new=1)  # one fresh clip per render
         except Exception as e:
             logger.warning(f"Gameplay sync skipped: {e}")
 
