@@ -120,15 +120,19 @@ def run_pipeline(language: str = 'de', brief: dict = None):
         if _vg.LAST_ENGINE == 'elevenlabs':
             script['voice_credit'] = 'ElevenLabs (elevenlabs.io)'
 
-        # Owner's PS5 clips: pick up anything dropped into the shared Drive
-        # folder minutes ago (no-op unless GAMEPLAY_DRIVE_FOLDER is set)
+        # The whole render (trailer/still/gameplay montage + export) gets the
+        # box to itself: the background clip sync pauses between jobs while
+        # this flag is set (a montage cut timed out behind a proxy job once)
         try:
-            from gameplay_sync import sync as sync_gameplay
-            sync_gameplay(time_budget=90, max_new=1)  # one fresh clip per render
-        except Exception as e:
-            logger.warning(f"Gameplay sync skipped: {e}")
-
-        video = VideoAssembler().assemble(script, audio)
+            from gameplay_sync import RENDER_BUSY
+            RENDER_BUSY.set()
+        except Exception:
+            RENDER_BUSY = None
+        try:
+            video = VideoAssembler().assemble(script, audio)
+        finally:
+            if RENDER_BUSY is not None:
+                RENDER_BUSY.clear()
         logger.info(f"🎥 Video done: {video}")
 
         vid = uploader.upload(video, script, language)

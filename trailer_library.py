@@ -151,7 +151,9 @@ def build_trailer_montage(duration: float, n_segments: int = 3) -> str:
                    '-an', '-vf', 'crop=ih*9/16:ih,scale=1080:1920,fps=24',
                    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
                    '-pix_fmt', 'yuv420p', out]
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+            # the box is small: one 20 s segment took >180 s once while a
+            # background proxy job was still running — generous timeout
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=420)
             if r.returncode != 0 or not os.path.exists(out):
                 logger.warning(f"Trailer segment failed: {r.stderr[-200:]}")
                 continue
