@@ -140,6 +140,12 @@ def is_gta_video(item: dict, min_seconds: float = 4.0) -> bool:
     name = f"{item.get('sceTitleName', '')} {item.get('title', '')}"
     if not GTA_TITLE.search(name):
         return False
+    # A capture that is still being transcoded answers 403 on its media URL
+    # (seen live right after recording) — it is simply picked up next sync
+    if str(item.get('transcodeStatus') or 'complete').lower() != 'complete':
+        return False
+    if str(item.get('cloudStatus') or 'active').lower() != 'active':
+        return False
     dur = item.get('videoDuration')
     return dur is None or float(dur) >= min_seconds
 

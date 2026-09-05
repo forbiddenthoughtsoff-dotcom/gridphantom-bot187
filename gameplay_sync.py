@@ -107,10 +107,13 @@ def runtime_entries() -> list:
 
 
 def make_proxy(src: str, dst: str, timeout: int = 900) -> bool:
-    """Vertical 1080x1920 / 24 fps / silent proxy: scale to cover, centre
-    crop — works for 16:9, 4K, and already-vertical sources alike."""
+    """Vertical 1080x1920 / 24 fps / silent proxy: drop the bottom 10 %
+    of the source first (that is where GTA draws its in-game subtitles,
+    which would sit right under our captions), then scale to cover and
+    centre crop — works for 16:9, 4K, and already-vertical sources alike."""
     cmd = [_ffmpeg(), '-y', '-i', src, '-an',
-           '-vf', ('scale=1080:1920:force_original_aspect_ratio=increase'
+           '-vf', ('crop=iw:ih*0.9:0:0,'
+                   'scale=1080:1920:force_original_aspect_ratio=increase'
                    ':flags=lanczos,crop=1080:1920,fps=24'),
            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
            '-pix_fmt', 'yuv420p', '-movflags', '+faststart', dst]
