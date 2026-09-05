@@ -231,16 +231,65 @@ def analyze_highlights(raw: str, duration: float, window: float = 8.0,
         return [{'start': 0.0, 'end': round(min(duration, window), 2), 'score': 1.0}]
 
 
+def auto_tags(proxy: str, duration: float) -> list:
+    """What is actually in the clip: three frames → Claude vision → a
+    handful of German keyword tags (car, chase, police, night, plane,
+    parachute, heist ...). PS5 capture names carry no topic, so this is what
+    makes topic matching work. Costs a fraction of a cent per clip; fails
+    soft to no tags."""
+    key = os.environ.get('ANTHROPIC_API_KEY', '')
+    if not key or duration <= 0:
+        return []
+    frames = []
+    try:
+        import base64
+        import anthropic
+        ff = _ffmpeg()
+        for t in (duration * 0.2, duration * 0.5, duration * 0.8):
+            out = proxy + f'.tag{int(t)}.jpg'
+            subprocess.run([ff, '-y', '-loglevel', 'error', '-ss', f'{t:.1f}',
+                            '-i', proxy, '-frames:v', '1', '-vf', 'scale=360:-2',
+                            '-q:v', '5', out], capture_output=True, timeout=60)
+            if os.path.exists(out):
+                with open(out, 'rb') as f:
+                    frames.append(base64.b64encode(f.read()).decode())
+                os.remove(out)
+        if not frames:
+            return []
+        content = [{'type': 'image', 'source': {'type': 'base64',
+                    'media_type': 'image/jpeg', 'data': fr}} for fr in frames]
+        content.append({'type': 'text', 'text': (
+            'These are three frames from ONE GTA Online (GTA 5) gameplay clip. '
+            'Return ONLY a JSON array of 5-10 lowercase German keyword tags for '
+            'what happens and where, e.g. "auto", "verfolgungsjagd", "polizei", '
+            '"nacht", "flugzeug", "helikopter", "fallschirm", "heist", '
+            '"schiesserei", "motorrad", "strand", "stadt", "wueste", "boot", '
+            '"explosion", "rennen", "tuning", "casino", "bunker". No sentences.')})
+        client = anthropic.Anthropic(api_key=key)
+        msg = client.messages.create(model='claude-haiku-4-5-20251001',
+                                     max_tokens=120,
+                                     messages=[{'role': 'user', 'content': content}])
+        txt = msg.content[0].text
+        m = re.search(r'\[.*?\]', txt, re.S)
+        tags = json.loads(m.group(0)) if m else []
+        return sorted({str(t).lower().strip() for t in tags
+                       if str(t).strip() and len(str(t)) < 30})[:12]
+    except Exception as e:
+        logger.warning(f"Auto-tagging skipped: {e}")
+        return []
+
+
 def _register(entries: list, drive_id: str, name: str, proxy: str,
               highlights: list = None) -> dict:
     dur, w, h = _probe(proxy)
+    tags = sorted(set(tags_from_name(name)) | set(auto_tags(proxy, dur)))
     entry = {'path': proxy, 'drive_id': drive_id, 'name': name,
-             'tags': tags_from_name(name), 'duration': round(dur, 1),
+             'tags': tags, 'duration': round(dur, 1),
              'highlights': highlights or [], 'added': int(time.time())}
     entries.append(entry)
     _save_manifest(entries)
     logger.info(f"🎮 New own gameplay clip: {name} ({dur:.0f}s, "
-                f"{len(entry['highlights'])} highlights) → vertical proxy")
+                f"{len(entry['highlights'])} highlights, tags {tags[:6]}) → vertical proxy")
     return entry
 
 

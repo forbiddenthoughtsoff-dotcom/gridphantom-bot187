@@ -115,15 +115,35 @@ class ScriptGenerator:
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
 
     def generate(self, language: str = 'de', avoid_titles: list = None,
-                 news_items: list = None, top_performers: list = None) -> dict:
+                 news_items: list = None, top_performers: list = None,
+                 topic_brief: str = None) -> dict:
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
-        user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
+        if topic_brief:
+            # Owner's assignment: a specific, in-depth video. Longer than the
+            # daily format because the owner wants ALL relevant information.
+            user_prompt = f"""OWNER'S ASSIGNMENT — this video MUST be about exactly this topic, nothing else:
+
+{topic_brief}
+
+Write 6 to 8 full, natural German sentences, ~45-55 seconds spoken: a sharp hook first, then every relevant fact in a logical order (what, when, where, how much, what is confirmed vs. only rumoured), and one closing sentence that makes people comment. Use ONLY the facts given in the assignment and in the news list below; where something is not officially confirmed, say so explicitly. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would say it out loud.
+Language: {lang_name} ONLY. Output ONLY valid JSON."""
+        else:
+            user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
 
 3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
-        if news_items:
+        if news_items and topic_brief:
+            news_block = "\n".join(
+                f"- [{n.get('published','')}] {n.get('title','')}"
+                f" (Quelle: {n.get('source','?')})"
+                for n in news_items[:12])
+            user_prompt += f"""
+
+REAL CURRENT GTA NEWS (fetched live today) — use a headline ONLY if it is about the assigned topic, and never add facts beyond it:
+{news_block}"""
+        elif news_items:
             news_block = "\n".join(
                 f"- [{n.get('published','')}] {n.get('title','')}"
                 f" (Quelle: {n.get('source','?')})"
