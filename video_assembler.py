@@ -376,19 +376,26 @@ def build_gameplay_montage(script: dict, duration: float, n_segments: int = 3,
                              'dur': float(e.get('duration') or 0.0)})
         if not pool:
             return None
-        pool.sort(key=lambda p: (p['topic'], p['score']), reverse=True)
         n = max(1, min(n_segments, 6))
+        # Coherent cut: one recording at a time, its best windows in
+        # chronological order, best-matching/strongest recording first — the
+        # footage keeps its own little story instead of jumping between
+        # unrelated clips every sentence. A second clip only fills what the
+        # first cannot cover.
+        by_clip = {}
+        for p in pool:
+            by_clip.setdefault(p['path'], []).append(p)
+        clips = sorted(by_clip.values(),
+                       key=lambda ws: (ws[0]['topic'], sum(w['score'] for w in ws)),
+                       reverse=True)
         chosen, per_clip = [], {}
-        for limit in (1, 2, 99):  # variety: spread across clips first
-            for p in pool:
-                if len(chosen) >= n:
-                    break
-                if p in chosen or per_clip.get(p['path'], 0) >= limit:
-                    continue
-                chosen.append(p)
-                per_clip[p['path']] = per_clip.get(p['path'], 0) + 1
+        for ws in clips:
             if len(chosen) >= n:
                 break
+            best = sorted(ws, key=lambda w: w['score'], reverse=True)[:n - len(chosen)]
+            take = sorted(best, key=lambda w: w['start'])
+            chosen.extend(take)
+            per_clip[ws[0]['path']] = len(take)
         seg_len = duration / len(chosen)
         import imageio_ffmpeg
         ff = imageio_ffmpeg.get_ffmpeg_exe()
@@ -525,8 +532,19 @@ class VideoAssembler:
             # (e.g. "gta6" in the file name) — otherwise Rockstar's official
             # trailer beats GTA 5 gameplay
             n_seg = len(sentences) or 3
-            bg_path = (build_gameplay_montage(script, duration, n_seg, require_match=gta6)
-                       or pick_gameplay_clip(script, require_match=gta6))
+            bg_path = None
+            # Owner-supplied stills (e.g. official product images for a
+            # hardware topic) are the only right footage — they win outright
+            if script.get('still_images'):
+                try:
+                    from stills import fetch_images, build_still_montage
+                    bg_path = build_still_montage(
+                        fetch_images(script['still_images']), duration, max(n_seg, 4))
+                except Exception as e:
+                    logger.warning(f"Still images unavailable: {e}")
+            if not bg_path:
+                bg_path = (build_gameplay_montage(script, duration, n_seg, require_match=gta6)
+                           or pick_gameplay_clip(script, require_match=gta6))
             if not bg_path and gta6 and build_trailer_montage:
                 try:
                     bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)

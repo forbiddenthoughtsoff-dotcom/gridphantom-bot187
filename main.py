@@ -58,9 +58,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger('GridPhantomBot')
 
-def run_pipeline(language: str = 'de'):
-    """Run full pipeline: GTA Short des Tages."""
-    logger.info(f"🎬 Pipeline {language.upper()}: GTA Short generieren")
+def owner_brief() -> dict:
+    """Owner's assignment for the startup post: TOPIC_BRIEF_JSON holds a
+    base64-encoded JSON {"brief": "...", "images": [urls]} — a specific,
+    in-depth video with its own footage. Empty dict when not set."""
+    raw = os.environ.get('TOPIC_BRIEF_JSON', '').strip()
+    if not raw:
+        return {}
+    try:
+        import base64
+        data = json.loads(base64.b64decode(raw).decode('utf-8'))
+        return data if isinstance(data, dict) and data.get('brief') else {}
+    except Exception as e:
+        logger.warning(f"TOPIC_BRIEF_JSON unreadable: {e}")
+        return {}
+
+
+def run_pipeline(language: str = 'de', brief: dict = None):
+    """Run full pipeline: GTA Short des Tages (or the owner's assignment)."""
+    brief = brief or {}
+    logger.info(f"🎬 Pipeline {language.upper()}: GTA Short generieren"
+                + (" — OWNER ASSIGNMENT" if brief else ""))
     try:
         from script_generator import ScriptGenerator
         from voice_generator import VoiceGenerator
@@ -90,7 +108,10 @@ def run_pipeline(language: str = 'de'):
         script = ScriptGenerator().generate(language,
                                             avoid_titles=recent_titles,
                                             news_items=news_items,
-                                            top_performers=top_performers)
+                                            top_performers=top_performers,
+                                            topic_brief=brief.get('brief'))
+        if brief.get('images'):
+            script['still_images'] = list(brief['images'])
         logger.info(f"📝 Script: {script.get('title', '')}")
 
         audio = VoiceGenerator().generate(script['narration'], language)
@@ -127,13 +148,13 @@ def run_pipeline(language: str = 'de'):
         logger.error(f"❌ Pipeline failed [{language}]: {e}", exc_info=True)
         return None
 
-def run_bot_short(is_retry: bool = False):
-    """Scheduled slot: 1 German GTA Short."""
+def run_bot_short(is_retry: bool = False, brief: dict = None):
+    """Scheduled slot: 1 German GTA Short (brief = owner's assignment)."""
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
                 + (" (retry)" if is_retry else ""))
     vid = None
     try:
-        vid = run_pipeline(language='de')
+        vid = run_pipeline(language='de', brief=brief)
         logger.info("🏁 Short cycle complete")
     except Exception as e:
         logger.error(f"Short cycle error: {e}", exc_info=True)
@@ -144,7 +165,7 @@ def run_bot_short(is_retry: bool = False):
         logger.warning("⏳ Slot failed — retrying once in 30 minutes")
 
         def _retry():
-            run_bot_short(is_retry=True)
+            run_bot_short(is_retry=True, brief=brief)
             return schedule.CancelJob
 
         schedule.every(30).minutes.do(_retry)
@@ -204,8 +225,11 @@ if __name__ == "__main__":
     # Immediate post on startup only if explicitly enabled — otherwise every
     # deploy/restart uploads an unscheduled extra video
     if os.environ.get('POST_ON_START', '').lower() in ('1', 'true', 'yes'):
-        logger.info("🚀 POST_ON_START enabled — posting immediately")
-        threading.Thread(target=run_bot_short, daemon=True).start()
+        brief = owner_brief()
+        logger.info("🚀 POST_ON_START enabled — posting immediately"
+                    + (f" (owner assignment: {brief['brief'][:60]}...)" if brief else ""))
+        threading.Thread(target=run_bot_short, kwargs={'brief': brief},
+                         daemon=True).start()
     else:
         logger.info("⏭️ Startup post disabled (set POST_ON_START=true to enable)")
 
