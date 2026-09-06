@@ -115,6 +115,49 @@ def _sanitize_json(raw: str) -> str:
     return raw
 
 
+_GENERIC = {
+    'gta', 'gta5', 'gta6', 'online', 'shorts', 'short', 'rockstar', 'games',
+    'der', 'die', 'das', 'und', 'oder', 'mit', 'für', 'fuer', 'von', 'vom',
+    'im', 'in', 'am', 'an', 'auf', 'aus', 'ist', 'sind', 'hat', 'wird',
+    'du', 'dir', 'dich', 'dein', 'deine', 'deinen', 'so', 'ein', 'eine',
+    'einen', 'einem', 'einer', 'dem', 'den', 'des', 'nicht', 'mehr', 'kein',
+    'keine', 'keinen', 'aber', 'wie', 'was', 'warum', 'wer', 'wann', 'wo',
+    'jetzt', 'neu', 'neue', 'neuer', 'neues', 'alle', 'alles', 'noch', 'nur',
+    'ps5', 'xbox', 'kannst', 'kann', 'koennen', 'können', 'sollte', 'musst',
+    'machen', 'macht', 'diese', 'dieser', 'dieses', 'diesen', 'trick',
+    'tricks', 'tipp', 'tipps', 'fakten', 'fakt', 'geheim', 'wirklich',
+    'endlich', 'offiziell', 'bestätigt', 'sofort', 'besser', 'grosse',
+    'grosser', 'grosses', 'komplett', 'niemand', 'jeder', 'darum', 'deshalb',
+    'ganz', 'sehr', 'viel', 'viele', 'wenig', 'schon', 'nie', 'immer',
+}
+
+
+def _keywords(title: str) -> set:
+    import re
+    low = str(title).lower()
+    t = re.sub(r'[^\wäöü ]+', ' ', low)
+    words = {w for w in t.split() if len(w) >= 4 and w not in _GENERIC
+             and not w.isdigit()}
+    if re.search(r'gta\s*6\s*online|gta\s*vi\s*online', low):
+        words.add('gta6online')  # the subject itself, not just "online"
+    return words
+
+
+def too_similar(title: str, recent_titles: list) -> bool:
+    """True when the new title shares its subject with a recently published
+    one: two distinctive words in common, or one distinctive word of five or
+    more letters (e.g. "Angeln", "Jagen"). A false positive only costs one
+    regeneration."""
+    k = _keywords(title)
+    if not k:
+        return False
+    for r in recent_titles[:25]:
+        shared = k & _keywords(r)
+        if len(shared) >= 2 or any(len(w) >= 5 for w in shared):
+            return True
+    return False
+
+
 class ScriptGenerator:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
@@ -189,18 +232,32 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
         # narration) — at 4 videos/day this is ~2 CHF/month, worth it.
         # Assignments run 6-8 sentences plus metadata: 1400 tokens truncated
         # the JSON once (live), which surfaced as a JSONDecodeError.
-        message = self.client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2600 if topic_brief else 1400,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}]
-        )
-
-        raw = message.content[0].text
-        try:
-            script = json.loads(raw)
-        except json.JSONDecodeError:
-            script = json.loads(_sanitize_json(raw))
+        # Hard guard against repeats: the model once made "Angeln & Jagen"
+        # twice in a row despite the published list — a title too close to a
+        # recent one is regenerated with the subject explicitly banned.
+        banned = []
+        for attempt in range(3):
+            prompt = user_prompt
+            if banned:
+                prompt += ("\n\nHARD BAN — the channel JUST covered these; pick a COMPLETELY "
+                           "different subject (another pillar if needed), not a new angle "
+                           "on them: " + " | ".join(banned))
+            message = self.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=2600 if topic_brief else 1400,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            raw = message.content[0].text
+            try:
+                script = json.loads(raw)
+            except json.JSONDecodeError:
+                script = json.loads(_sanitize_json(raw))
+            title = script.get('title', '')
+            if topic_brief or not avoid_titles or not too_similar(title, avoid_titles):
+                break
+            logger.warning(f"Topic too close to a recent video, regenerating: {title}")
+            banned.append(title)
 
         script = _swissify(script)
         script['narration'] = " ".join(script.get('sentences', []))
