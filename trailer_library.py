@@ -13,6 +13,7 @@ import logging
 import threading
 import subprocess
 import requests
+from motion import motion_vf
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +153,7 @@ def build_trailer_montage(duration: float, n_segments: int = 3) -> str:
             used.setdefault(src, []).append(start)
             out = os.path.join(TRAILER_DIR, f'seg_{os.getpid()}_{i}.mp4')
             cmd = [ff, '-y', '-ss', f'{start:.2f}', '-i', src, '-t', f'{seg_len:.2f}',
-                   '-an', '-vf', 'crop=ih*9/16:ih,scale=1080:1920,fps=24',
+                   '-an', '-vf', 'crop=ih*9/16:ih,' + motion_vf(i, seg_len) + ',fps=24',
                    '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
                    '-pix_fmt', 'yuv420p', out]
             # the box is small: one 20 s segment took >180 s once while a

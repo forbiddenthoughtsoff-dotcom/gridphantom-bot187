@@ -105,6 +105,20 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             logger.warning(f"News fetch failed, evergreen fallback: {e}")
             news_items = []
 
+        # Owner's series "GTA Online Karriere": the midday slot publishes the
+        # next tutorial episode (progress is read from the published titles)
+        if not brief:
+            try:
+                from series import is_series_slot, next_episode, brief_for
+                if is_series_slot():
+                    ep = next_episode(recent_titles)
+                    if ep:
+                        brief = brief_for(ep)
+                        logger.info(f"📚 Serie: Karriere-Tutorial #{ep['n']} – "
+                                    f"{ep['career']} Stufe {ep['tier']}")
+            except Exception as e:
+                logger.warning(f"Series slot skipped: {e}")
+
         script = ScriptGenerator().generate(language,
                                             avoid_titles=recent_titles,
                                             news_items=news_items,
