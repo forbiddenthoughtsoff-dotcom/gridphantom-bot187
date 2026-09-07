@@ -6,6 +6,7 @@ import random
 import subprocess
 import requests
 import numpy as np
+from motion import motion_vf
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (VideoClip, AudioFileClip, ImageClip,
                             VideoFileClip, CompositeVideoClip,
@@ -410,7 +411,8 @@ def build_gameplay_montage(script: dict, duration: float, n_segments: int = 3,
             out = os.path.join(out_dir, f'seg_{os.getpid()}_{i}.mp4')
             cmd = [ff, '-y', '-ss', f'{start:.2f}', '-i', p['path'],
                    '-t', f'{length:.2f}', '-an', '-r', '24',
-                   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+                   '-vf', motion_vf(i, length),  # slow push/pan per cut
+                   '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
                    '-pix_fmt', 'yuv420p', out]
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
             if r.returncode == 0 and os.path.exists(out):
@@ -466,6 +468,73 @@ def pick_gameplay_clip(script: dict, require_match: bool = False) -> str:
     logger.info(f"🎮 Own gameplay clip: {os.path.basename(choice)} "
                 f"(match score {best}, library {len(entries)})")
     return choice
+
+
+def build_pexels_montage(queries: list, duration: float, n_segments: int = 3) -> str:
+    """Up to three different topic clips from Pexels, cut into one segment
+    per sentence (random window each) with camera motion on every cut,
+    concatenated into a silent 1080x1920 clip. None → caller falls back to
+    a single clip."""
+    paths = []
+    for q in queries[:4]:
+        p = fetch_pexels_video(q)
+        if p and p not in paths:
+            paths.append(p)
+        if len(paths) >= 3:
+            break
+    if not paths:
+        return None
+    try:
+        from trailer_library import _probe_duration
+        import imageio_ffmpeg
+        ff = imageio_ffmpeg.get_ffmpeg_exe()
+        n = max(1, min(n_segments, 6))
+        seg_len = duration / n
+        out_dir = '/tmp/pexels_montage'
+        os.makedirs(out_dir, exist_ok=True)
+        durs = {p: _probe_duration(p) for p in paths}
+        parts = []
+        for i in range(n):
+            src = paths[i % len(paths)]
+            total = durs.get(src) or 0.0
+            loop = ['-stream_loop', '-1'] if 0 < total < seg_len + 0.3 else []
+            start = (random.uniform(0, total - seg_len - 0.3)
+                     if total > seg_len + 0.5 else 0.0)
+            out = os.path.join(out_dir, f'seg_{os.getpid()}_{i}.mp4')
+            cmd = [ff, '-y'] + loop + ['-ss', f'{start:.2f}', '-i', src,
+                   '-t', f'{seg_len:.2f}', '-an',
+                   '-vf', motion_vf(i, seg_len) + ',fps=24', '-r', '24',
+                   '-c:v', 'libx264', '-preset', 'superfast', '-crf', '21',
+                   '-pix_fmt', 'yuv420p', out]
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if r.returncode == 0 and os.path.exists(out):
+                parts.append(out)
+            else:
+                logger.warning(f"Pexels segment failed: {r.stderr[-160:]}")
+        if not parts:
+            return None
+        lst = os.path.join(out_dir, f'concat_{os.getpid()}.txt')
+        with open(lst, 'w') as f:
+            for part in parts:
+                f.write(f"file '{part}'\n")
+        montage = os.path.join(out_dir, f'montage_{os.getpid()}.mp4')
+        r = subprocess.run([ff, '-y', '-f', 'concat', '-safe', '0', '-i', lst,
+                            '-c', 'copy', montage],
+                           capture_output=True, text=True, timeout=120)
+        for part in parts:
+            try:
+                os.remove(part)
+            except OSError:
+                pass
+        if r.returncode != 0 or not os.path.exists(montage):
+            logger.warning(f"Pexels concat failed: {r.stderr[-160:]}")
+            return None
+        logger.info(f"🎥 Pexels montage: {len(parts)} segments from {len(paths)} clip(s) "
+                    f"('{queries[0]}')")
+        return montage
+    except Exception as e:
+        logger.warning(f"Pexels montage skipped: {e}")
+        return None
 
 
 def fetch_pexels_video(query: str) -> str:
@@ -579,10 +648,15 @@ class VideoAssembler:
                 if isinstance(alts, list):
                     queries.extend(alts[:3])
                 queries.append("night city street driving neon")
-                for q in [q for q in queries if q and str(q).strip()]:
-                    bg_path = fetch_pexels_video(str(q).strip())
-                    if bg_path:
-                        break
+                queries = [str(q).strip() for q in queries if q and str(q).strip()]
+                # several topic clips, one hard cut per sentence, camera
+                # motion on every cut — instead of one static stock clip
+                bg_path = build_pexels_montage(queries, duration, n_seg)
+                if not bg_path:
+                    for q in queries:
+                        bg_path = fetch_pexels_video(q)
+                        if bg_path:
+                            break
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()
                 scale = max(W / base.w, H / base.h)

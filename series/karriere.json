@@ -1,0 +1,1442 @@
+[
+ {
+  "n": 1,
+  "category": "Businesses (Geschaefte)",
+  "career": "Money Fronts",
+  "tier": 1,
+  "tasks": [
+   "Mr. Faber treffen, 'Hands On' erwerben und einen Job abschliessen"
+  ],
+  "next_hint": "Money Fronts Stufe 2"
+ },
+ {
+  "n": 2,
+  "category": "Businesses (Geschaefte)",
+  "career": "Money Fronts",
+  "tier": 2,
+  "tasks": [
+   "'Higgins' erwerben, 10 Jobs abschliessen, 100.000 $ einsammeln"
+  ],
+  "next_hint": "Money Fronts Stufe 3"
+ },
+ {
+  "n": 3,
+  "category": "Businesses (Geschaefte)",
+  "career": "Money Fronts",
+  "tier": 3,
+  "tasks": [
+   "'Smoke on the Water' erwerben, 500.000 $ verdienen, maximalen Bonus erreichen"
+  ],
+  "next_hint": "Money Fronts Stufe 4"
+ },
+ {
+  "n": 4,
+  "category": "Businesses (Geschaefte)",
+  "career": "Money Fronts",
+  "tier": 4,
+  "tasks": [
+   "14 Platin-Medaillen, alle Boni maximieren, 2.000.000 $ verdienen, 500.000 $ einsammeln"
+  ],
+  "next_hint": "Agents of Sabotage Stufe 1"
+ },
+ {
+  "n": 5,
+  "category": "Businesses (Geschaefte)",
+  "career": "Agents of Sabotage",
+  "tier": 1,
+  "tasks": [
+   "Garment Factory erwerben, Pavel treffen, eine File abschliessen"
+  ],
+  "next_hint": "Agents of Sabotage Stufe 2"
+ },
+ {
+  "n": 6,
+  "category": "Businesses (Geschaefte)",
+  "career": "Agents of Sabotage",
+  "tier": 2,
+  "tasks": [
+   "5 Files abschliessen, 2 davon ohne Tod, 25.000 $ Bonus verdienen"
+  ],
+  "next_hint": "Agents of Sabotage Stufe 3"
+ },
+ {
+  "n": 7,
+  "category": "Businesses (Geschaefte)",
+  "career": "Agents of Sabotage",
+  "tier": 3,
+  "tasks": [
+   "Alle Files abschliessen, 2 Wochen Prioritaets-File, alle Herausforderungen"
+  ],
+  "next_hint": "Agents of Sabotage Stufe 4"
+ },
+ {
+  "n": 8,
+  "category": "Businesses (Geschaefte)",
+  "career": "Agents of Sabotage",
+  "tier": 4,
+  "tasks": [
+   "9 Platin-Medaillen, 25 Files, alle Herausforderungen, 100.000 $ Bonus"
+  ],
+  "next_hint": "Bottom Dollar Bounties Stufe 1"
+ },
+ {
+  "n": 9,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bottom Dollar Bounties",
+  "tier": 1,
+  "tasks": [
+   "Kautionsbuero (Bail Office) einrichten, Maude treffen, ein Kopfgeldziel sichern oder ausschalten"
+  ],
+  "next_hint": "Bottom Dollar Bounties Stufe 2"
+ },
+ {
+  "n": 10,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bottom Dollar Bounties",
+  "tier": 2,
+  "tasks": [
+   "5 Standard-Ziele und 2 Most-Wanted-Ziele, 250.000 $ verdienen"
+  ],
+  "next_hint": "Bottom Dollar Bounties Stufe 3"
+ },
+ {
+  "n": 11,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bottom Dollar Bounties",
+  "tier": 3,
+  "tasks": [
+   "10 Ziele ohne Tod, Most Wanted an 3 Tagen, 25 Ziele insgesamt"
+  ],
+  "next_hint": "Bottom Dollar Bounties Stufe 4"
+ },
+ {
+  "n": 12,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bottom Dollar Bounties",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, alle Ziele lebend, 1.000.000 $ Agenten-Einkommen, 5.000.000 $ verdient"
+  ],
+  "next_hint": "The Chop Shop Stufe 1"
+ },
+ {
+  "n": 13,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Chop Shop",
+  "tier": 1,
+  "tasks": [
+   "Schrottplatz (Salvage Yard) einrichten, Yusuf treffen, einen Fahrzeugraub abschliessen"
+  ],
+  "next_hint": "The Chop Shop Stufe 2"
+ },
+ {
+  "n": 14,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Chop Shop",
+  "tier": 2,
+  "tasks": [
+   "Ein Fahrzeug verkaufen, ein Fahrzeug verschrotten, 250.000 $ verdienen"
+  ],
+  "next_hint": "The Chop Shop Stufe 3"
+ },
+ {
+  "n": 15,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Chop Shop",
+  "tier": 3,
+  "tasks": [
+   "Alle Raubzuege abschliessen, 5 Fahrzeuge in perfektem Zustand, alle Herausforderungen"
+  ],
+  "next_hint": "The Chop Shop Stufe 4"
+ },
+ {
+  "n": 16,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Chop Shop",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, 2.500.000 $ durch Verschrotten, alle Herausforderungen, 10.000.000 $ Verkaeufe"
+  ],
+  "next_hint": "The Contract Stufe 1"
+ },
+ {
+  "n": 17,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Contract",
+  "tier": 1,
+  "tasks": [
+   "Agentur einrichten, einen Sicherheitsauftrag abschliessen, Dr. Dre treffen"
+  ],
+  "next_hint": "The Contract Stufe 2"
+ },
+ {
+  "n": 18,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Contract",
+  "tier": 2,
+  "tasks": [
+   "Das Datenleck starten, 10 Telefonzellen-Auftraege, 10 Sicherheitsauftraege"
+  ],
+  "next_hint": "The Contract Stufe 3"
+ },
+ {
+  "n": 19,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Contract",
+  "tier": 3,
+  "tasks": [
+   "Den VIP-Auftrag abschliessen, 25 Telefonzellen-Auftraege mit Bonus, alle Kurztrips"
+  ],
+  "next_hint": "The Contract Stufe 4"
+ },
+ {
+  "n": 20,
+  "category": "Businesses (Geschaefte)",
+  "career": "The Contract",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, 100 Sicherheitsauftraege als Spezialist, 100 Telefonzellen-Auftraege mit Bonus, 5.000.000 $"
+  ],
+  "next_hint": "Los Santos Drug Wars Stufe 1"
+ },
+ {
+  "n": 21,
+  "category": "Businesses (Geschaefte)",
+  "career": "Los Santos Drug Wars",
+  "tier": 1,
+  "tasks": [
+   "First-Dose-Missionen abschliessen, Acid Lab einrichten, 10 Beschaffungsmissionen"
+  ],
+  "next_hint": "Los Santos Drug Wars Stufe 2"
+ },
+ {
+  "n": 22,
+  "category": "Businesses (Geschaefte)",
+  "career": "Los Santos Drug Wars",
+  "tier": 2,
+  "tasks": [
+   "Last Dose abschliessen, alle Fooligan-Jobs, 1.000.000 $ Acid-Verkaeufe"
+  ],
+  "next_hint": "Los Santos Drug Wars Stufe 3"
+ },
+ {
+  "n": 23,
+  "category": "Businesses (Geschaefte)",
+  "career": "Los Santos Drug Wars",
+  "tier": 3,
+  "tasks": [
+   "Alle Acid-Namen freischalten, 25 Fooligan-Jobs ohne Tod, 100 feindliche Lieferungen"
+  ],
+  "next_hint": "Los Santos Drug Wars Stufe 4"
+ },
+ {
+  "n": 24,
+  "category": "Businesses (Geschaefte)",
+  "career": "Los Santos Drug Wars",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, 100 Beschaffungsmissionen, alle Missionen ohne Tod, 10.000.000 $ Acid-Verkaeufe"
+  ],
+  "next_hint": "After Hours (Nachtclub) Stufe 1"
+ },
+ {
+  "n": 25,
+  "category": "Businesses (Geschaefte)",
+  "career": "After Hours (Nachtclub)",
+  "tier": 1,
+  "tasks": [
+   "Nachtclub einrichten, Club-Management-Auftrag, 5 Minuten tanzen"
+  ],
+  "next_hint": "After Hours (Nachtclub) Stufe 2"
+ },
+ {
+  "n": 26,
+  "category": "Businesses (Geschaefte)",
+  "career": "After Hours (Nachtclub)",
+  "tier": 2,
+  "tasks": [
+   "Zweiten DJ anheuern, Waren beschaffen, einen Stoerenfried rauswerfen"
+  ],
+  "next_hint": "After Hours (Nachtclub) Stufe 3"
+ },
+ {
+  "n": 27,
+  "category": "Businesses (Geschaefte)",
+  "career": "After Hours (Nachtclub)",
+  "tier": 3,
+  "tasks": [
+   "Alle DJs anheuern, den Tresor fuellen, 25 Management-Auftraege"
+  ],
+  "next_hint": "After Hours (Nachtclub) Stufe 4"
+ },
+ {
+  "n": 28,
+  "category": "Businesses (Geschaefte)",
+  "career": "After Hours (Nachtclub)",
+  "tier": 4,
+  "tasks": [
+   "8 Platin-Medaillen, 25 Promi-Auftritte, 10 Stunden bei 100 % Beliebtheit, 50.000.000 $ Gesamteinnahmen"
+  ],
+  "next_hint": "Smuggler's Run Stufe 1"
+ },
+ {
+  "n": 29,
+  "category": "Businesses (Geschaefte)",
+  "career": "Smuggler's Run",
+  "tier": 1,
+  "tasks": [
+   "Hangar einrichten, Fracht beschaffen, Personal losschicken"
+  ],
+  "next_hint": "Smuggler's Run Stufe 2"
+ },
+ {
+  "n": 30,
+  "category": "Businesses (Geschaefte)",
+  "career": "Smuggler's Run",
+  "tier": 2,
+  "tasks": [
+   "Ein Pegasus-Fahrzeug zum Privatfahrzeug machen, 10 Beschaffungen, einen Verkauf abschliessen"
+  ],
+  "next_hint": "Smuggler's Run Stufe 3"
+ },
+ {
+  "n": 31,
+  "category": "Businesses (Geschaefte)",
+  "career": "Smuggler's Run",
+  "tier": 3,
+  "tasks": [
+   "25 Beschaffungen, den Hangar fuellen, 50 Kisten einer Art"
+  ],
+  "next_hint": "Smuggler's Run Stufe 4"
+ },
+ {
+  "n": 32,
+  "category": "Businesses (Geschaefte)",
+  "career": "Smuggler's Run",
+  "tier": 4,
+  "tasks": [
+   "100 Beschaffungen, 1.000 Kisten verkauft, alle Frachtarten, 50.000.000 $"
+  ],
+  "next_hint": "Gunrunning (Bunker) Stufe 1"
+ },
+ {
+  "n": 33,
+  "category": "Businesses (Geschaefte)",
+  "career": "Gunrunning (Bunker)",
+  "tier": 1,
+  "tasks": [
+   "Bunker einrichten, Nachschub holen, Forschung starten"
+  ],
+  "next_hint": "Gunrunning (Bunker) Stufe 2"
+ },
+ {
+  "n": 34,
+  "category": "Businesses (Geschaefte)",
+  "career": "Gunrunning (Bunker)",
+  "tier": 2,
+  "tasks": [
+   "Lieferung an Ammu-Nation, eine Mobile Operation, ein Verkauf"
+  ],
+  "next_hint": "Gunrunning (Bunker) Stufe 3"
+ },
+ {
+  "n": 35,
+  "category": "Businesses (Geschaefte)",
+  "career": "Gunrunning (Bunker)",
+  "tier": 3,
+  "tasks": [
+   "Alle Schiessstand-Herausforderungen im Bunker, 25 Nachschubmissionen, 5 Mk-II-Upgrades"
+  ],
+  "next_hint": "Gunrunning (Bunker) Stufe 4"
+ },
+ {
+  "n": 36,
+  "category": "Businesses (Geschaefte)",
+  "career": "Gunrunning (Bunker)",
+  "tier": 4,
+  "tasks": [
+   "Alle Mobile Operations auf Schwer unter 10 Minuten, alle Herausforderungen, 25 Forschungen, 25.000.000 $"
+  ],
+  "next_hint": "Import/Export Stufe 1"
+ },
+ {
+  "n": 37,
+  "category": "Businesses (Geschaefte)",
+  "career": "Import/Export",
+  "tier": 1,
+  "tasks": [
+   "Fahrzeuglager kaufen, Fahrzeugfracht beschaffen, ein Spezialfahrzeug kaufen"
+  ],
+  "next_hint": "Import/Export Stufe 2"
+ },
+ {
+  "n": 38,
+  "category": "Businesses (Geschaefte)",
+  "career": "Import/Export",
+  "tier": 2,
+  "tasks": [
+   "Eine komplette Sammlerreihe, 1 perfekte Lieferung, 5 Spezialisten-Haendler"
+  ],
+  "next_hint": "Import/Export Stufe 3"
+ },
+ {
+  "n": 39,
+  "category": "Businesses (Geschaefte)",
+  "career": "Import/Export",
+  "tier": 3,
+  "tasks": [
+   "25 Fahrzeugfrachten, 40 Fahrzeuge im Lager, alle Special Vehicle Works"
+  ],
+  "next_hint": "Import/Export Stufe 4"
+ },
+ {
+  "n": 40,
+  "category": "Businesses (Geschaefte)",
+  "career": "Import/Export",
+  "tier": 4,
+  "tasks": [
+   "Alle Sammlerreihen, alle Special Vehicle Works auf Schwer, 50 perfekte Lieferungen, 25.000.000 $"
+  ],
+  "next_hint": "Bikers (Biker) Stufe 1"
+ },
+ {
+  "n": 41,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bikers (Biker)",
+  "tier": 1,
+  "tasks": [
+   "MC-Praesident werden, einen Spieler anheuern, einen Clubhaus-Auftrag"
+  ],
+  "next_hint": "Bikers (Biker) Stufe 2"
+ },
+ {
+  "n": 42,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bikers (Biker)",
+  "tier": 2,
+  "tasks": [
+   "Ein Bike liefern, ein Geschaeft einrichten, Nachschub holen"
+  ],
+  "next_hint": "Bikers (Biker) Stufe 3"
+ },
+ {
+  "n": 43,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bikers (Biker)",
+  "tier": 3,
+  "tasks": [
+   "Alle Clubhaus-Auftraege, alle Geschaefte verkaufen, 10 Bar-Nachschuebe"
+  ],
+  "next_hint": "Bikers (Biker) Stufe 4"
+ },
+ {
+  "n": 44,
+  "category": "Businesses (Geschaefte)",
+  "career": "Bikers (Biker)",
+  "tier": 4,
+  "tasks": [
+   "25.000.000 $ Ware verkauft, 2.500.000 $ mit Bikes, 500.000 $ mit der Bar, 50 Clubhaus-Auftraege"
+  ],
+  "next_hint": "Further Adventures in Finance and Felony (CEO) Stufe 1"
+ },
+ {
+  "n": 45,
+  "category": "Businesses (Geschaefte)",
+  "career": "Further Adventures in Finance and Felony (CEO)",
+  "tier": 1,
+  "tasks": [
+   "CEO werden, einen Spieler anheuern, eine VIP-Arbeit"
+  ],
+  "next_hint": "Further Adventures in Finance and Felony (CEO) Stufe 2"
+ },
+ {
+  "n": 46,
+  "category": "Businesses (Geschaefte)",
+  "career": "Further Adventures in Finance and Felony (CEO)",
+  "tier": 2,
+  "tasks": [
+   "Gemischte Waren exportieren, Spezialfracht-Lager kaufen, Fracht beschaffen"
+  ],
+  "next_hint": "Further Adventures in Finance and Felony (CEO) Stufe 3"
+ },
+ {
+  "n": 47,
+  "category": "Businesses (Geschaefte)",
+  "career": "Further Adventures in Finance and Felony (CEO)",
+  "tier": 3,
+  "tasks": [
+   "Alle Frachtarten, 111 Kisten auf einmal verkaufen, 5 VIP-Arbeiten"
+  ],
+  "next_hint": "Further Adventures in Finance and Felony (CEO) Stufe 4"
+ },
+ {
+  "n": 48,
+  "category": "Businesses (Geschaefte)",
+  "career": "Further Adventures in Finance and Felony (CEO)",
+  "tier": 4,
+  "tasks": [
+   "10 VIP-Arbeiten, alle Spezialgegenstaende, 250 Kisten, 50.000.000 $"
+  ],
+  "next_hint": "The Kortz Center Heist Stufe 1"
+ },
+ {
+  "n": 49,
+  "category": "Heists",
+  "career": "The Kortz Center Heist",
+  "tier": 1,
+  "tasks": [
+   "Raf treffen, das Ziel auskundschaften, eine Vorbereitung abschliessen"
+  ],
+  "next_hint": "The Kortz Center Heist Stufe 2"
+ },
+ {
+  "n": 50,
+  "category": "Heists",
+  "career": "The Kortz Center Heist",
+  "tier": 2,
+  "tasks": [
+   "Den Heist abschliessen, 20 Vorbereitungen, alle Nebenziele"
+  ],
+  "next_hint": "The Kortz Center Heist Stufe 3"
+ },
+ {
+  "n": 51,
+  "category": "Heists",
+  "career": "The Kortz Center Heist",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer ungesehen abschliessen, das Gemaelde behalten, 4 Eingaenge nutzen"
+  ],
+  "next_hint": "The Kortz Center Heist Stufe 4"
+ },
+ {
+  "n": 52,
+  "category": "Heists",
+  "career": "The Kortz Center Heist",
+  "tier": 4,
+  "tasks": [
+   "15 Platin-Medaillen, Elite-Herausforderung, 5 Gemaelde, 50.000.000 $ Beute"
+  ],
+  "next_hint": "Cayo Perico Heist Stufe 1"
+ },
+ {
+  "n": 53,
+  "category": "Heists",
+  "career": "Cayo Perico Heist",
+  "tier": 1,
+  "tasks": [
+   "Miguel treffen, die Kosatka kaufen, Informationen sammeln"
+  ],
+  "next_hint": "Cayo Perico Heist Stufe 2"
+ },
+ {
+  "n": 54,
+  "category": "Heists",
+  "career": "Cayo Perico Heist",
+  "tier": 2,
+  "tasks": [
+   "Als Anfuehrer abschliessen, DJ-Wuensche erfuellen, 10 Schatztruhen"
+  ],
+  "next_hint": "Cayo Perico Heist Stufe 3"
+ },
+ {
+  "n": 55,
+  "category": "Heists",
+  "career": "Cayo Perico Heist",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer abschliessen, 25 Vorbereitungen ohne Tod, alle DJ-Wuensche"
+  ],
+  "next_hint": "Cayo Perico Heist Stufe 4"
+ },
+ {
+  "n": 56,
+  "category": "Heists",
+  "career": "Cayo Perico Heist",
+  "tier": 4,
+  "tasks": [
+   "15 Platin-Medaillen, alle Hauptziel-Varianten, alle Ansaetze, 50.000.000 $ Beute"
+  ],
+  "next_hint": "The Diamond Casino Heist Stufe 1"
+ },
+ {
+  "n": 57,
+  "category": "Heists",
+  "career": "The Diamond Casino Heist",
+  "tier": 1,
+  "tasks": [
+   "Lester treffen, eine Spielhalle kaufen, den Tresor auskundschaften"
+  ],
+  "next_hint": "The Diamond Casino Heist Stufe 2"
+ },
+ {
+  "n": 58,
+  "category": "Heists",
+  "career": "The Diamond Casino Heist",
+  "tier": 2,
+  "tasks": [
+   "Den Heist abschliessen, 25 Vorbereitungen, ein Spielhallen-Spiel spielen"
+  ],
+  "next_hint": "The Diamond Casino Heist Stufe 3"
+ },
+ {
+  "n": 59,
+  "category": "Heists",
+  "career": "The Diamond Casino Heist",
+  "tier": 3,
+  "tasks": [
+   "Alle Ansaetze, alle Crew-Mitglieder, auf Schwer unter 10 Minuten"
+  ],
+  "next_hint": "The Diamond Casino Heist Stufe 4"
+ },
+ {
+  "n": 60,
+  "category": "Heists",
+  "career": "The Diamond Casino Heist",
+  "tier": 4,
+  "tasks": [
+   "15 Platin-Medaillen, alle Beute-Varianten auf Schwer ungesehen, 50.000.000 $ Tresor, 100.000 $ Tagestresor"
+  ],
+  "next_hint": "The Doomsday Heist Stufe 1"
+ },
+ {
+  "n": 61,
+  "category": "Heists",
+  "career": "The Doomsday Heist",
+  "tier": 1,
+  "tasks": [
+   "Einrichtung (Facility) kaufen, Lester treffen, Setup Datenleck"
+  ],
+  "next_hint": "The Doomsday Heist Stufe 2"
+ },
+ {
+  "n": 62,
+  "category": "Heists",
+  "career": "The Doomsday Heist",
+  "tier": 2,
+  "tasks": [
+   "Akt 1 als Anfuehrer, Setup Bogdan, Akt 2 als Anfuehrer"
+  ],
+  "next_hint": "The Doomsday Heist Stufe 3"
+ },
+ {
+  "n": 63,
+  "category": "Heists",
+  "career": "The Doomsday Heist",
+  "tier": 3,
+  "tasks": [
+   "Setup Doomsday, Akt 3 als Anfuehrer, 14 Vorbereitungen ohne Tod"
+  ],
+  "next_hint": "The Doomsday Heist Stufe 4"
+ },
+ {
+  "n": 64,
+  "category": "Heists",
+  "career": "The Doomsday Heist",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, alle Akte nur mit Pistolen und Fahrzeugen, alle Elite-Herausforderungen, 15 Akte als Anfuehrer"
+  ],
+  "next_hint": "Original Heists (Klassische Heists) Stufe 1"
+ },
+ {
+  "n": 65,
+  "category": "Heists",
+  "career": "Original Heists (Klassische Heists)",
+  "tier": 1,
+  "tasks": [
+   "High-End-Apartment kaufen, Fleeca-Job, ein Setup als Anfuehrer"
+  ],
+  "next_hint": "Original Heists (Klassische Heists) Stufe 2"
+ },
+ {
+  "n": 66,
+  "category": "Heists",
+  "career": "Original Heists (Klassische Heists)",
+  "tier": 2,
+  "tasks": [
+   "Fleeca, Gefaengnisausbruch und Humane Labs als Anfuehrer"
+  ],
+  "next_hint": "Original Heists (Klassische Heists) Stufe 3"
+ },
+ {
+  "n": 67,
+  "category": "Heists",
+  "career": "Original Heists (Klassische Heists)",
+  "tier": 3,
+  "tasks": [
+   "Series A und Pacific Standard mit derselben Crew"
+  ],
+  "next_hint": "Original Heists (Klassische Heists) Stufe 4"
+ },
+ {
+  "n": 68,
+  "category": "Heists",
+  "career": "Original Heists (Klassische Heists)",
+  "tier": 4,
+  "tasks": [
+   "15 Platin-Medaillen, 50.000.000 $ aus allen Heists, Elite-Herausforderungen, Criminal Mastermind"
+  ],
+  "next_hint": "KnoWay Out Stufe 1"
+ },
+ {
+  "n": 69,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "KnoWay Out",
+  "tier": 1,
+  "tasks": [
+   "'Negative Press' abschliessen"
+  ],
+  "next_hint": "KnoWay Out Stufe 2"
+ },
+ {
+  "n": 70,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "KnoWay Out",
+  "tier": 2,
+  "tasks": [
+   "'A Clean Break' abschliessen und eine Mission ohne Tod"
+  ],
+  "next_hint": "KnoWay Out Stufe 3"
+ },
+ {
+  "n": 71,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "KnoWay Out",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer abschliessen und alle Missionen auf Schwer"
+  ],
+  "next_hint": "KnoWay Out Stufe 4"
+ },
+ {
+  "n": 72,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "KnoWay Out",
+  "tier": 4,
+  "tasks": [
+   "5.000.000 $ verdient, auf Schwer ohne Gegenstaende, unter 60 Minuten"
+  ],
+  "next_hint": "Oscar Guzman Flies Again Stufe 1"
+ },
+ {
+  "n": 73,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Oscar Guzman Flies Again",
+  "tier": 1,
+  "tasks": [
+   "'Up and Running' abschliessen"
+  ],
+  "next_hint": "Oscar Guzman Flies Again Stufe 2"
+ },
+ {
+  "n": 74,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Oscar Guzman Flies Again",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen abschliessen, keine Tode"
+  ],
+  "next_hint": "Oscar Guzman Flies Again Stufe 3"
+ },
+ {
+  "n": 75,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Oscar Guzman Flies Again",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "Oscar Guzman Flies Again Stufe 4"
+ },
+ {
+  "n": 76,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Oscar Guzman Flies Again",
+  "tier": 4,
+  "tasks": [
+   "5.000.000 $, auf Schwer ohne Gegenstaende, unter 60 Minuten"
+  ],
+  "next_hint": "The Cluckin' Bell Farm Raid Stufe 1"
+ },
+ {
+  "n": 77,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "The Cluckin' Bell Farm Raid",
+  "tier": 1,
+  "tasks": [
+   "Startkapital stehlen (erste Mission)"
+  ],
+  "next_hint": "The Cluckin' Bell Farm Raid Stufe 2"
+ },
+ {
+  "n": 78,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "The Cluckin' Bell Farm Raid",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "The Cluckin' Bell Farm Raid Stufe 3"
+ },
+ {
+  "n": 79,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "The Cluckin' Bell Farm Raid",
+  "tier": 3,
+  "tasks": [
+   "'Scene' ungesehen abschliessen und beide Ansaetze"
+  ],
+  "next_hint": "The Cluckin' Bell Farm Raid Stufe 4"
+ },
+ {
+  "n": 80,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "The Cluckin' Bell Farm Raid",
+  "tier": 4,
+  "tasks": [
+   "5.000.000 $, unter 45 Minuten, komplette Ausruestung"
+  ],
+  "next_hint": "San Andreas Mercenaries Stufe 1"
+ },
+ {
+  "n": 81,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "San Andreas Mercenaries",
+  "tier": 1,
+  "tasks": [
+   "'Project Overthrow' abschliessen"
+  ],
+  "next_hint": "San Andreas Mercenaries Stufe 2"
+ },
+ {
+  "n": 82,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "San Andreas Mercenaries",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "San Andreas Mercenaries Stufe 3"
+ },
+ {
+  "n": 83,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "San Andreas Mercenaries",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "San Andreas Mercenaries Stufe 4"
+ },
+ {
+  "n": 84,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "San Andreas Mercenaries",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "Operation Paper Trail Stufe 1"
+ },
+ {
+  "n": 85,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Operation Paper Trail",
+  "tier": 1,
+  "tasks": [
+   "Die Mission abschliessen"
+  ],
+  "next_hint": "Operation Paper Trail Stufe 2"
+ },
+ {
+  "n": 86,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Operation Paper Trail",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "Operation Paper Trail Stufe 3"
+ },
+ {
+  "n": 87,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Operation Paper Trail",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "Operation Paper Trail Stufe 4"
+ },
+ {
+  "n": 88,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Operation Paper Trail",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "A Superyacht Life Stufe 1"
+ },
+ {
+  "n": 89,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "A Superyacht Life",
+  "tier": 1,
+  "tasks": [
+   "Die Mission abschliessen"
+  ],
+  "next_hint": "A Superyacht Life Stufe 2"
+ },
+ {
+  "n": 90,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "A Superyacht Life",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "A Superyacht Life Stufe 3"
+ },
+ {
+  "n": 91,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "A Superyacht Life",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "A Superyacht Life Stufe 4"
+ },
+ {
+  "n": 92,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "A Superyacht Life",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "Gerald's Last Play Stufe 1"
+ },
+ {
+  "n": 93,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Gerald's Last Play",
+  "tier": 1,
+  "tasks": [
+   "'Last Play' abschliessen"
+  ],
+  "next_hint": "Gerald's Last Play Stufe 2"
+ },
+ {
+  "n": 94,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Gerald's Last Play",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "Gerald's Last Play Stufe 3"
+ },
+ {
+  "n": 95,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Gerald's Last Play",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "Gerald's Last Play Stufe 4"
+ },
+ {
+  "n": 96,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Gerald's Last Play",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "Premium Deluxe Repo Stufe 1"
+ },
+ {
+  "n": 97,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Premium Deluxe Repo",
+  "tier": 1,
+  "tasks": [
+   "'Repo Work' abschliessen"
+  ],
+  "next_hint": "Premium Deluxe Repo Stufe 2"
+ },
+ {
+  "n": 98,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Premium Deluxe Repo",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "Premium Deluxe Repo Stufe 3"
+ },
+ {
+  "n": 99,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Premium Deluxe Repo",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "Premium Deluxe Repo Stufe 4"
+ },
+ {
+  "n": 100,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Premium Deluxe Repo",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "Madrazo Dispatch Services Stufe 1"
+ },
+ {
+  "n": 101,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Madrazo Dispatch Services",
+  "tier": 1,
+  "tasks": [
+   "'Dispatch' abschliessen"
+  ],
+  "next_hint": "Madrazo Dispatch Services Stufe 2"
+ },
+ {
+  "n": 102,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Madrazo Dispatch Services",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "Madrazo Dispatch Services Stufe 3"
+ },
+ {
+  "n": 103,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Madrazo Dispatch Services",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "Madrazo Dispatch Services Stufe 4"
+ },
+ {
+  "n": 104,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Madrazo Dispatch Services",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "Lowriders Stufe 1"
+ },
+ {
+  "n": 105,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Lowriders",
+  "tier": 1,
+  "tasks": [
+   "Eine Lowrider-Mission abschliessen"
+  ],
+  "next_hint": "Lowriders Stufe 2"
+ },
+ {
+  "n": 106,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Lowriders",
+  "tier": 2,
+  "tasks": [
+   "Alle Missionen ohne Tod"
+  ],
+  "next_hint": "Lowriders Stufe 3"
+ },
+ {
+  "n": 107,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Lowriders",
+  "tier": 3,
+  "tasks": [
+   "Auf Schwer und alle auf Schwer"
+  ],
+  "next_hint": "Lowriders Stufe 4"
+ },
+ {
+  "n": 108,
+  "category": "Contact Missions (Kontaktmissionen)",
+  "career": "Lowriders",
+  "tier": 4,
+  "tasks": [
+   "Auf Schwer ohne Gegenstaende, unter 50 % Schaden, ueber 80 % Treffergenauigkeit"
+  ],
+  "next_hint": "Los Santos Tuners Stufe 1"
+ },
+ {
+  "n": 109,
+  "category": "Recreation (Freizeit)",
+  "career": "Los Santos Tuners",
+  "tier": 1,
+  "tasks": [
+   "LS Car Meet beitreten, Teststrecke fahren, Autowerkstatt kaufen"
+  ],
+  "next_hint": "Los Santos Tuners Stufe 2"
+ },
+ {
+  "n": 110,
+  "category": "Recreation (Freizeit)",
+  "career": "Los Santos Tuners",
+  "tier": 2,
+  "tasks": [
+   "Raubauftraege starten, 10 Kundenauftraege, Ruf-Level 10"
+  ],
+  "next_hint": "Los Santos Tuners Stufe 3"
+ },
+ {
+  "n": 111,
+  "category": "Recreation (Freizeit)",
+  "career": "Los Santos Tuners",
+  "tier": 3,
+  "tasks": [
+   "Alle Raubauftraege, ein Prize Ride gewinnen, 10 Exotic Exports"
+  ],
+  "next_hint": "Los Santos Tuners Stufe 4"
+ },
+ {
+  "n": 112,
+  "category": "Recreation (Freizeit)",
+  "career": "Los Santos Tuners",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, 25 Raubauftraege, 5.000.000 $ Lieferungen, Ruf-Level 100"
+  ],
+  "next_hint": "Diamond Casino and Resort Stufe 1"
+ },
+ {
+  "n": 113,
+  "category": "Recreation (Freizeit)",
+  "career": "Diamond Casino and Resort",
+  "tier": 1,
+  "tasks": [
+   "Casino besuchen, Penthouse kaufen, 'Loose Cheng' abschliessen"
+  ],
+  "next_hint": "Diamond Casino and Resort Stufe 2"
+ },
+ {
+  "n": 114,
+  "category": "Recreation (Freizeit)",
+  "career": "Diamond Casino and Resort",
+  "tier": 2,
+  "tasks": [
+   "'Cashing Out' abschliessen, Bonus-Bergung, Casino-Arbeit"
+  ],
+  "next_hint": "Diamond Casino and Resort Stufe 3"
+ },
+ {
+  "n": 115,
+  "category": "Recreation (Freizeit)",
+  "career": "Diamond Casino and Resort",
+  "tier": 3,
+  "tasks": [
+   "13 Casino-Arbeiten, Missionen auf Schwer, Avery ungesehen"
+  ],
+  "next_hint": "Diamond Casino and Resort Stufe 4"
+ },
+ {
+  "n": 116,
+  "category": "Recreation (Freizeit)",
+  "career": "Diamond Casino and Resort",
+  "tier": 4,
+  "tasks": [
+   "11 Platin-Medaillen, auf Schwer unter 50 % Schaden, nur Pistolen, 100 Casino-Arbeiten"
+  ],
+  "next_hint": "Arena War Stufe 1"
+ },
+ {
+  "n": 117,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Arena War",
+  "tier": 1,
+  "tasks": [
+   "Arena-Werkstatt kaufen"
+  ],
+  "next_hint": "Arena War Stufe 2"
+ },
+ {
+  "n": 118,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Arena War",
+  "tier": 2,
+  "tasks": [
+   "Einen Modus gewinnen, Skill-Level 5"
+  ],
+  "next_hint": "Arena War Stufe 3"
+ },
+ {
+  "n": 119,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Arena War",
+  "tier": 3,
+  "tasks": [
+   "Sponsoring-Stufe 25, alle Modi"
+  ],
+  "next_hint": "Arena War Stufe 4"
+ },
+ {
+  "n": 120,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Arena War",
+  "tier": 4,
+  "tasks": [
+   "15 Platin-Medaillen, Skill 20, Sponsoring 50"
+  ],
+  "next_hint": "Adversary Modes (Gegnermodi) Stufe 1"
+ },
+ {
+  "n": 121,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Adversary Modes (Gegnermodi)",
+  "tier": 1,
+  "tasks": [
+   "An einem Gegnermodus teilnehmen"
+  ],
+  "next_hint": "Adversary Modes (Gegnermodi) Stufe 2"
+ },
+ {
+  "n": 122,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Adversary Modes (Gegnermodi)",
+  "tier": 2,
+  "tasks": [
+   "Featured-Modus spielen, 5 Siege"
+  ],
+  "next_hint": "Adversary Modes (Gegnermodi) Stufe 3"
+ },
+ {
+  "n": 123,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Adversary Modes (Gegnermodi)",
+  "tier": 3,
+  "tasks": [
+   "10 verschiedene Modi, 20 Siege"
+  ],
+  "next_hint": "Adversary Modes (Gegnermodi) Stufe 4"
+ },
+ {
+  "n": 124,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Adversary Modes (Gegnermodi)",
+  "tier": 4,
+  "tasks": [
+   "25 verschiedene Modi, 50 Siege, 5 Siege in Folge"
+  ],
+  "next_hint": "Survivals (Ueberleben) Stufe 1"
+ },
+ {
+  "n": 125,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Survivals (Ueberleben)",
+  "tier": 1,
+  "tasks": [
+   "Ein Survival spielen"
+  ],
+  "next_hint": "Survivals (Ueberleben) Stufe 2"
+ },
+ {
+  "n": 126,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Survivals (Ueberleben)",
+  "tier": 2,
+  "tasks": [
+   "5 Wellen ohne Tod, 50 Wellen gesamt"
+  ],
+  "next_hint": "Survivals (Ueberleben) Stufe 3"
+ },
+ {
+  "n": 127,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Survivals (Ueberleben)",
+  "tier": 3,
+  "tasks": [
+   "10 Wellen ohne Tod, 100 Kopfschuesse"
+  ],
+  "next_hint": "Survivals (Ueberleben) Stufe 4"
+ },
+ {
+  "n": 128,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Survivals (Ueberleben)",
+  "tier": 4,
+  "tasks": [
+   "10 Wellen solo, Welle 16 im Endlos-Modus, 250 Wellen"
+  ],
+  "next_hint": "Racing (Rennen) Stufe 1"
+ },
+ {
+  "n": 129,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Racing (Rennen)",
+  "tier": 1,
+  "tasks": [
+   "An einem Rennen teilnehmen"
+  ],
+  "next_hint": "Racing (Rennen) Stufe 2"
+ },
+ {
+  "n": 130,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Racing (Rennen)",
+  "tier": 2,
+  "tasks": [
+   "5 Rennarten, 5 Siege gegen Spieler"
+  ],
+  "next_hint": "Racing (Rennen) Stufe 3"
+ },
+ {
+  "n": 131,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Racing (Rennen)",
+  "tier": 3,
+  "tasks": [
+   "25 Siege gegen Spieler, 25 Zeitrennen unter Par"
+  ],
+  "next_hint": "Racing (Rennen) Stufe 4"
+ },
+ {
+  "n": 132,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Racing (Rennen)",
+  "tier": 4,
+  "tasks": [
+   "20 Community-Siege, 50 schnellste Runden, 50 Siege gegen Spieler"
+  ],
+  "next_hint": "Deathmatches Stufe 1"
+ },
+ {
+  "n": 133,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Deathmatches",
+  "tier": 1,
+  "tasks": [
+   "An einem Deathmatch teilnehmen"
+  ],
+  "next_hint": "Deathmatches Stufe 2"
+ },
+ {
+  "n": 134,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Deathmatches",
+  "tier": 2,
+  "tasks": [
+   "Team-Deathmatch spielen, 5 Siege"
+  ],
+  "next_hint": "Deathmatches Stufe 3"
+ },
+ {
+  "n": 135,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Deathmatches",
+  "tier": 3,
+  "tasks": [
+   "10 Community-Deathmatches, 20 Siege"
+  ],
+  "next_hint": "Deathmatches Stufe 4"
+ },
+ {
+  "n": 136,
+  "category": "Series Modes (Spielmodi)",
+  "career": "Deathmatches",
+  "tier": 4,
+  "tasks": [
+   "25-mal 5 Kills ohne Tod, 50 Siege, 5 Siege in Folge"
+  ],
+  "next_hint": "Vehicle Enthusiast (Fahrzeug-Enthusiast) Stufe 1"
+ },
+ {
+  "n": 137,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Vehicle Enthusiast (Fahrzeug-Enthusiast)",
+  "tier": 1,
+  "tasks": [
+   "10er-Garage kaufen, ein Fahrzeug tunen, ein Pegasus-Fahrzeug"
+  ],
+  "next_hint": "Vehicle Enthusiast (Fahrzeug-Enthusiast) Stufe 2"
+ },
+ {
+  "n": 138,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Vehicle Enthusiast (Fahrzeug-Enthusiast)",
+  "tier": 2,
+  "tasks": [
+   "Kauf bei Premium Deluxe oder Legendary Motorsport, Benny's-Upgrade, HSW-Upgrade"
+  ],
+  "next_hint": "Vehicle Enthusiast (Fahrzeug-Enthusiast) Stufe 3"
+ },
+ {
+  "n": 139,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Vehicle Enthusiast (Fahrzeug-Enthusiast)",
+  "tier": 3,
+  "tasks": [
+   "Arena-Fahrzeug, Imani-Tech, 5 Flugschul-Goldmedaillen"
+  ],
+  "next_hint": "Vehicle Enthusiast (Fahrzeug-Enthusiast) Stufe 4"
+ },
+ {
+  "n": 140,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Vehicle Enthusiast (Fahrzeug-Enthusiast)",
+  "tier": 4,
+  "tasks": [
+   "10 Platin-Medaillen, 100 Fahrzeuge (1 Spezialfahrzeug), alle 15 Klassen, 50 getunte Fahrzeuge"
+  ],
+  "next_hint": "Weapons Expert (Waffenexperte) Stufe 1"
+ },
+ {
+  "n": 141,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Weapons Expert (Waffenexperte)",
+  "tier": 1,
+  "tasks": [
+   "5 Waffen, Koerperpanzerung, ein Aufsatz"
+  ],
+  "next_hint": "Weapons Expert (Waffenexperte) Stufe 2"
+ },
+ {
+  "n": 142,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Weapons Expert (Waffenexperte)",
+  "tier": 2,
+  "tasks": [
+   "Waffenschrank-Loadout, Waffenwerkstatt, Merryweather-Abwurf"
+  ],
+  "next_hint": "Weapons Expert (Waffenexperte) Stufe 3"
+ },
+ {
+  "n": 143,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Weapons Expert (Waffenexperte)",
+  "tier": 3,
+  "tasks": [
+   "Alle Ammu-Nation-Herausforderungen aller Waffentypen, alle Typen, 10 Tage Gun Van"
+  ],
+  "next_hint": "Weapons Expert (Waffenexperte) Stufe 4"
+ },
+ {
+  "n": 144,
+  "category": "Special Interests (Spezialgebiete)",
+  "career": "Weapons Expert (Waffenexperte)",
+  "tier": 4,
+  "tasks": [
+   "10 Ammu-Nation-Siege gegen Spieler, alle Mk-II-Waffen, 50 Waffen, alle Mk-II-Munition"
+  ],
+  "next_hint": "Abschluss der Serie"
+ }
+]

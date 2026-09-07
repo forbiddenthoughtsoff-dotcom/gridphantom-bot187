@@ -32,3 +32,7 @@ Thumbs.db
 # Bundled royalty-free music bed (CC BY, credited in descriptions)
 !music/*.mp3
 !music/manifest.json
+
+# Owner series definition (committed)
+!series/
+!series/karriere.json
