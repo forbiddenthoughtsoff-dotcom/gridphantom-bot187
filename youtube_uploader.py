@@ -118,7 +118,11 @@ class YouTubeUploader:
         related = self.find_related_video(script.get('title', ''))
         if related:
             script['related_video_url'] = related
+        # YouTube rejects '<' and '>' in title/description (invalidDescription)
+        # — an episode that wrote "Pause > Online > Karriere" hit exactly that
+        title = title.replace('<', '‹').replace('>', '›')
         description = self._build_description(script, language)
+        description = description.replace('<', '‹').replace('>', '›')
         tags = script.get('tags', [])
 
         # Branding + audience-targeting search tags

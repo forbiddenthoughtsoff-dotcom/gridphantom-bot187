@@ -61,7 +61,7 @@ def brief_for(e: dict) -> dict:
         f"'GTA Online Karriere #{e['n']}: {e['career']} Stufe {e['tier']}' – danach darf ein kurzer Zusatz folgen.\n"
         f"Kontext (bestaetigt): Der Karriere-Fortschritt ist ein Feature von GTA Online auf PS5 und Xbox Series X|S "
         f"(eingefuehrt Juni 2023 mit dem Update San Andreas Mercenaries). Es gibt 6 Kategorien, jede Herausforderung hat 4 Stufen; "
-        f"jede Stufe schaltet Belohnungen frei (exklusive Kleidung, Lackierungen, GTA$ und RP). Menue: Pause > Online > Karriere-Fortschritt.\n"
+        f"jede Stufe schaltet Belohnungen frei (exklusive Kleidung, Lackierungen, GTA$ und RP). Menue: Pause-Menue, Reiter Online, Punkt Karriere-Fortschritt (keine Pfeile oder Groesser-Zeichen im Text verwenden).\n"
         f"AUFGABEN dieser Stufe (Kurzform aus dem GTA-Wiki – jede Aufgabe nennen und verstaendlich erklaeren, "
         f"keine Zahlen erfinden, die hier nicht stehen):\n{tasks}\n"
         f"Ziel des Videos: Der Zuschauer weiss danach genau, was zu tun ist, in welcher Reihenfolge es am schnellsten geht, "
