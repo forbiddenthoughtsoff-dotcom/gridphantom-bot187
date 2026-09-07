@@ -48,8 +48,15 @@ def _run_health_server():
             print(f"[HEALTH] error, restarting: {e}", flush=True)
             time.sleep(2)
 
-threading.Thread(target=_run_health_server, daemon=True).start()
-print("[HEALTH] Health server started on port 8080", flush=True)
+# Own PROCESS, not a thread: during a long export the render holds the GIL
+# for seconds at a time and a health probe on the thread could time out —
+# the platform then restarts the container mid-render. Forked before any
+# heavy import, so the child is tiny and immune to the main process' load.
+if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.get_context('fork').Process(
+        target=_run_health_server, daemon=True, name='health').start()
+    print("[HEALTH] Health server started on port 8080 (own process)", flush=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -142,6 +149,16 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             RENDER_BUSY.set()
         except Exception:
             RENDER_BUSY = None
+        # Fresh container (empty /tmp) and no owner stills: pull a few own
+        # PS5 clips NOW rather than rendering the first video on stock
+        if not script.get('still_images'):
+            try:
+                from gameplay_sync import ensure_library
+                n = ensure_library()
+                if n:
+                    logger.info(f"🎮 Own-clip library: {n} clip(s) usable")
+            except Exception as e:
+                logger.warning(f"Just-in-time clip sync skipped: {e}")
         try:
             video = VideoAssembler().assemble(script, audio)
         finally:
