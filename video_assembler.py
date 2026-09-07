@@ -195,6 +195,55 @@ def make_caption_layer(text: str):
     return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
 
 
+class CaptionTrack:
+    """Time-indexed caption bands rendered lazily (see the overlay loop in
+    _assemble). frame(t)/mask(t) are moviepy make_frame callables; frames
+    outside any span are fully transparent."""
+
+    def __init__(self, groups: list, duration: float):
+        self.spans = []
+        for i, g in enumerate(groups):
+            start = min(float(g['start']), duration)
+            if i + 1 < len(groups):
+                end = min(float(groups[i + 1]['start']), duration)
+            else:
+                end = min(float(g['end']) + 0.8, duration)
+            if end > start:
+                self.spans.append((start, end, g['text']))
+        self._cache = {}
+        self._empty_rgb = np.zeros((CAPTION_BAND_H, W, 3), dtype=np.uint8)
+        self._empty_mask = np.zeros((CAPTION_BAND_H, W), dtype=np.float32)
+        self._last = 0
+
+    def _index(self, t: float):
+        # frames are requested in order: start from the last hit
+        n = len(self.spans)
+        i = self._last if self._last < n else 0
+        if self.spans[i][0] > t:
+            i = 0
+        while i < n and self.spans[i][1] <= t:
+            i += 1
+        if i < n and self.spans[i][0] <= t < self.spans[i][1]:
+            self._last = i
+            return i
+        return None
+
+    def _layer(self, i: int):
+        if i not in self._cache:
+            if len(self._cache) >= 2:
+                self._cache.pop(min(self._cache))
+            self._cache[i] = make_caption_layer(self.spans[i][2])
+        return self._cache[i]
+
+    def frame(self, t: float):
+        i = self._index(t)
+        return self._empty_rgb if i is None else self._layer(i)[0]
+
+    def mask(self, t: float):
+        i = self._index(t)
+        return self._empty_mask if i is None else self._layer(i)[1]
+
+
 def make_brand_layer():
     """Small static channel handle band for the bottom of the frame."""
     layer = Image.new('RGBA', (W, BRAND_BAND_H), (0, 0, 0, 0))
@@ -695,21 +744,20 @@ class VideoAssembler:
                     .set_start(0).set_duration(duration))
                 narration = script.get('narration') or " ".join(sentences)
                 groups = build_caption_groups(narration, words)
-                for i, g in enumerate(groups):
-                    start = min(g['start'], duration)
-                    if i + 1 < len(groups):
-                        end = min(groups[i + 1]['start'], duration)
-                    else:
-                        end = min(g['end'] + 0.8, duration)
-                    if end <= start:
-                        continue
-                    rgb, alpha = make_caption_layer(g['text'])
+                # ONE dynamic caption track instead of one ImageClip per
+                # pop-in: a 120 s tutorial has ~80 groups, and 80 pre-rendered
+                # bands (uint8 rgb + float32 mask each) plus the composite
+                # bookkeeping pushed the 1 GB container over the edge mid-
+                # export (restart at 12:36, first series episode lost). The
+                # track renders the active band on demand and keeps two.
+                track = CaptionTrack(groups, duration)
+                if track.spans:
                     overlays.append(
-                        ImageClip(rgb)
-                        .set_mask(ImageClip(alpha, ismask=True))
-                        .set_position((0, CAPTION_Y))
-                        .set_start(start).set_duration(end - start))
-                logger.info(f"💬 Word-synced captions: {len(groups)} pop-ins")
+                        VideoClip(track.frame, duration=duration)
+                        .set_mask(VideoClip(track.mask, ismask=True,
+                                            duration=duration))
+                        .set_position((0, CAPTION_Y)))
+                logger.info(f"💬 Word-synced captions: {len(track.spans)} pop-ins")
             else:
                 for i, sentence in enumerate(sentences):
                     start = i * seg_dur

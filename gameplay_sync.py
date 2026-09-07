@@ -44,13 +44,23 @@ _lock = threading.Lock()
 RENDER_BUSY = threading.Event()
 
 
-def _wait_render_idle(t0: float, time_budget: float) -> bool:
-    """Block while a render is in progress; False when the budget ran out."""
-    while RENDER_BUSY.is_set():
-        if time.time() - t0 > time_budget:
-            return False
-        time.sleep(5)
-    return True
+def _wait_render_idle(t0: float, time_budget: float,
+                      ignore_busy: bool = False) -> bool:
+    """Block while a render is in progress; False when the budget ran out.
+    The sync lock is released while waiting so a just-in-time sync (which
+    deliberately runs during a cycle) can get in; it is re-taken before
+    returning True."""
+    if ignore_busy or not RENDER_BUSY.is_set():
+        return True
+    _lock.release()
+    try:
+        while RENDER_BUSY.is_set():
+            if time.time() - t0 > time_budget:
+                return False
+            time.sleep(5)
+        return True
+    finally:
+        _lock.acquire()
 
 
 def folder_id() -> str:
@@ -348,7 +358,7 @@ def _ingest(entries: list, uid: str, name: str, raw: str, proxy: str):
 
 
 def _sync_drive(entries: list, fid: str, t0: float, time_budget: float,
-                max_new: int):
+                max_new: int, ignore_busy: bool = False):
     try:
         import gdown
     except ImportError:
@@ -370,7 +380,7 @@ def _sync_drive(entries: list, fid: str, t0: float, time_budget: float,
     for f in new[:max_new]:
         if len(entries) >= MAX_CLIPS or not _budget_left(t0, time_budget):
             break
-        if not _wait_render_idle(t0, time_budget):
+        if not _wait_render_idle(t0, time_budget, ignore_busy):
             break
         name = os.path.basename(str(f.path))
         safe = re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80]
@@ -384,7 +394,8 @@ def _sync_drive(entries: list, fid: str, t0: float, time_budget: float,
         _ingest(entries, f.id, name, raw, proxy)
 
 
-def _sync_psn(entries: list, t0: float, time_budget: float, max_new: int):
+def _sync_psn(entries: list, t0: float, time_budget: float, max_new: int,
+              ignore_busy: bool = False):
     import psn_captures as psn
     known = {e.get('drive_id') for e in entries}
     try:
@@ -404,7 +415,7 @@ def _sync_psn(entries: list, t0: float, time_budget: float, max_new: int):
     for i in new[:max_new]:
         if len(entries) >= MAX_CLIPS or not _budget_left(t0, time_budget):
             break
-        if not _wait_render_idle(t0, time_budget):
+        if not _wait_render_idle(t0, time_budget, ignore_busy):
             break
         uid = f"psn:{i.get('id')}"
         safe = re.sub(r'[^A-Za-z0-9_-]+', '_', str(i.get('id')))[:60]
@@ -416,10 +427,11 @@ def _sync_psn(entries: list, t0: float, time_budget: float, max_new: int):
 
 
 def sync(time_budget: float = 240.0, lock_wait: float = 30.0,
-         max_new: int = PREFETCH_PER_RUN) -> list:
+         max_new: int = PREFETCH_PER_RUN, ignore_busy: bool = False) -> list:
     """Pull up to `max_new` new clips from all configured sources into the
     runtime library (download once, highlight analysis, vertical proxy).
-    Returns the usable entries. No-op when nothing is configured."""
+    Returns the usable entries. No-op when nothing is configured.
+    ignore_busy: run even while a cycle holds the box (just-in-time fill)."""
     fid = folder_id()
     try:
         import psn_captures
@@ -435,15 +447,35 @@ def sync(time_budget: float = 240.0, lock_wait: float = 30.0,
         entries = runtime_entries()
         t0 = time.time()
         if psn_on:
-            _sync_psn(entries, t0, time_budget, max_new)
+            _sync_psn(entries, t0, time_budget, max_new, ignore_busy)
         if fid:
-            _sync_drive(entries, fid, t0, time_budget, max_new)
+            _sync_drive(entries, fid, t0, time_budget, max_new, ignore_busy)
         return entries
     except Exception as e:
         logger.warning(f"Gameplay sync skipped: {e}")
         return runtime_entries()
     finally:
         _lock.release()
+
+
+def ensure_library(min_clips: int = 4, max_new: int = 5,
+                   time_budget: float = 600.0) -> int:
+    """Just-in-time fill right before a render: /tmp is empty after every
+    deploy, and the startup post claims the box before the background sync
+    gets a single clip in — the first video of a fresh container then ran
+    on stock footage instead of the owner's gameplay. Blocks (ignoring the
+    busy flag) until at least `min_clips` own clips are usable or the
+    budget is spent. Returns the library size."""
+    if not sources():
+        return 0
+    have = len(runtime_entries())
+    if have >= min_clips:
+        return have
+    logger.info(f"🎮 Own-clip library has {have} clip(s) — pulling up to "
+                f"{max_new} before the render (max {int(time_budget)} s)")
+    entries = sync(time_budget=time_budget, lock_wait=240.0,
+                   max_new=max_new, ignore_busy=True)
+    return len(entries)
 
 
 def sync_async():
