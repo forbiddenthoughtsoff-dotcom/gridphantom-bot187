@@ -36,7 +36,7 @@ W, H = 1920, 1080
 SEG_LEN = 8.0
 SECTION_GAP = 0.6
 MARKER_RE = re.compile(r'Langform-ID:\s*(LF-\d+)', re.I)
-TARGET_WORDS = {'weekly': (1150, 1350), 'evergreen': (1450, 1700)}
+TARGET_WORDS = {'weekly': (1500, 1800), 'evergreen': (1800, 2100)}
 GTA6_KEYS = ('gta 6', 'gta6', 'gta vi', 'vice city', 'leonida', 'lucia', 'jason', 'trailer')
 
 LONGFORM_SYSTEM = """You write long-form YouTube video scripts for the German GTA channel GridPhantom
@@ -48,7 +48,7 @@ arrogant, no clickbait claims that the video does not deliver.
 Facts: only what is confirmed or clearly labelled as rumour/leak. Never invent dates, prices, payouts
 or features. When something is unknown, say so — that is content too.
 
-Structure: 6 to 8 sections. Section 1 is the cold open: a concrete promise of what the viewer gets
+Structure: 8 to 10 sections. Section 1 is the cold open: a concrete promise of what the viewer gets
 in the next minutes (max 3 sentences), then straight into content. Every following section has a
 short spoken heading (3-6 words, this becomes the YouTube chapter name) and 6-12 sentences that
 each add a new fact, step or insight. The last section wraps up in 3-4 sentences, names ONE thing

@@ -336,10 +336,13 @@ if __name__ == "__main__":
     schedule.every().day.at("10:00").do(run_clip_short)
     # long-form for watch time, at night (box free, quota day still open;
     # the following 07:00 Short is skipped)
-    schedule.every().thursday.at("03:30").do(run_longform_slot, 'evergreen')
+    # DAILY long-form at night: the 3 000 public watch hours come from
+    # 10-15 min videos, not from Shorts. Sunday = weekly recap, else guides.
+    for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
+        getattr(schedule.every(), _day).at("03:30").do(run_longform_slot, 'evergreen')
     schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
     logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE) + Clip-Short 10 "
-                "+ long-form Thu/Sun 03:30")
+                "+ long-form daily 03:30")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
