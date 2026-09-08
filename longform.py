@@ -541,9 +541,9 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
     # release at prime time (default 18:00 local), never in the night
     publish_at = None
     try:
-        hour = int(os.environ.get('LONGFORM_PUBLISH_HOUR', '18'))
+        hh, mm = os.environ.get('LONGFORM_PUBLISH_AT', '17:30').split(':')
         now = datetime.datetime.now()
-        publish_at = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        publish_at = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
         if publish_at <= now + datetime.timedelta(minutes=20):
             publish_at += datetime.timedelta(days=1)
         publish_at = publish_at.astimezone()

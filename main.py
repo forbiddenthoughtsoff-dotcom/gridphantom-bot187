@@ -326,23 +326,19 @@ if __name__ == "__main__":
 
     validate_config()
 
-    # English only — morning post, midday short, evening post (Zürich time)
-    schedule.every().day.at("07:00").do(run_bot_short)
+    # Slots on the DACH activity peaks (YouTube gaming audience 14-30):
+    # 12:00 lunch (series episode), 15:30 after school (clip Short),
+    # 19:00 and 21:15 evening prime (narration / dialogue). The nightly
+    # long-form is released at 17:30. Five uploads per quota day = the cap.
     schedule.every().day.at("12:00").do(run_bot_short)
-    schedule.every().day.at("17:00").do(run_bot_short)
-    schedule.every().day.at("22:00").do(run_bot_short)
-    # fifth upload of the day: raw own-gameplay highlight (game audio, no
-    # voice). Five uploads keep the day inside the 10 000-unit YouTube quota
-    schedule.every().day.at("10:00").do(run_clip_short)
-    # long-form for watch time, at night (box free, quota day still open;
-    # the following 07:00 Short is skipped)
-    # DAILY long-form at night: the 3 000 public watch hours come from
-    # 10-15 min videos, not from Shorts. Sunday = weekly recap, else guides.
+    schedule.every().day.at("15:30").do(run_clip_short)
+    schedule.every().day.at("19:00").do(run_bot_short)
+    schedule.every().day.at("21:15").do(run_bot_short)
     for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
         getattr(schedule.every(), _day).at("03:30").do(run_longform_slot, 'evergreen')
     schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
-    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE) + Clip-Short 10 "
-                "+ long-form daily 03:30")
+    logger.info("⏰ Shorts 12:00 (Serie) | 15:30 (Clip) | 19:00 | 21:15 (Di/Fr Dialog) "
+                "+ long-form nightly, released 17:30")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers

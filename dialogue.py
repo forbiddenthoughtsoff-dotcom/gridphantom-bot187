@@ -173,9 +173,9 @@ def voice(script: dict, language: str = 'de', output_path: str = None) -> str:
 
 
 def is_dialogue_slot(now=None) -> bool:
-    """Tuesday and Friday 22:00 (configurable: DIALOGUE_DAYS='1,4', DIALOGUE_HOUR=22)."""
+    """Tuesday and Friday 21:15 slot (configurable: DIALOGUE_DAYS='1,4', DIALOGUE_HOUR=21)."""
     from datetime import datetime
     now = now or datetime.now()
     days = {int(x) for x in os.environ.get('DIALOGUE_DAYS', '1,4').split(',') if x.strip().isdigit()}
-    hour = int(os.environ.get('DIALOGUE_HOUR', '22'))
+    hour = int(os.environ.get('DIALOGUE_HOUR', '21'))
     return now.weekday() in days and now.hour == hour
