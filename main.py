@@ -302,6 +302,17 @@ def run_longform_slot(kind: str = 'evergreen', is_retry: bool = False):
         schedule.every(20).minutes.do(_retry)
 
 
+def run_cleanup():
+    """08:40 local: hide a batch of the old off-topic clips with the quota
+    left over from the day (the quota day resets 09:00)."""
+    try:
+        from youtube_uploader import YouTubeUploader
+        import cleanup
+        cleanup.run(YouTubeUploader().service)
+    except Exception as e:
+        logger.error(f"Cleanup error: {e}", exc_info=True)
+
+
 def run_engagement():
     """Reply to new viewer comments across recent videos."""
     logger.info(f"💬 ENGAGEMENT cycle — {datetime.now():%Y-%m-%d %H:%M}")
@@ -338,6 +349,7 @@ if __name__ == "__main__":
     for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
         getattr(schedule.every(), _day).at("03:30").do(run_longform_slot, 'evergreen')
     schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
+    schedule.every().day.at("08:40").do(run_cleanup)
     logger.info("⏰ Shorts 12:00 (Serie) | 15:30 (Clip) | 19:00 | 21:15 (Di/Fr Dialog) "
                 "+ long-form nightly, released 17:30")
     try:
