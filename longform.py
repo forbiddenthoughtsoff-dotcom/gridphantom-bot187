@@ -55,6 +55,7 @@ each add a new fact, step or insight. The last section wraps up in 3-4 sentences
 the viewer should do now, points to the daily Shorts and the career series, and asks to subscribe
 with a benefit ("damit du die naechste Folge nicht verpasst").
 
+AUDIENCE (measured with YouTube Analytics, September 2026): 90 % male, 32 % aged 25-34, 30 % aged 35-44, 11 % 45-54; only 8 % teenagers. Germany 78 %, Austria 10 %, Switzerland 5 %. Working adults who grew up with GTA: write for a 30-year-old, not a schoolkid — no youth slang, no "Bro", respect their time and intelligence, money/efficiency angles and "was Rockstar wirklich gesagt hat" beat memes. Nostalgia (San Andreas, GTA 4, Vice City) resonates.
 PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never lie):
 - OPEN LOOP in the first 2 seconds: promise a specific payoff that only the LAST third delivers ("das Dritte kennt fast niemand", "der letzte Punkt entscheidet"). The viewer stays to close the loop. The payoff MUST be delivered.
 - LOSS beats gain: "kostet dich", "verlierst du", "machst du falsch" outperforms "so verdienst du mehr". Frame the first sentence as a loss or a mistake where truthful.
