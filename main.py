@@ -292,7 +292,18 @@ if __name__ == "__main__":
     # Immediate post on startup only if explicitly enabled — otherwise every
     # deploy/restart uploads an unscheduled extra video. Started BEFORE the
     # clip sync so the cycle's busy flag is up before any transcode begins.
-    if os.environ.get('POST_ON_START', '').lower() in ('1', 'true', 'yes'):
+    start_mode = os.environ.get('POST_ON_START', '').lower()
+    if start_mode == 'clip':
+        # one raw-highlight clip Short right away (first data point for a
+        # new format without waiting for the 10:00 slot)
+        logger.info("🚀 POST_ON_START=clip — posting one clip Short immediately")
+        try:
+            from gameplay_sync import RENDER_BUSY
+            RENDER_BUSY.set()
+        except Exception:
+            pass
+        threading.Thread(target=run_clip_short, daemon=True).start()
+    elif start_mode in ('1', 'true', 'yes'):
         brief = owner_brief()
         logger.info("🚀 POST_ON_START enabled — posting immediately"
                     + (f" (owner assignment: {brief['brief'][:60]}...)" if brief else ""))
