@@ -169,6 +169,7 @@ def run_pipeline(language: str = 'de', brief: dict = None):
         vid = uploader.upload(video, script, language)
         if vid:
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+            uploader.add_to_series_playlist(vid, script.get('title', ''))
             from community_manager import CommunityManager
             CommunityManager(uploader.service).seed_comment(vid, script)
         else:
@@ -215,6 +216,36 @@ def run_bot_short(is_retry: bool = False, brief: dict = None):
 
         schedule.every(30).minutes.do(_retry)
 
+def run_clip_short(is_retry: bool = False):
+    """Raw-highlight slot: one of the owner's own PS5 moments with the
+    original game audio — no narration, so it costs no voice credits and
+    plays like the clip Shorts that travel furthest in the GTA feed."""
+    logger.info(f"🎞️ CLIP SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
+                + (" (retry)" if is_retry else ""))
+    try:
+        from gameplay_sync import RENDER_BUSY as busy
+        busy.set()
+    except Exception:
+        busy = None
+    vid = None
+    try:
+        from clip_short import run_clip_short as _run
+        vid = _run()
+    except Exception as e:
+        logger.error(f"Clip short error: {e}", exc_info=True)
+    finally:
+        if busy is not None:
+            busy.clear()
+    if vid is None and not is_retry:
+        logger.warning("⏳ Clip slot failed — retrying once in 30 minutes")
+
+        def _retry():
+            run_clip_short(is_retry=True)
+            return schedule.CancelJob
+
+        schedule.every(30).minutes.do(_retry)
+
+
 def run_engagement():
     """Reply to new viewer comments across recent videos."""
     logger.info(f"💬 ENGAGEMENT cycle — {datetime.now():%Y-%m-%d %H:%M}")
@@ -245,7 +276,10 @@ if __name__ == "__main__":
     schedule.every().day.at("12:00").do(run_bot_short)
     schedule.every().day.at("17:00").do(run_bot_short)
     schedule.every().day.at("22:00").do(run_bot_short)
-    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE)")
+    # fifth upload of the day: raw own-gameplay highlight (game audio, no
+    # voice). Five uploads keep the day inside the 10 000-unit YouTube quota
+    schedule.every().day.at("10:00").do(run_clip_short)
+    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE) + Clip-Short 10")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
