@@ -9,6 +9,30 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
+def _clean_tags(tags) -> list:
+    """YouTube's tag rules, enforced instead of hoped for: no '<' '>' '"',
+    a single tag at most 30 characters, the whole list at most 500
+    characters where a tag with spaces costs two extra (it is quoted).
+    Episode 2 of the series was rejected twice with invalidTags because the
+    German search phrases pushed the list past that budget."""
+    import re
+    out, seen, total = [], set(), 0
+    for t in tags or []:
+        t = re.sub(r'[<>"]', '', str(t)).strip()
+        if not t or len(t) > 30:
+            continue
+        k = t.lower()
+        if k in seen:
+            continue
+        cost = len(t) + (2 if ' ' in t else 0)
+        if total + cost > 470:
+            continue
+        seen.add(k)
+        out.append(t)
+        total += cost
+    return out
+
+
 class YouTubeUploader:
     def __init__(self):
         self.service = self._authenticate()
@@ -75,6 +99,8 @@ class YouTubeUploader:
                 likes = int(v['statistics'].get('likeCount', 0))
                 out.append({
                     'title': v['snippet']['title'],
+                    'description': v['snippet'].get('description', ''),
+                    'video_id': v['id'],
                     'views': views, 'likes': likes,
                     'age_hours': round(age_h, 1),
                     # rate only meaningful once a video had time to spread
@@ -115,9 +141,8 @@ class YouTubeUploader:
         if '#shorts' not in title.lower():
             title = f"{title[:91]} #Shorts"
 
-        related = self.find_related_video(script.get('title', ''))
-        if related:
-            script['related_video_url'] = related
+        # No outbound "related video" link any more: it sent viewers to
+        # other channels and cost 100 quota units per upload
         # YouTube rejects '<' and '>' in title/description (invalidDescription)
         # — an episode that wrote "Pause > Online > Karriere" hit exactly that
         title = title.replace('<', '‹').replace('>', '›')
@@ -131,11 +156,13 @@ class YouTubeUploader:
                      'gta tricks', 'gta tipps deutsch', 'gta online deutsch',
                      'gta 5 deutsch', 'gaming shorts'])
 
+        tags = _clean_tags(tags)
+
         body = {
             'snippet': {
                 'title': title[:100],
                 'description': description,
-                'tags': tags[:30],
+                'tags': tags,
                 'categoryId': '20',  # Gaming
                 'defaultLanguage': language,
                 'defaultAudioLanguage': language,
@@ -171,6 +198,45 @@ class YouTubeUploader:
         video_url = f"https://youtube.com/watch?v={video_id}"
         logger.info(f"✅ Uploaded: {video_url}")
         return video_id
+
+    SERIES_PLAYLIST = "GTA Online Karriere – alle Folgen (Tutorial-Serie)"
+
+    def add_to_series_playlist(self, video_id: str, title: str) -> bool:
+        """Every 'GTA Online Karriere #N' episode goes into the series
+        playlist (created on first use) — binge path for the tutorial series,
+        more watch time per viewer. Costs ~51 quota units per episode."""
+        try:
+            import re
+            if not re.search(r'karriere\s*#\s*\d+', title or '', re.I):
+                return False
+            pl_id = None
+            res = self.service.playlists().list(
+                part='snippet', mine=True, maxResults=50).execute()
+            for p in res.get('items', []):
+                if p['snippet']['title'].strip().lower() == self.SERIES_PLAYLIST.lower():
+                    pl_id = p['id']
+                    break
+            if not pl_id:
+                pl_id = self.service.playlists().insert(
+                    part='snippet,status',
+                    body={'snippet': {
+                        'title': self.SERIES_PLAYLIST,
+                        'description': ("Jede Aufgabe des Karriere-Fortschritts in GTA Online, "
+                                        "Stufe 1 bis 4, Folge fuer Folge erklaert. "
+                                        "Taeglich eine neue Folge um 12 Uhr. Sharing is caring."),
+                        'defaultLanguage': 'de'},
+                        'status': {'privacyStatus': 'public'}}).execute()['id']
+                logger.info(f"📚 Series playlist created: {pl_id}")
+            self.service.playlistItems().insert(
+                part='snippet',
+                body={'snippet': {'playlistId': pl_id,
+                                  'resourceId': {'kind': 'youtube#video',
+                                                 'videoId': video_id}}}).execute()
+            logger.info(f"📚 Added to series playlist: {video_id}")
+            return True
+        except Exception as e:
+            logger.warning(f"Series playlist skipped (non-fatal): {e}")
+            return False
 
     def _build_description(self, script: dict, language: str) -> str:
         # First line: #Shorts (YouTube reads the first hashtags for classification)

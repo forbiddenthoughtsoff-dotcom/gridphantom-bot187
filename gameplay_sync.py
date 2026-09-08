@@ -132,18 +132,21 @@ def runtime_entries() -> list:
 
 
 def make_proxy(src: str, dst: str, timeout: int = 900) -> bool:
-    """Vertical 1080x1920 / 24 fps / silent proxy: drop the bottom 10 %
-    of the source first (that is where GTA draws its in-game subtitles,
-    which would sit right under our captions), then scale to cover and
-    centre crop — works for 16:9, 4K, and already-vertical sources alike."""
+    """Vertical 1080x1920 / 24 fps proxy: drop the bottom 10 % of the
+    source first (that is where GTA draws its in-game subtitles, which
+    would sit right under our captions), then scale to cover and centre
+    crop — works for 16:9, 4K, and already-vertical sources alike. The game
+    audio is kept (AAC 128k): the raw-highlight Shorts play the original
+    engine/shots/crash sound; narration videos drop it at assembly."""
     # thread caps keep one proxy job around 200 MB instead of 450 MB
-    cmd = [_ffmpeg(), '-y', '-threads', '2', '-i', src, '-an',
+    cmd = [_ffmpeg(), '-y', '-threads', '2', '-i', src,
            '-vf', ('crop=iw:ih*0.9:0:0,'
                    'scale=1080:1920:force_original_aspect_ratio=increase'
                    ':flags=lanczos,crop=1080:1920,fps=24'),
            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
            '-x264-params', 'threads=2:lookahead-threads=1:rc-lookahead=10',
-           '-pix_fmt', 'yuv420p', '-movflags', '+faststart', dst]
+           '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-ac', '2',
+           '-movflags', '+faststart', dst]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:

@@ -257,6 +257,45 @@ def make_brand_layer():
     return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
 
 
+SUB_BAND_H = 150
+SUB_Y = CAPTION_Y + CAPTION_BAND_H + 60   # between captions and brand
+
+
+def make_subscribe_layer():
+    """Red 'ABONNIEREN' pill — the on-screen subscribe nudge every Short
+    shows for a few seconds in its last third (subs are the bottleneck for
+    monetisation, views alone are not). Same band format as the captions."""
+    layer = Image.new('RGBA', (W, SUB_BAND_H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    font = load_font(58)
+    text = "ABONNIEREN"
+    tw = d.textbbox((0, 0), text, font=font)[2]
+    pw, ph = tw + 150, 108
+    x0, y0 = (W - pw) // 2, (SUB_BAND_H - ph) // 2
+    d.rounded_rectangle((x0 + 4, y0 + 6, x0 + pw + 4, y0 + ph + 6), radius=54,
+                        fill=(0, 0, 0, 140))                      # soft shadow
+    d.rounded_rectangle((x0, y0, x0 + pw, y0 + ph), radius=54,
+                        fill=(230, 33, 23, 255))
+    # bell glyph drawn by hand (the bundled font has no emoji)
+    bx, by = x0 + 46, y0 + ph // 2
+    d.pieslice((bx - 22, by - 30, bx + 22, by + 14), 180, 360, fill=(255, 255, 255, 255))
+    d.rectangle((bx - 22, by - 8, bx + 22, by + 14), fill=(255, 255, 255, 255))
+    d.rectangle((bx - 30, by + 12, bx + 30, by + 20), fill=(255, 255, 255, 255))
+    d.ellipse((bx - 9, by + 20, bx + 9, by + 34), fill=(255, 255, 255, 255))
+    tb = d.textbbox((0, 0), text, font=font)
+    d.text((x0 + 96, y0 + (ph - (tb[3] - tb[1])) // 2 - tb[1]), text,
+           font=font, fill=(255, 255, 255, 255))
+    arr = np.asarray(layer, dtype=np.uint8)
+    return arr[:, :, :3].copy(), arr[:, :, 3].astype(np.float32) / 255.0
+
+
+def save_layer_png(rgb, alpha, path: str) -> str:
+    """Write a (rgb uint8, alpha float) band as an RGBA PNG for ffmpeg overlays."""
+    a = (np.clip(alpha, 0, 1) * 255).astype(np.uint8)[:, :, None]
+    Image.fromarray(np.concatenate([rgb, a], axis=2), 'RGBA').save(path)
+    return path
+
+
 def build_caption_groups(narration: str, tts_words: list,
                          max_words: int = 3, max_chars: int = 22) -> list:
     """Caption chunks built from the ORIGINAL narration text, timed by the
@@ -758,6 +797,16 @@ class VideoAssembler:
                                             duration=duration))
                         .set_position((0, CAPTION_Y)))
                 logger.info(f"💬 Word-synced captions: {len(track.spans)} pop-ins")
+                # subscribe pill in the last third, gone before the end card
+                # moment — long enough to read, short enough not to annoy
+                sub_start = min(duration * 0.58, max(duration - 6.0, 0.0))
+                sub_len = min(3.5, max(duration - sub_start, 0.5))
+                sub_rgb, sub_a = make_subscribe_layer()
+                overlays.append(
+                    ImageClip(sub_rgb)
+                    .set_mask(ImageClip(sub_a, ismask=True))
+                    .set_position((0, SUB_Y))
+                    .set_start(sub_start).set_duration(sub_len))
             else:
                 for i, sentence in enumerate(sentences):
                     start = i * seg_dur

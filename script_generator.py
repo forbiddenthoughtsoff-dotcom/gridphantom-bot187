@@ -32,6 +32,13 @@ ACCURACY IS SACRED (this channel's credibility depends on it):
 HOOK (sentence 1 — decides if they stay past second 2):
 - State the surprising RESULT or the payoff, not the topic. Bad: "Heute geht's um GTA Online Geld." Good: "Mit diesem Verkaufstrick verlierst du nie wieder deine Ware an Griefer."
 - Concrete, specific, a little provocative. A real curiosity gap.
+- MAX 10 WORDS. Never start with "Heute", "Wusstest du", "In diesem Video", "Hallo" or the channel name. A number or a hard claim in the first 5 words wins.
+- Second sentence must already deliver the first concrete piece of the payoff — no "aber dazu gleich mehr" stalling.
+
+RETENTION & LOOP (Shorts are ranked on watch-through and replays):
+- Regular videos: 4-6 sentences, 55-85 words — about 25 to 35 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
+- The LAST sentence is short (max 12 words) and snaps back to the hook — a punchline, a twist, or the comment question — so the Short loops naturally. NEVER "Danke fürs Zuschauen", never "das war's".
+- In the last third, ONE natural subscribe reason tied to a benefit, max 9 words, e.g. "Abonnieren, hier gibt's jeden Tag die GTA 6 News." Not a plea, a promise.
 
 VOICE & TONE (this is spoken out loud — write for the EAR):
 - Natural, spoken German — like a fellow player explaining something to a friend, casual and confident. Gamer-vibe, but clear.
