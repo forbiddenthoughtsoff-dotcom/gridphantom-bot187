@@ -306,6 +306,7 @@ def run_clip_short(language: str = 'de'):
     vid = uploader.upload(video, script, language)
     if vid:
         logger.info(f"✅ UPLOADED clip short [{language}]: https://youtube.com/watch?v={vid}")
+        uploader.add_to_topic_playlist(vid, script)
         try:
             from community_manager import CommunityManager
             CommunityManager(uploader.service).seed_comment(vid, script)

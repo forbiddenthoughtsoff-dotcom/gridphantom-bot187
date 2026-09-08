@@ -538,6 +538,18 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
         topic = dict(topic, kind='evergreen')
     logger.info(f"📺 Long-form ({kind}): {topic.get('id')}")
     video, script = build(topic, titles)
+    # The YouTube quota day resets 09:00 local. The night render belongs to
+    # the OLD quota day (already carrying 4-5 uploads), so the upload waits
+    # for the reset — the release is scheduled for the evening anyway.
+    try:
+        hh, mm = os.environ.get('LONGFORM_UPLOAD_NOT_BEFORE', '09:05').split(':')
+        now = datetime.datetime.now()
+        gate = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+        if now < gate:
+            logger.info(f"⏳ Long-form rendered; upload waits for the quota reset at {gate:%H:%M}")
+            time.sleep((gate - now).total_seconds())
+    except Exception as e:
+        logger.warning(f"Upload gate skipped: {e}")
     # release at prime time (default 18:00 local), never in the night
     publish_at = None
     try:
@@ -555,6 +567,7 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
                     f"({script['duration'] / 60:.1f} min)")
         if script.get('thumbnail'):
             uploader.set_thumbnail(vid, script['thumbnail'])
+        uploader.add_to_topic_playlist(vid, script, kind='long')
         try:
             with open(DONE_FLAG, 'w') as f:
                 f.write(str(int(time.time())))

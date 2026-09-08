@@ -188,7 +188,8 @@ def run_pipeline(language: str = 'de', brief: dict = None):
         vid = uploader.upload(video, script, language)
         if vid:
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
-            uploader.add_to_series_playlist(vid, script.get('title', ''))
+            if not uploader.add_to_series_playlist(vid, script.get('title', '')):
+                uploader.add_to_topic_playlist(vid, script)
             from community_manager import CommunityManager
             CommunityManager(uploader.service).seed_comment(vid, script)
         else:
