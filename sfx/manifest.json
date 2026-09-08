@@ -1,0 +1,80 @@
+{
+ "credit": "Sound effects generated with ElevenLabs (elevenlabs.io)",
+ "effects": [
+  {
+   "name": "whoosh_1",
+   "file": "whoosh_1.mp3",
+   "seconds": 0.7
+  },
+  {
+   "name": "whoosh_2",
+   "file": "whoosh_2.mp3",
+   "seconds": 0.6
+  },
+  {
+   "name": "whoosh_3",
+   "file": "whoosh_3.mp3",
+   "seconds": 0.8
+  },
+  {
+   "name": "whoosh_4",
+   "file": "whoosh_4.mp3",
+   "seconds": 0.6
+  },
+  {
+   "name": "impact_1",
+   "file": "impact_1.mp3",
+   "seconds": 1.2
+  },
+  {
+   "name": "impact_2",
+   "file": "impact_2.mp3",
+   "seconds": 1.0
+  },
+  {
+   "name": "riser_1",
+   "file": "riser_1.mp3",
+   "seconds": 2.0
+  },
+  {
+   "name": "cash_1",
+   "file": "cash_1.mp3",
+   "seconds": 1.0
+  },
+  {
+   "name": "cash_2",
+   "file": "cash_2.mp3",
+   "seconds": 1.2
+  },
+  {
+   "name": "ding_1",
+   "file": "ding_1.mp3",
+   "seconds": 0.6
+  },
+  {
+   "name": "siren_1",
+   "file": "siren_1.mp3",
+   "seconds": 1.0
+  },
+  {
+   "name": "engine_1",
+   "file": "engine_1.mp3",
+   "seconds": 1.2
+  },
+  {
+   "name": "gunshot_1",
+   "file": "gunshot_1.mp3",
+   "seconds": 1.0
+  },
+  {
+   "name": "explosion_1",
+   "file": "explosion_1.mp3",
+   "seconds": 1.5
+  },
+  {
+   "name": "drone_1",
+   "file": "drone_1.mp3",
+   "seconds": 3.0
+  }
+ ]
+}

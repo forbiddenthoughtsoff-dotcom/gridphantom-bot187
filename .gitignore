@@ -36,3 +36,8 @@ Thumbs.db
 # Owner series definition (committed)
 !series/
 !series/karriere.json
+
+# Owner series + long-form topic lists, generated sound-design library (committed)
+!series/longform.json
+!sfx/*.mp3
+!sfx/manifest.json

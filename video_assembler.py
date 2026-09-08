@@ -696,6 +696,9 @@ class VideoAssembler:
         # 2) official GTA VI trailer montage (GTA 6 topics), 3) any own
         # gameplay clip, 4) topic-matched Pexels stock, 5) AI image + Ken Burns
         base = None
+        cuts_n = 0
+        # subscribe pill timing (also the cue for its pop sound)
+        sub_start = min(duration * 0.58, max(duration - 6.0, 0.0))
         try:
             gta6, build_trailer_montage = False, None
             try:
@@ -708,6 +711,7 @@ class VideoAssembler:
             # trailer beats GTA 5 gameplay
             n_seg = len(sentences) or 3
             bg_path = None
+            cuts_n = 0   # hard cuts in the background (for the whoosh sound design)
             # Owner-supplied stills (e.g. official product images for a
             # hardware topic) are the only right footage — they win outright
             if script.get('still_images'):
@@ -717,17 +721,24 @@ class VideoAssembler:
                         fetch_images(script['still_images']), duration, max(n_seg, 4))
                 except Exception as e:
                     logger.warning(f"Still images unavailable: {e}")
+            if bg_path:
+                cuts_n = max(n_seg, 4)
             if not bg_path:
-                bg_path = (build_gameplay_montage(script, duration, n_seg, require_match=gta6)
-                           or pick_gameplay_clip(script, require_match=gta6))
+                bg_path = build_gameplay_montage(script, duration, n_seg, require_match=gta6)
+                cuts_n = n_seg if bg_path else 0
+                if not bg_path:
+                    bg_path = pick_gameplay_clip(script, require_match=gta6)
             if not bg_path and gta6 and build_trailer_montage:
                 try:
                     bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)
+                    cuts_n = (len(sentences) or 3) if bg_path else 0
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
             if not bg_path and gta6:  # own footage still beats stock
-                bg_path = (build_gameplay_montage(script, duration, n_seg)
-                           or pick_gameplay_clip(script))
+                bg_path = build_gameplay_montage(script, duration, n_seg)
+                cuts_n = n_seg if bg_path else 0
+                if not bg_path:
+                    bg_path = pick_gameplay_clip(script)
             if not bg_path:
                 # Topic-matched footage: the script's subject query first,
                 # then its broader alternatives, then a neutral fallback
@@ -740,6 +751,7 @@ class VideoAssembler:
                 # several topic clips, one hard cut per sentence, camera
                 # motion on every cut — instead of one static stock clip
                 bg_path = build_pexels_montage(queries, duration, n_seg)
+                cuts_n = n_seg if bg_path else 0
                 if not bg_path:
                     for q in queries:
                         bg_path = fetch_pexels_video(q)
@@ -799,7 +811,6 @@ class VideoAssembler:
                 logger.info(f"💬 Word-synced captions: {len(track.spans)} pop-ins")
                 # subscribe pill in the last third, gone before the end card
                 # moment — long enough to read, short enough not to annoy
-                sub_start = min(duration * 0.58, max(duration - 6.0, 0.0))
                 sub_len = min(3.5, max(duration - sub_start, 0.5))
                 sub_rgb, sub_a = make_subscribe_layer()
                 overlays.append(
@@ -853,6 +864,14 @@ class VideoAssembler:
         output_path, credit = add_music_bed(output_path, duration)
         if credit:
             script['music_credit'] = credit
+        # Sound design on top of the mix: whoosh per cut, impact under the
+        # hook, pop with the subscribe pill, cash register on money talk
+        try:
+            from sfx import plan_events, mix_sfx
+            output_path = mix_sfx(output_path, plan_events(
+                duration, cuts_n, words, sub_start))
+        except Exception as e:
+            logger.warning(f"Sound design skipped: {e}")
 
         logger.info(f"Video assembled: {output_path}")
         return output_path

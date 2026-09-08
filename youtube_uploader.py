@@ -132,13 +132,15 @@ class YouTubeUploader:
             logger.warning(f"Related-video search failed (non-fatal): {e}")
             return ''
 
-    def upload(self, video_path: str, script: dict, language: str) -> str:
-        """Upload video to YouTube with full metadata"""
+    def upload(self, video_path: str, script: dict, language: str,
+               kind: str = 'short') -> str:
+        """Upload video to YouTube with full metadata. kind='long' uploads a
+        regular 16:9 video (no #Shorts marker, chapters in the description)."""
 
         # "#Shorts" in the title is YouTube's explicit signal to classify
         # the upload as a Short instead of a regular video
         title = script['title']
-        if '#shorts' not in title.lower():
+        if kind == 'short' and '#shorts' not in title.lower():
             title = f"{title[:91]} #Shorts"
 
         # No outbound "related video" link any more: it sent viewers to
@@ -146,7 +148,7 @@ class YouTubeUploader:
         # YouTube rejects '<' and '>' in title/description (invalidDescription)
         # — an episode that wrote "Pause > Online > Karriere" hit exactly that
         title = title.replace('<', '‹').replace('>', '›')
-        description = self._build_description(script, language)
+        description = self._build_description(script, language, shorts=(kind == 'short'))
         description = description.replace('<', '‹').replace('>', '›')
         tags = script.get('tags', [])
 
@@ -238,9 +240,29 @@ class YouTubeUploader:
             logger.warning(f"Series playlist skipped (non-fatal): {e}")
             return False
 
-    def _build_description(self, script: dict, language: str) -> str:
+    def set_thumbnail(self, video_id: str, path: str) -> bool:
+        """Custom thumbnail (long-form only; ~50 quota units). Fails soft —
+        channels without phone verification cannot set thumbnails."""
+        try:
+            self.service.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(path, mimetype='image/jpeg')).execute()
+            logger.info(f"🖼️ Thumbnail set on {video_id}")
+            return True
+        except Exception as e:
+            logger.warning(f"Thumbnail skipped (non-fatal): {e}")
+            return False
+
+    def _build_description(self, script: dict, language: str, shorts: bool = True) -> str:
         # First line: #Shorts (YouTube reads the first hashtags for classification)
-        description = "#Shorts\n\n" + script.get('description', '')
+        description = ("#Shorts\n\n" if shorts else "") + script.get('description', '')
+        # Long-form: chapters (first one must be 0:00) — navigation + retention
+        if script.get('chapters'):
+            lines = []
+            for i, (sec, name) in enumerate(script['chapters']):
+                sec = 0 if i == 0 else int(sec)
+                lines.append(f"{sec // 60}:{sec % 60:02d} {name}")
+            description += "\n\n📑 Kapitel:\n" + "\n".join(lines)
 
         # Direct link to a topical video — saves viewers the search
         if script.get('related_video_url'):
@@ -278,6 +300,8 @@ class YouTubeUploader:
             base_tags = ['shorts', 'gta', 'gta5', 'gta5deutsch', 'gtaonline',
                          'gta6', 'gtavi', 'gtatricksdeutsch', 'gtatippsdeutsch',
                          'grandtheftauto', 'rockstargames', 'gamingdeutsch']
+        if not shorts:
+            base_tags = [t for t in base_tags if t != 'shorts']
 
         # Hashtags: topic-specific first (from script tags), then base — deduped.
         # YouTube reads the first 3 for display, uses all for search; hard
