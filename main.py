@@ -349,8 +349,8 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
     # Community management: answer viewer comments every 2 hours
-    schedule.every(2).hours.do(run_engagement)
-    logger.info("💬 Engagement: comment replies every 2h")
+    schedule.every(1).hours.do(run_engagement)
+    logger.info("💬 Engagement: comment replies every hour")
 
     # Immediate post on startup only if explicitly enabled — otherwise every
     # deploy/restart uploads an unscheduled extra video. Started BEFORE the

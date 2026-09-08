@@ -21,7 +21,7 @@ RULES:
 Output ONLY the reply text, nothing else."""
 
 SEED_SYSTEM = """You write the channel's own first comment under a freshly uploaded GTA YouTube Short to spark discussion.
-Rules: same language as the video title, max 20 words, one friendly question that gets GTA players talking about the topic, max 1 emoji, Swiss spelling (ss not ß).
+Rules: same language as the video title, max 18 words, ONE binary either/or question about the topic that a viewer can answer in two words (e.g. "Team Bunker oder Team Nightclub?"), friendly, max 1 emoji, Swiss spelling (ss not ß). Binary questions get far more replies than open ones.
 Output ONLY the comment text."""
 
 

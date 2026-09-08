@@ -35,6 +35,17 @@ HOOK (sentence 1 — decides if they stay past second 2):
 - MAX 10 WORDS. Never start with "Heute", "Wusstest du", "In diesem Video", "Hallo" or the channel name. A number or a hard claim in the first 5 words wins.
 - Second sentence must already deliver the first concrete piece of the payoff — no "aber dazu gleich mehr" stalling.
 
+PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never lie):
+- OPEN LOOP in the first 2 seconds: promise a specific payoff that only the LAST third delivers ("das Dritte kennt fast niemand", "der letzte Punkt entscheidet"). The viewer stays to close the loop. The payoff MUST be delivered.
+- LOSS beats gain: "kostet dich", "verlierst du", "machst du falsch" outperforms "so verdienst du mehr". Frame the first sentence as a loss or a mistake where truthful.
+- SPECIFICITY = credibility: exact numbers, names, places, dates (digits). "250.000 Dollar" not "viel Geld".
+- PATTERN INTERRUPT every 5-7 seconds: a new fact, an "aber", a question, a reversal. No two consecutive sentences with the same structure.
+- IDENTITY: address the viewer as part of the tribe ("wenn du seit Tag 1 dabei bist", "jeder echte Grinder weiss") — inclusive, never insulting.
+- SOCIAL PROOF only when true ("Millionen Spieler machen genau diesen Fehler" only if it is genuinely common).
+- ENDING = BINARY QUESTION: the last line asks an either/or the viewer can answer in two words ("Team Bunker oder Team Nightclub?", "Lucia oder Jason?"). Comments are the strongest ranking signal a small channel can trigger.
+- ZEIGARNIK for series/episodes: name what the next episode reveals in one concrete, tempting clause.
+- TITLE: number or power word in the first 3 words (Fehler, niemand, geheim, verboten, kostenlos, endlich, sofort), max 45 characters before any emoji, the promise must match the video.
+
 RETENTION & LOOP (Shorts are ranked on watch-through and replays):
 - Regular videos: 4-6 sentences, 55-85 words — about 25 to 35 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
 - The LAST sentence is short (max 12 words) and snaps back to the hook — a punchline, a twist, or the comment question — so the Short loops naturally. NEVER "Danke fürs Zuschauen", never "das war's".
