@@ -526,7 +526,18 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
         topic = dict(topic, kind='evergreen')
     logger.info(f"📺 Long-form ({kind}): {topic.get('id')}")
     video, script = build(topic, titles)
-    vid = uploader.upload(video, script, language, kind='long')
+    # release at prime time (default 18:00 local), never in the night
+    publish_at = None
+    try:
+        hour = int(os.environ.get('LONGFORM_PUBLISH_HOUR', '18'))
+        now = datetime.datetime.now()
+        publish_at = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if publish_at <= now + datetime.timedelta(minutes=20):
+            publish_at += datetime.timedelta(days=1)
+        publish_at = publish_at.astimezone()
+    except Exception as e:
+        logger.warning(f"Publish time not set ({e}) — publishing immediately")
+    vid = uploader.upload(video, script, language, kind='long', publish_at=publish_at)
     if vid:
         logger.info(f"✅ UPLOADED long-form [{language}]: https://youtube.com/watch?v={vid} "
                     f"({script['duration'] / 60:.1f} min)")
@@ -537,11 +548,12 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
                 f.write(str(int(time.time())))
         except OSError:
             pass
-        try:
-            from community_manager import CommunityManager
-            CommunityManager(uploader.service).seed_comment(vid, script)
-        except Exception as e:
-            logger.warning(f"Seed comment skipped: {e}")
+        if publish_at is None:  # comments on a private (scheduled) video fail
+            try:
+                from community_manager import CommunityManager
+                CommunityManager(uploader.service).seed_comment(vid, script)
+            except Exception as e:
+                logger.warning(f"Seed comment skipped: {e}")
     try:
         os.remove(video)
     except OSError:

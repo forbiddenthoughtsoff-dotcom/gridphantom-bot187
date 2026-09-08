@@ -133,7 +133,7 @@ class YouTubeUploader:
             return ''
 
     def upload(self, video_path: str, script: dict, language: str,
-               kind: str = 'short') -> str:
+               kind: str = 'short', publish_at=None) -> str:
         """Upload video to YouTube with full metadata. kind='long' uploads a
         regular 16:9 video (no #Shorts marker, chapters in the description)."""
 
@@ -174,6 +174,14 @@ class YouTubeUploader:
                 'selfDeclaredMadeForKids': False,
             }
         }
+        # Scheduled premiere: rendered at night, released at prime time.
+        # YouTube requires private + publishAt (RFC 3339, UTC)
+        if publish_at is not None:
+            from datetime import timezone
+            body['status']['privacyStatus'] = 'private'
+            body['status']['publishAt'] = publish_at.astimezone(
+                timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+            logger.info(f"⏰ Scheduled release: {publish_at:%Y-%m-%d %H:%M} local")
 
         media = MediaFileUpload(
             video_path,
