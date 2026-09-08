@@ -6,6 +6,7 @@ subscribe pill appears, a cash register when the narration talks money.
 Subtle by design (all well under the voice); fails soft to the dry mix."""
 import os
 import json
+import re
 import random
 import logging
 import subprocess
@@ -107,4 +108,37 @@ def mix_sfx(video_path: str, events: list, timeout: int = 300) -> str:
         return video_path
     except Exception as e:
         logger.warning(f"SFX mix skipped: {e}")
+        return video_path
+
+
+def finalize_loudness(video_path: str, target_lufs: float = -14.0, timeout: int = 900) -> str:
+    """Last audio pass: two-pass EBU R128 normalisation to YouTube's playback
+    level (-14 LUFS, -1.5 dBTP, linear gain — no pumping, no clipping). Quiet
+    uploads are NOT turned up by YouTube, so a -23 LUFS mix simply sounds
+    weaker than every neighbouring Short."""
+    ff = _ffmpeg()
+    spec = f'I={target_lufs}:TP=-1.5:LRA=11'
+    try:
+        r = subprocess.run([ff, '-hide_banner', '-nostats', '-i', video_path, '-af',
+                            f'loudnorm={spec}:print_format=json', '-f', 'null', '-'],
+                           capture_output=True, text=True, timeout=timeout)
+        m = re.search(r'\{[^{}]*"input_i"[^{}]*\}', r.stderr, re.S)
+        meas = json.loads(m.group(0)) if m else {}
+        af = f'loudnorm={spec}'
+        if meas and meas.get('input_i') not in (None, '-inf'):
+            af += (f":measured_I={meas['input_i']}:measured_TP={meas['input_tp']}"
+                   f":measured_LRA={meas['input_lra']}:measured_thresh={meas['input_thresh']}"
+                   f":offset={meas.get('target_offset', 0)}:linear=true")
+        out = video_path[:-4] + '_ln.mp4'
+        r = subprocess.run([ff, '-y', '-i', video_path, '-af', af, '-map', '0:v', '-map', '0:a',
+                            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', out],
+                           capture_output=True, text=True, timeout=timeout)
+        if r.returncode != 0 or not os.path.exists(out):
+            logger.warning(f"Loudness pass failed, keeping mix: {r.stderr[-200:]}")
+            return video_path
+        os.replace(out, video_path)
+        logger.info(f"🔉 Loudness: {meas.get('input_i', '?')} → {target_lufs} LUFS")
+        return video_path
+    except Exception as e:
+        logger.warning(f"Loudness pass skipped: {e}")
         return video_path

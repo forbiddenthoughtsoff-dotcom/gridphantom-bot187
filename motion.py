@@ -29,3 +29,9 @@ def motion_vf(index: int, seg_len: float, w: int = W, h: int = H) -> str:
     x, y = moves[index % len(moves)]
     return (f"scale={bw}:{bh}:force_original_aspect_ratio=increase:flags=bicubic,"
             f"crop={bw}:{bh},crop={w}:{h}:x='{x}':y='{y}'")
+
+
+# Light "punch" grade for the owner's raw captures (contrast, colour, a touch
+# of sharpness): consoles record flat, the feed rewards vivid frames. Not
+# applied to official trailer footage, which is already graded.
+GRADE = 'eq=contrast=1.06:saturation=1.22:brightness=0.01,unsharp=5:5:0.45:5:5:0.0'

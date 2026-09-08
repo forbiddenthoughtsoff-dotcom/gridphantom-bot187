@@ -24,7 +24,7 @@ import logging
 import datetime
 import subprocess
 
-from motion import motion_vf
+from motion import motion_vf, GRADE
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ def voice_sections(sections: list, work: str) -> tuple:
 # --------------------------------------------------------------- visuals --
 def _cut_segment(src: str, start: float, length: float, idx: int, out: str,
                  crop_subs: bool, timeout: int = 420) -> bool:
-    pre = 'crop=iw:ih*0.9:0:0,' if crop_subs else ''
+    pre = ('crop=iw:ih*0.9:0:0,' + GRADE + ',') if crop_subs else ''
     cmd = [_ffmpeg(), '-y', '-ss', f'{start:.2f}', '-i', src, '-t', f'{length:.2f}', '-an',
            '-threads', '2', '-vf', pre + motion_vf(idx, length, W, H) + ',fps=24',
            '-c:v', 'libx264', '-preset', 'superfast', '-crf', '22', '-pix_fmt', 'yuv420p', out]
@@ -484,6 +484,8 @@ def build(topic: dict, recent_titles: list = None, script: dict = None) -> tuple
         ev = [(0.0, 'impact_1', 0.45)] + [(st - 0.1, f'whoosh_{(i % 4) + 1}', 0.4)
                                           for i, st in enumerate(starts) if st > 1]
         mix_sfx(out, [e for e in ev if e[1] in lib])
+        from sfx import finalize_loudness
+        finalize_loudness(out)
     except Exception as e:
         logger.warning(f"Long-form sound design skipped: {e}")
     thumb = os.path.join(WORK_DIR, 'thumb.jpg')

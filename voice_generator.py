@@ -27,7 +27,11 @@ ELEVEN_MODEL = os.environ.get('ELEVENLABS_MODEL', 'eleven_flash_v2_5')
 VOICES = {
     'en': os.environ.get('VOICE_EN', 'en-US-AvaMultilingualNeural'),
     'de': os.environ.get('VOICE_DE', 'de-DE-SeraphinaMultilingualNeural'),
+    # second speaker (dialogue format) on the free fallback engine
+    'de_m': os.environ.get('VOICE_DE_M', 'de-DE-FlorianMultilingualNeural'),
 }
+# Second ElevenLabs voice for the two-voice format ("Ben - GridPhantom DE")
+ELEVEN_VOICE_2 = os.environ.get('ELEVENLABS_VOICE_ID_2', 'aTTiK3YzK3dXETpuDE2h').strip()
 RATE = os.environ.get('TTS_RATE', '+0%')
 PITCH = os.environ.get('TTS_PITCH', '+0Hz')
 
@@ -64,7 +68,10 @@ def _write_words(output_path, words):
 
 
 class VoiceGenerator:
-    def generate(self, text: str, language: str = 'en', output_path: str = None) -> str:
+    def generate(self, text: str, language: str = 'en', output_path: str = None,
+                 voice_id: str = None) -> str:
+        """voice_id: optional ElevenLabs voice for this call (second speaker);
+        on the fallback engine a male German voice is used instead."""
         if not output_path:
             output_path = f'/tmp/narration_{language}.mp3'
         # stale timings from a previous run must never leak into this video
@@ -74,9 +81,9 @@ class VoiceGenerator:
             pass
 
         global LAST_ENGINE
-        if ELEVEN_KEY and ELEVEN_VOICE:
+        if ELEVEN_KEY and (voice_id or ELEVEN_VOICE):
             try:
-                self._elevenlabs(text, language, output_path)
+                self._elevenlabs(text, language, output_path, voice_id=voice_id)
                 LAST_ENGINE = 'elevenlabs'
                 logger.info(f"Audio generated [{language}/ElevenLabs {ELEVEN_MODEL}]: "
                             f"{output_path} ({os.path.getsize(output_path)} bytes)")
@@ -86,14 +93,17 @@ class VoiceGenerator:
 
         LAST_ENGINE = 'edge'
         voice = VOICES.get(language, VOICES['en'])
+        if voice_id and voice_id != ELEVEN_VOICE and language == 'de':
+            voice = VOICES['de_m']
         asyncio.run(self._edge(text, voice, output_path))
         logger.info(f"Audio generated [{language}/{voice}]: {output_path} "
                     f"({os.path.getsize(output_path)} bytes)")
         return output_path
 
     # -- premium tier --------------------------------------------------------
-    def _elevenlabs(self, text: str, language: str, output_path: str):
-        url = (f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVEN_VOICE}"
+    def _elevenlabs(self, text: str, language: str, output_path: str,
+                    voice_id: str = None):
+        url = (f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id or ELEVEN_VOICE}"
                f"/with-timestamps?output_format=mp3_44100_128")
         body = {
             'text': text,

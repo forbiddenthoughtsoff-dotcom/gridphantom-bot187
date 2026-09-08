@@ -6,7 +6,7 @@ import random
 import subprocess
 import requests
 import numpy as np
-from motion import motion_vf
+from motion import motion_vf, GRADE
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (VideoClip, AudioFileClip, ImageClip,
                             VideoFileClip, CompositeVideoClip,
@@ -163,7 +163,10 @@ def _split_two_lines(text: str):
     return best
 
 
-def make_caption_layer(text: str):
+SPEAKER_FILL = {'ava': (255, 255, 255, 255), 'ben': (255, 214, 0, 255)}
+
+
+def make_caption_layer(text: str, fill=(255, 255, 255, 255)):
     """Pro-style pop-in caption band: big bold centered text with a hard
     black stroke. Long German compounds ("Minispielen und Beschaeftigungen")
     used to overflow the frame — the text is now fitted: shrink a little,
@@ -188,7 +191,7 @@ def make_caption_layer(text: str):
         bbox = d.textbbox((0, 0), ln, font=font, stroke_width=stroke)
         x = (W - (bbox[2] - bbox[0])) // 2 - bbox[0]
         y = y0 + i * line_h + (line_h - (bbox[3] - bbox[1])) // 2 - bbox[1]
-        d.text((x, y), ln, font=font, fill=(255, 255, 255, 255),
+        d.text((x, y), ln, font=font, fill=fill,
                stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
 
     arr = np.asarray(layer, dtype=np.uint8)
@@ -209,7 +212,8 @@ class CaptionTrack:
             else:
                 end = min(float(g['end']) + 0.8, duration)
             if end > start:
-                self.spans.append((start, end, g['text']))
+                # (start, end, text, speaker) — speaker colours the dialogue format
+                self.spans.append((start, end, g['text'], g.get('speaker')))
         self._cache = {}
         self._empty_rgb = np.zeros((CAPTION_BAND_H, W, 3), dtype=np.uint8)
         self._empty_mask = np.zeros((CAPTION_BAND_H, W), dtype=np.float32)
@@ -232,7 +236,9 @@ class CaptionTrack:
         if i not in self._cache:
             if len(self._cache) >= 2:
                 self._cache.pop(min(self._cache))
-            self._cache[i] = make_caption_layer(self.spans[i][2])
+            sp = self.spans[i][3]
+            self._cache[i] = make_caption_layer(
+                self.spans[i][2], SPEAKER_FILL.get(sp, (255, 255, 255, 255)))
         return self._cache[i]
 
     def frame(self, t: float):
@@ -332,7 +338,8 @@ def build_caption_groups(narration: str, tts_words: list,
         te = min(m - 1, max(ti, int((idx + len(c)) * m / n) - 1))
         groups.append({'text': ' '.join(c),
                        'start': tts_words[ti]['start'],
-                       'end': tts_words[te]['end']})
+                       'end': tts_words[te]['end'],
+                       'speaker': tts_words[ti].get('speaker')})
         idx += len(c)
     return groups
 
@@ -498,8 +505,8 @@ def build_gameplay_montage(script: dict, duration: float, n_segments: int = 3,
             start = max(0.0, min(center - length / 2.0, clip_dur - length))
             out = os.path.join(out_dir, f'seg_{os.getpid()}_{i}.mp4')
             cmd = [ff, '-y', '-ss', f'{start:.2f}', '-i', p['path'],
-                   '-t', f'{length:.2f}', '-an', '-r', '24',
-                   '-vf', motion_vf(i, length),  # slow push/pan per cut
+                   '-t', f'{length:.2f}', '-an', '-r', '24',  # noqa
+                   '-vf', GRADE + ',' + motion_vf(i, length),  # slow push/pan per cut
                    '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
                    '-pix_fmt', 'yuv420p', out]
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
@@ -848,10 +855,13 @@ class VideoAssembler:
                 audio.subclip(0, duration))
 
         logger.info(f"Exporting {duration:.1f}s video ({len(sentences)} sentences)...")
+        # crf 22 / superfast: YouTube re-encodes whatever it gets — a blocky
+        # crf-26 source stays blocky. Frame generation dominates render time,
+        # the encoder settings add well under a minute per video.
         final.write_videofile(
             output_path, fps=24, codec='libx264',
-            audio_codec='aac', threads=1, preset='ultrafast',
-            ffmpeg_params=['-crf', '26'], logger=None
+            audio_codec='aac', threads=2, preset='superfast',
+            ffmpeg_params=['-crf', '22', '-pix_fmt', 'yuv420p'], logger=None
         )
 
         try:
@@ -867,9 +877,10 @@ class VideoAssembler:
         # Sound design on top of the mix: whoosh per cut, impact under the
         # hook, pop with the subscribe pill, cash register on money talk
         try:
-            from sfx import plan_events, mix_sfx
+            from sfx import plan_events, mix_sfx, finalize_loudness
             output_path = mix_sfx(output_path, plan_events(
                 duration, cuts_n, words, sub_start))
+            output_path = finalize_loudness(output_path)
         except Exception as e:
             logger.warning(f"Sound design skipped: {e}")
 
