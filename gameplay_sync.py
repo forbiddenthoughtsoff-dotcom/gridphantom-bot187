@@ -224,9 +224,12 @@ def analyze_highlights(raw: str, duration: float, window: float = 8.0,
             return [(v - lo) / (hi - lo) if hi > lo else 0.0 for v in vals]
 
         a_n = norm(aud) if any(v is not None for v in aud) else [0.0] * n
-        m_n, s_n = norm(mot), norm(sat)
-        wa = 0.45 if any(a_n) else 0.0
-        score = [wa * a_n[i] + (0.90 - wa) * m_n[i] + 0.10 * s_n[i] for i in range(n)]
+        m_n, s_n, l_n = norm(mot), norm(sat), norm(lum)
+        wa = 0.42 if any(a_n) else 0.0
+        # audio energy, motion, colour, brightness: vivid daylight action
+        # beats a loud but murky night scene for the feed
+        score = [wa * a_n[i] + (0.82 - wa) * m_n[i] + 0.10 * s_n[i] + 0.08 * l_n[i]
+                 for i in range(n)]
         # menus, map overlays, loading and black screens: grey and/or dark
         # and nearly static — never a highlight, whatever the radio plays
         sat_ok = sorted(sat)[len(sat) // 2] * 0.6 if any(sat) else 0.0

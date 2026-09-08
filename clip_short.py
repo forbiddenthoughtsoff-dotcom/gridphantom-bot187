@@ -20,7 +20,7 @@ import hashlib
 import logging
 import subprocess
 
-from motion import motion_vf
+from motion import motion_vf, GRADE
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def cut(entry: dict, h: dict, out_path: str):
     length = round(min(length, dur - start), 2)
     cmd = [_ffmpeg(), '-y', '-ss', f'{start:.2f}', '-i', entry['path'],
            '-t', f'{length:.2f}', '-threads', '2',
-           '-vf', motion_vf(0, length) + ',fps=24',
+           '-vf', GRADE + ',' + motion_vf(0, length) + ',fps=24',
            '-af', 'loudnorm=I=-15:TP=-1.5:LRA=11',
            '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
            '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', out_path]
@@ -299,6 +299,8 @@ def run_clip_short(language: str = 'de'):
             va.MUSIC_VOLUME = prev
         if credit:
             script['music_credit'] = credit
+        from sfx import finalize_loudness
+        video = finalize_loudness(video)
     except Exception as e:
         logger.warning(f"Music bed skipped for clip short: {e}")
     vid = uploader.upload(video, script, language)

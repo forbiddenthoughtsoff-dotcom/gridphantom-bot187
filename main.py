@@ -126,16 +126,35 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             except Exception as e:
                 logger.warning(f"Series slot skipped: {e}")
 
-        script = ScriptGenerator().generate(language,
-                                            avoid_titles=recent_titles,
-                                            news_items=news_items,
-                                            top_performers=top_performers,
-                                            topic_brief=brief.get('brief'))
-        if brief.get('images'):
-            script['still_images'] = list(brief['images'])
-        logger.info(f"📝 Script: {script.get('title', '')}")
-
-        audio = VoiceGenerator().generate(script['narration'], language)
+        # Two-voice format "Mythos oder Fakt" twice a week (Tue/Fri 22:00)
+        dialogue = None
+        if not brief:
+            try:
+                import dialogue as _dlg
+                if _dlg.is_dialogue_slot():
+                    dialogue = _dlg
+            except Exception as e:
+                logger.warning(f"Dialogue slot check skipped: {e}")
+        script = audio = None
+        if dialogue:
+            try:
+                script = dialogue.generate(language, avoid_titles=recent_titles,
+                                           news_items=news_items)
+                logger.info(f"🎭 Dialogue script: {script.get('title', '')}")
+                audio = dialogue.voice(script, language)
+            except Exception as e:  # never lose the slot: solo format instead
+                logger.warning(f"Dialogue format failed, solo narration instead: {e}")
+                script = audio = None
+        if audio is None:
+            script = ScriptGenerator().generate(language,
+                                                avoid_titles=recent_titles,
+                                                news_items=news_items,
+                                                top_performers=top_performers,
+                                                topic_brief=brief.get('brief'))
+            if brief.get('images'):
+                script['still_images'] = list(brief['images'])
+            logger.info(f"📝 Script: {script.get('title', '')}")
+            audio = VoiceGenerator().generate(script['narration'], language)
         logger.info(f"🎙️ Voice done: {audio}")
         import voice_generator as _vg
         if _vg.LAST_ENGINE == 'elevenlabs':
