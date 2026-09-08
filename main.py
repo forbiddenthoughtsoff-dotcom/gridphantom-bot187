@@ -339,18 +339,18 @@ if __name__ == "__main__":
     validate_config()
 
     # Slots on the DACH activity peaks (YouTube gaming audience 14-30):
-    # 12:00 lunch (series episode), 15:30 after school (clip Short),
+    # 07:30 commute (clip Short), 12:00 lunch (series episode),
     # 19:00 and 21:15 evening prime (narration / dialogue). The nightly
     # long-form is released at 17:30. Five uploads per quota day = the cap.
     schedule.every().day.at("12:00").do(run_bot_short)
-    schedule.every().day.at("15:30").do(run_clip_short)
+    schedule.every().day.at("07:30").do(run_clip_short)   # commute (audience is 25-44, working)
     schedule.every().day.at("19:00").do(run_bot_short)
     schedule.every().day.at("21:15").do(run_bot_short)
     for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
         getattr(schedule.every(), _day).at("03:30").do(run_longform_slot, 'evergreen')
     schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
     schedule.every().day.at("08:40").do(run_cleanup)
-    logger.info("⏰ Shorts 12:00 (Serie) | 15:30 (Clip) | 19:00 | 21:15 (Di/Fr Dialog) "
+    logger.info("⏰ Shorts 07:30 (Clip) | 12:00 (Serie) | 19:00 | 21:15 (Di/Fr Dialog) "
                 "+ long-form nightly, released 17:30")
     try:
         from trailer_library import ensure_trailers_async
