@@ -186,6 +186,15 @@ def run_pipeline(language: str = 'de', brief: dict = None):
 
 def run_bot_short(is_retry: bool = False, brief: dict = None):
     """Scheduled slot: 1 German GTA Short (brief = owner's assignment)."""
+    # A long-form video went out in the night: its upload took the fifth
+    # quota slot of this quota day, so the morning Short steps aside
+    try:
+        from longform import recently_done
+        if not brief and datetime.now().hour < 9 and recently_done(6.0):
+            logger.info("⏭️ Morning Short skipped (long-form uploaded tonight, quota)")
+            return
+    except Exception:
+        pass
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
                 + (" (retry)" if is_retry else ""))
     # Whole cycle owns the CPU: the background clip sync must not start a
@@ -246,6 +255,33 @@ def run_clip_short(is_retry: bool = False):
         schedule.every(30).minutes.do(_retry)
 
 
+def run_longform_slot(kind: str = 'evergreen', is_retry: bool = False):
+    """Night slot: one 8-12 min 16:9 video for watch time."""
+    logger.info(f"📺 LONG-FORM cycle ({kind}) — {datetime.now():%Y-%m-%d %H:%M}")
+    try:
+        from gameplay_sync import RENDER_BUSY as busy
+        busy.set()
+    except Exception:
+        busy = None
+    vid = None
+    try:
+        from longform import run_longform
+        vid = run_longform(kind)
+    except Exception as e:
+        logger.error(f"Long-form error: {e}", exc_info=True)
+    finally:
+        if busy is not None:
+            busy.clear()
+    if vid is None and not is_retry:
+        logger.warning("⏳ Long-form failed — retrying once in 20 minutes")
+
+        def _retry():
+            run_longform_slot(kind, is_retry=True)
+            return schedule.CancelJob
+
+        schedule.every(20).minutes.do(_retry)
+
+
 def run_engagement():
     """Reply to new viewer comments across recent videos."""
     logger.info(f"💬 ENGAGEMENT cycle — {datetime.now():%Y-%m-%d %H:%M}")
@@ -279,7 +315,12 @@ if __name__ == "__main__":
     # fifth upload of the day: raw own-gameplay highlight (game audio, no
     # voice). Five uploads keep the day inside the 10 000-unit YouTube quota
     schedule.every().day.at("10:00").do(run_clip_short)
-    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE) + Clip-Short 10")
+    # long-form for watch time, at night (box free, quota day still open;
+    # the following 07:00 Short is skipped)
+    schedule.every().thursday.at("03:30").do(run_longform_slot, 'evergreen')
+    schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
+    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE) + Clip-Short 10 "
+                "+ long-form Thu/Sun 03:30")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
@@ -294,12 +335,16 @@ if __name__ == "__main__":
     # clip sync so the cycle's busy flag is up before any transcode begins.
     start_mode = os.environ.get('POST_ON_START', '').lower()
     clip_on_start = os.environ.get('CLIP_ON_START', '').lower() in ('1', 'true', 'yes')
-    if start_mode in ('1', 'true', 'yes', 'clip') or clip_on_start:
+    longform_on_start = os.environ.get('LONGFORM_ON_START', '').lower()  # evergreen | weekly
+    if longform_on_start not in ('evergreen', 'weekly'):
+        longform_on_start = ''
+    if start_mode in ('1', 'true', 'yes', 'clip') or clip_on_start or longform_on_start:
         brief = owner_brief() if start_mode in ('1', 'true', 'yes') else {}
         logger.info("🚀 Startup posts: "
                     + ("owner assignment " if brief else
                        "regular Short " if start_mode in ('1', 'true', 'yes') else "")
                     + ("+ clip Short" if (clip_on_start or start_mode == 'clip') else "")
+                    + (f"+ long-form {longform_on_start}" if longform_on_start else "")
                     + (f" ({brief['brief'][:60]}...)" if brief else ""))
         try:
             from gameplay_sync import RENDER_BUSY
@@ -313,6 +358,8 @@ if __name__ == "__main__":
                 run_bot_short(brief=brief)
             if clip_on_start or start_mode == 'clip':
                 run_clip_short()
+            if longform_on_start:
+                run_longform_slot(longform_on_start)
         threading.Thread(target=_startup_posts, daemon=True).start()
     else:
         logger.info("⏭️ Startup post disabled (set POST_ON_START=true to enable)")

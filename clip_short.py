@@ -171,16 +171,22 @@ def describe(clip_path: str, length: float, tags: list) -> dict:
         return dict(FALLBACK)
 
 
-def compose(clip_path: str, length: float, hook: str, out_path: str) -> str:
+def hook_text(hook: str) -> str:
+    """On-screen / spoken hook: the bundled font has no emoji, so emoji stay
+    in the title only."""
+    return ''.join(ch for ch in hook if ord(ch) < 0x2500).strip() or 'Warte bis zum Ende'
+
+
+def compose(clip_path: str, length: float, hook: str, out_path: str,
+            hook_audio: str = None) -> str:
     """One ffmpeg pass: hook band (first 3 s), subscribe pill (last third),
-    brand band — all PNG overlays with alpha, video re-encoded once."""
+    brand band — all PNG overlays with alpha, video re-encoded once. With
+    hook_audio the spoken hook is laid over the game sound (ducked)."""
     from video_assembler import (make_caption_layer, make_brand_layer,
                                  make_subscribe_layer, save_layer_png,
                                  CAPTION_Y, BRAND_Y, SUB_Y)
     base = out_path[:-4]
-    # the bundled font has no emoji: keep the emoji in the title, not on screen
-    hook_txt = ''.join(ch for ch in hook if ord(ch) < 0x2500).strip() or 'Warte bis zum Ende'
-    hook_png = save_layer_png(*make_caption_layer(hook_txt), base + '_hook.png')
+    hook_png = save_layer_png(*make_caption_layer(hook_text(hook)), base + '_hook.png')
     brand_png = save_layer_png(*make_brand_layer(), base + '_brand.png')
     sub_png = save_layer_png(*make_subscribe_layer(), base + '_sub.png')
     sub_start = max(0.0, min(length * 0.6, length - 4.0))
@@ -188,10 +194,18 @@ def compose(clip_path: str, length: float, hook: str, out_path: str) -> str:
     filt = (f"[0:v][1:v]overlay=0:{CAPTION_Y}:enable='lt(t,{HOOK_SECONDS})'[v1];"
             f"[v1][2:v]overlay=0:{BRAND_Y}[v2];"
             f"[v2][3:v]overlay=0:{SUB_Y}:enable='between(t,{sub_start:.2f},{sub_end:.2f})'[v]")
-    cmd = [_ffmpeg(), '-y', '-i', clip_path, '-i', hook_png, '-i', brand_png, '-i', sub_png,
-           '-filter_complex', filt, '-map', '[v]', '-map', '0:a', '-threads', '2',
-           '-c:v', 'libx264', '-preset', 'superfast', '-crf', '21', '-pix_fmt', 'yuv420p',
-           '-c:a', 'copy', '-movflags', '+faststart', out_path]
+    cmd = [_ffmpeg(), '-y', '-i', clip_path, '-i', hook_png, '-i', brand_png, '-i', sub_png]
+    if hook_audio and os.path.exists(hook_audio):
+        cmd += ['-i', hook_audio]
+        filt += (f";[4:a]adelay=250:all=1,apad=whole_dur={length:.2f},asplit=2[h1][h2];"
+                 f"[0:a][h1]sidechaincompress=threshold=0.04:ratio=5:attack=15:release=350[g];"
+                 f"[g][h2]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]")
+        audio = ['-map', '[a]', '-c:a', 'aac', '-b:a', '160k']
+    else:
+        audio = ['-map', '0:a', '-c:a', 'copy']
+    cmd += ['-filter_complex', filt, '-map', '[v]', '-threads', '2',
+            '-c:v', 'libx264', '-preset', 'superfast', '-crf', '21', '-pix_fmt', 'yuv420p',
+            *audio, '-movflags', '+faststart', out_path]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     for p in (hook_png, brand_png, sub_png):
         try:
@@ -217,11 +231,28 @@ def build(entries: list, used: set, out_dir: str = OUT_DIR):
         return None, None
     meta = describe(cut_path, length, entry.get('tags') or [])
     final = os.path.join(out_dir, f'clip_{tag}.mp4')
-    compose(cut_path, length, meta['hook'], final)
+    # spoken hook (one short line — a few dozen voice characters)
+    hook_audio = None
     try:
-        os.remove(cut_path)
-    except OSError:
-        pass
+        from voice_generator import VoiceGenerator
+        hook_audio = VoiceGenerator().generate(
+            hook_text(meta['hook']), 'de', output_path=os.path.join(out_dir, f'hook_{tag}.mp3'))
+    except Exception as e:
+        logger.warning(f"Spoken hook skipped: {e}")
+    compose(cut_path, length, meta['hook'], final, hook_audio=hook_audio)
+    for p in (cut_path, hook_audio, (hook_audio or '') + '.words.json'):
+        try:
+            if p:
+                os.remove(p)
+        except OSError:
+            pass
+    # sound design: impact under the hook, pop with the subscribe pill
+    try:
+        from sfx import plan_events, mix_sfx
+        sub_start = max(0.0, min(length * 0.6, length - 4.0))
+        mix_sfx(final, plan_events(length, 0, None, sub_start, hook_impact=True))
+    except Exception as e:
+        logger.warning(f"Sound design skipped: {e}")
     script = {
         'title': meta['title'],
         'description': meta['description'] + f"\n\n🎮 Eigene PS5-Aufnahme · Clip-ID: {tag}",
