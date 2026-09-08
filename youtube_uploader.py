@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import json
 import logging
 from google.oauth2.credentials import Credentials
@@ -33,6 +34,17 @@ def _clean_tags(tags) -> list:
     return out
 
 
+# Must match what the refresh token was granted (a subset is fine, a
+# superset is refused with invalid_scope). YOUTUBE_SCOPES overrides for
+# tokens without the analytics grants.
+SCOPES = [x for x in os.environ.get(
+    'YOUTUBE_SCOPES',
+    'https://www.googleapis.com/auth/youtube.force-ssl '
+    'https://www.googleapis.com/auth/youtube.upload '
+    'https://www.googleapis.com/auth/yt-analytics.readonly '
+    'https://www.googleapis.com/auth/yt-analytics-monetary.readonly').split() if x]
+
+
 class YouTubeUploader:
     def __init__(self):
         self.service = self._authenticate()
@@ -52,8 +64,7 @@ class YouTubeUploader:
             client_secret=creds_data.get('client_secret'),
             # Must match exactly what the refresh token was granted,
             # otherwise Google rejects the refresh with invalid_scope
-            scopes=['https://www.googleapis.com/auth/youtube.force-ssl',
-                    'https://www.googleapis.com/auth/youtube.upload']
+            scopes=SCOPES
         )
 
         # Always refresh to ensure valid token
