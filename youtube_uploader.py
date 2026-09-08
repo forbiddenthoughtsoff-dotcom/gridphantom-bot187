@@ -9,6 +9,30 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
+def _clean_tags(tags) -> list:
+    """YouTube's tag rules, enforced instead of hoped for: no '<' '>' '"',
+    a single tag at most 30 characters, the whole list at most 500
+    characters where a tag with spaces costs two extra (it is quoted).
+    Episode 2 of the series was rejected twice with invalidTags because the
+    German search phrases pushed the list past that budget."""
+    import re
+    out, seen, total = [], set(), 0
+    for t in tags or []:
+        t = re.sub(r'[<>"]', '', str(t)).strip()
+        if not t or len(t) > 30:
+            continue
+        k = t.lower()
+        if k in seen:
+            continue
+        cost = len(t) + (2 if ' ' in t else 0)
+        if total + cost > 470:
+            continue
+        seen.add(k)
+        out.append(t)
+        total += cost
+    return out
+
+
 class YouTubeUploader:
     def __init__(self):
         self.service = self._authenticate()
@@ -132,11 +156,13 @@ class YouTubeUploader:
                      'gta tricks', 'gta tipps deutsch', 'gta online deutsch',
                      'gta 5 deutsch', 'gaming shorts'])
 
+        tags = _clean_tags(tags)
+
         body = {
             'snippet': {
                 'title': title[:100],
                 'description': description,
-                'tags': tags[:30],
+                'tags': tags,
                 'categoryId': '20',  # Gaming
                 'defaultLanguage': language,
                 'defaultAudioLanguage': language,

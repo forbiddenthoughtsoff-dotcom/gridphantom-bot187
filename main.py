@@ -293,27 +293,27 @@ if __name__ == "__main__":
     # deploy/restart uploads an unscheduled extra video. Started BEFORE the
     # clip sync so the cycle's busy flag is up before any transcode begins.
     start_mode = os.environ.get('POST_ON_START', '').lower()
-    if start_mode == 'clip':
-        # one raw-highlight clip Short right away (first data point for a
-        # new format without waiting for the 10:00 slot)
-        logger.info("🚀 POST_ON_START=clip — posting one clip Short immediately")
+    clip_on_start = os.environ.get('CLIP_ON_START', '').lower() in ('1', 'true', 'yes')
+    if start_mode in ('1', 'true', 'yes', 'clip') or clip_on_start:
+        brief = owner_brief() if start_mode in ('1', 'true', 'yes') else {}
+        logger.info("🚀 Startup posts: "
+                    + ("owner assignment " if brief else
+                       "regular Short " if start_mode in ('1', 'true', 'yes') else "")
+                    + ("+ clip Short" if (clip_on_start or start_mode == 'clip') else "")
+                    + (f" ({brief['brief'][:60]}...)" if brief else ""))
         try:
             from gameplay_sync import RENDER_BUSY
-            RENDER_BUSY.set()
+            RENDER_BUSY.set()  # claimed here, cleared by the cycle
         except Exception:
             pass
-        threading.Thread(target=run_clip_short, daemon=True).start()
-    elif start_mode in ('1', 'true', 'yes'):
-        brief = owner_brief()
-        logger.info("🚀 POST_ON_START enabled — posting immediately"
-                    + (f" (owner assignment: {brief['brief'][:60]}...)" if brief else ""))
-        try:
-            from gameplay_sync import RENDER_BUSY
-            RENDER_BUSY.set()  # claimed here, cleared by run_bot_short
-        except Exception:
-            pass
-        threading.Thread(target=run_bot_short, kwargs={'brief': brief},
-                         daemon=True).start()
+
+        def _startup_posts():
+            # sequential: the box renders one video at a time
+            if start_mode in ('1', 'true', 'yes'):
+                run_bot_short(brief=brief)
+            if clip_on_start or start_mode == 'clip':
+                run_clip_short()
+        threading.Thread(target=_startup_posts, daemon=True).start()
     else:
         logger.info("⏭️ Startup post disabled (set POST_ON_START=true to enable)")
 
