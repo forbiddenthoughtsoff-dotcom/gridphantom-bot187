@@ -188,7 +188,8 @@ def run_pipeline(language: str = 'de', brief: dict = None):
         vid = uploader.upload(video, script, language)
         if vid:
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
-            uploader.add_to_series_playlist(vid, script.get('title', ''))
+            if not uploader.add_to_series_playlist(vid, script.get('title', '')):
+                uploader.add_to_topic_playlist(vid, script)
             from community_manager import CommunityManager
             CommunityManager(uploader.service).seed_comment(vid, script)
         else:
@@ -301,6 +302,17 @@ def run_longform_slot(kind: str = 'evergreen', is_retry: bool = False):
         schedule.every(20).minutes.do(_retry)
 
 
+def run_cleanup():
+    """08:40 local: hide a batch of the old off-topic clips with the quota
+    left over from the day (the quota day resets 09:00)."""
+    try:
+        from youtube_uploader import YouTubeUploader
+        import cleanup
+        cleanup.run(YouTubeUploader().service)
+    except Exception as e:
+        logger.error(f"Cleanup error: {e}", exc_info=True)
+
+
 def run_engagement():
     """Reply to new viewer comments across recent videos."""
     logger.info(f"💬 ENGAGEMENT cycle — {datetime.now():%Y-%m-%d %H:%M}")
@@ -326,31 +338,28 @@ if __name__ == "__main__":
 
     validate_config()
 
-    # English only — morning post, midday short, evening post (Zürich time)
-    schedule.every().day.at("07:00").do(run_bot_short)
+    # Slots on the DACH activity peaks (YouTube gaming audience 14-30):
+    # 12:00 lunch (series episode), 15:30 after school (clip Short),
+    # 19:00 and 21:15 evening prime (narration / dialogue). The nightly
+    # long-form is released at 17:30. Five uploads per quota day = the cap.
     schedule.every().day.at("12:00").do(run_bot_short)
-    schedule.every().day.at("17:00").do(run_bot_short)
-    schedule.every().day.at("22:00").do(run_bot_short)
-    # fifth upload of the day: raw own-gameplay highlight (game audio, no
-    # voice). Five uploads keep the day inside the 10 000-unit YouTube quota
-    schedule.every().day.at("10:00").do(run_clip_short)
-    # long-form for watch time, at night (box free, quota day still open;
-    # the following 07:00 Short is skipped)
-    # DAILY long-form at night: the 3 000 public watch hours come from
-    # 10-15 min videos, not from Shorts. Sunday = weekly recap, else guides.
+    schedule.every().day.at("15:30").do(run_clip_short)
+    schedule.every().day.at("19:00").do(run_bot_short)
+    schedule.every().day.at("21:15").do(run_bot_short)
     for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
         getattr(schedule.every(), _day).at("03:30").do(run_longform_slot, 'evergreen')
     schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
-    logger.info("⏰ 4x daily GTA Shorts: 07 | 12 | 17 | 22 (DE) + Clip-Short 10 "
-                "+ long-form daily 03:30")
+    schedule.every().day.at("08:40").do(run_cleanup)
+    logger.info("⏰ Shorts 12:00 (Serie) | 15:30 (Clip) | 19:00 | 21:15 (Di/Fr Dialog) "
+                "+ long-form nightly, released 17:30")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
     # Community management: answer viewer comments every 2 hours
-    schedule.every(2).hours.do(run_engagement)
-    logger.info("💬 Engagement: comment replies every 2h")
+    schedule.every(1).hours.do(run_engagement)
+    logger.info("💬 Engagement: comment replies every hour")
 
     # Immediate post on startup only if explicitly enabled — otherwise every
     # deploy/restart uploads an unscheduled extra video. Started BEFORE the

@@ -133,7 +133,7 @@ class YouTubeUploader:
             return ''
 
     def upload(self, video_path: str, script: dict, language: str,
-               kind: str = 'short') -> str:
+               kind: str = 'short', publish_at=None) -> str:
         """Upload video to YouTube with full metadata. kind='long' uploads a
         regular 16:9 video (no #Shorts marker, chapters in the description)."""
 
@@ -174,6 +174,14 @@ class YouTubeUploader:
                 'selfDeclaredMadeForKids': False,
             }
         }
+        # Scheduled premiere: rendered at night, released at prime time.
+        # YouTube requires private + publishAt (RFC 3339, UTC)
+        if publish_at is not None:
+            from datetime import timezone
+            body['status']['privacyStatus'] = 'private'
+            body['status']['publishAt'] = publish_at.astimezone(
+                timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+            logger.info(f"⏰ Scheduled release: {publish_at:%Y-%m-%d %H:%M} local")
 
         media = MediaFileUpload(
             video_path,
@@ -202,6 +210,64 @@ class YouTubeUploader:
         return video_id
 
     SERIES_PLAYLIST = "GTA Online Karriere – alle Folgen (Tutorial-Serie)"
+    # Topic playlists: every upload lands in exactly one — binge paths for
+    # browse/suggested, session time for the channel
+    TOPIC_PLAYLISTS = [
+        ('mythos', "Mythos oder Fakt – GTA Behauptungen im Check"),
+        ('clip', "GridPhantom Moments – eigene GTA Online Clips"),
+        ('long', "GTA Guides in voller Laenge (10+ Minuten)"),
+        ('gta6', "GTA 6 News & Fakten – alles Bestaetigte"),
+        ('online', "GTA Online Tricks, Geld & Geheimnisse"),
+    ]
+
+    def topic_key(self, script: dict, kind: str = 'short') -> str:
+        t = (script.get('title', '') or '').lower()
+        if script.get('format') == 'dialogue' or 'mythos oder fakt' in t:
+            return 'mythos'
+        if script.get('clip_marker'):
+            return 'clip'
+        if kind == 'long':
+            return 'long'
+        blob = (t + ' ' + ' '.join(script.get('tags', []))).lower()
+        if any(k in blob for k in ('gta 6', 'gta6', 'gta vi', 'vice city', 'leonida', 'lucia', 'jason')):
+            return 'gta6'
+        return 'online'
+
+    def _playlist_id(self, title: str, description: str) -> str:
+        if not hasattr(self, '_pl_cache'):
+            self._pl_cache = {}
+            try:
+                res = self.service.playlists().list(part='snippet', mine=True, maxResults=50).execute()
+                for p in res.get('items', []):
+                    self._pl_cache[p['snippet']['title'].strip().lower()] = p['id']
+            except Exception as e:
+                logger.warning(f"Playlist listing failed: {e}")
+        key = title.strip().lower()
+        if key not in self._pl_cache:
+            pl = self.service.playlists().insert(
+                part='snippet,status',
+                body={'snippet': {'title': title, 'description': description, 'defaultLanguage': 'de'},
+                      'status': {'privacyStatus': 'public'}}).execute()
+            self._pl_cache[key] = pl['id']
+            logger.info(f"📚 Playlist created: {title}")
+        return self._pl_cache[key]
+
+    def add_to_topic_playlist(self, video_id: str, script: dict, kind: str = 'short') -> bool:
+        """~51 quota units per upload."""
+        try:
+            key = self.topic_key(script, kind)
+            title = dict(self.TOPIC_PLAYLISTS)[key]
+            pl_id = self._playlist_id(title, "GridPhantom – taeglich GTA Shorts, Guides und eigene Clips. "
+                                             "Abonnieren fuer die naechste Folge.")
+            self.service.playlistItems().insert(
+                part='snippet',
+                body={'snippet': {'playlistId': pl_id,
+                                  'resourceId': {'kind': 'youtube#video', 'videoId': video_id}}}).execute()
+            logger.info(f"📚 Added to playlist '{title}': {video_id}")
+            return True
+        except Exception as e:
+            logger.warning(f"Topic playlist skipped (non-fatal): {e}")
+            return False
 
     def add_to_series_playlist(self, video_id: str, title: str) -> bool:
         """Every 'GTA Online Karriere #N' episode goes into the series

@@ -40,6 +40,17 @@ Rules:
 - The claim must be one many German players actually believe or discuss (GTA 6 rumours, GTA Online
   money myths, hidden mechanics, classic urban legends).
 
+PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never lie):
+- OPEN LOOP in the first 2 seconds: promise a specific payoff that only the LAST third delivers ("das Dritte kennt fast niemand", "der letzte Punkt entscheidet"). The viewer stays to close the loop. The payoff MUST be delivered.
+- LOSS beats gain: "kostet dich", "verlierst du", "machst du falsch" outperforms "so verdienst du mehr". Frame the first sentence as a loss or a mistake where truthful.
+- SPECIFICITY = credibility: exact numbers, names, places, dates (digits). "250.000 Dollar" not "viel Geld".
+- PATTERN INTERRUPT every 5-7 seconds: a new fact, an "aber", a question, a reversal. No two consecutive sentences with the same structure.
+- IDENTITY: address the viewer as part of the tribe ("wenn du seit Tag 1 dabei bist", "jeder echte Grinder weiss") — inclusive, never insulting.
+- SOCIAL PROOF only when true ("Millionen Spieler machen genau diesen Fehler" only if it is genuinely common).
+- ENDING = BINARY QUESTION: the last line asks an either/or the viewer can answer in two words ("Team Bunker oder Team Nightclub?", "Lucia oder Jason?"). Comments are the strongest ranking signal a small channel can trigger.
+- ZEIGARNIK for series/episodes: name what the next episode reveals in one concrete, tempting clause.
+- TITLE: number or power word in the first 3 words (Fehler, niemand, geheim, verboten, kostenlos, endlich, sofort), max 45 characters before any emoji, the promise must match the video.
+
 Output ONLY JSON:
 {"title": "German, max 60 chars, starts with 'Mythos oder Fakt:' then the claim, one emoji max",
  "claim": "the claim in one sentence",
@@ -162,9 +173,9 @@ def voice(script: dict, language: str = 'de', output_path: str = None) -> str:
 
 
 def is_dialogue_slot(now=None) -> bool:
-    """Tuesday and Friday 22:00 (configurable: DIALOGUE_DAYS='1,4', DIALOGUE_HOUR=22)."""
+    """Tuesday and Friday 21:15 slot (configurable: DIALOGUE_DAYS='1,4', DIALOGUE_HOUR=21)."""
     from datetime import datetime
     now = now or datetime.now()
     days = {int(x) for x in os.environ.get('DIALOGUE_DAYS', '1,4').split(',') if x.strip().isdigit()}
-    hour = int(os.environ.get('DIALOGUE_HOUR', '22'))
+    hour = int(os.environ.get('DIALOGUE_HOUR', '21'))
     return now.weekday() in days and now.hour == hour

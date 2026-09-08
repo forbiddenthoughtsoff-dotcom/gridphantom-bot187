@@ -164,6 +164,18 @@ def _split_two_lines(text: str):
 
 
 SPEAKER_FILL = {'ava': (255, 255, 255, 255), 'ben': (255, 214, 0, 255)}
+SIGNAL_FILL = (255, 214, 0, 255)
+SIGNAL_WORDS = ('fehler', 'niemand', 'geheim', 'verboten', 'kostenlos', 'gratis',
+                'sofort', ' nie ', 'niemals', 'verlierst', 'kostet', 'millionen',
+                'million', 'gta$', 'dollar', 'bestätigt', 'offiziell', 'leak',
+                'mythos', 'fakt', 'endlich', 'achtung', 'falsch')
+
+
+def is_signal_text(text: str) -> bool:
+    """Caption groups with a number or a trigger word get the signal colour —
+    a visual pattern interrupt on exactly the words the ear latches onto."""
+    t = ' ' + text.lower() + ' '
+    return any(ch.isdigit() for ch in text) or any(w in t for w in SIGNAL_WORDS)
 
 
 def make_caption_layer(text: str, fill=(255, 255, 255, 255)):
@@ -237,8 +249,10 @@ class CaptionTrack:
             if len(self._cache) >= 2:
                 self._cache.pop(min(self._cache))
             sp = self.spans[i][3]
-            self._cache[i] = make_caption_layer(
-                self.spans[i][2], SPEAKER_FILL.get(sp, (255, 255, 255, 255)))
+            fill = SPEAKER_FILL.get(sp, (255, 255, 255, 255))
+            if sp is None and is_signal_text(self.spans[i][2]):
+                fill = SIGNAL_FILL   # numbers / trigger words pop in yellow
+            self._cache[i] = make_caption_layer(self.spans[i][2], fill)
         return self._cache[i]
 
     def frame(self, t: float):

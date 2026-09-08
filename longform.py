@@ -55,6 +55,18 @@ each add a new fact, step or insight. The last section wraps up in 3-4 sentences
 the viewer should do now, points to the daily Shorts and the career series, and asks to subscribe
 with a benefit ("damit du die naechste Folge nicht verpasst").
 
+PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never lie):
+- OPEN LOOP in the first 2 seconds: promise a specific payoff that only the LAST third delivers ("das Dritte kennt fast niemand", "der letzte Punkt entscheidet"). The viewer stays to close the loop. The payoff MUST be delivered.
+- LOSS beats gain: "kostet dich", "verlierst du", "machst du falsch" outperforms "so verdienst du mehr". Frame the first sentence as a loss or a mistake where truthful.
+- SPECIFICITY = credibility: exact numbers, names, places, dates (digits). "250.000 Dollar" not "viel Geld".
+- PATTERN INTERRUPT every 5-7 seconds: a new fact, an "aber", a question, a reversal. No two consecutive sentences with the same structure.
+- IDENTITY: address the viewer as part of the tribe ("wenn du seit Tag 1 dabei bist", "jeder echte Grinder weiss") — inclusive, never insulting.
+- SOCIAL PROOF only when true ("Millionen Spieler machen genau diesen Fehler" only if it is genuinely common).
+- ENDING = BINARY QUESTION: the last line asks an either/or the viewer can answer in two words ("Team Bunker oder Team Nightclub?", "Lucia oder Jason?"). Comments are the strongest ranking signal a small channel can trigger.
+- ZEIGARNIK for series/episodes: name what the next episode reveals in one concrete, tempting clause.
+- TITLE: number or power word in the first 3 words (Fehler, niemand, geheim, verboten, kostenlos, endlich, sofort), max 45 characters before any emoji, the promise must match the video.
+- LONG-FORM: re-open a loop at the start of EVERY chapter ("gleich siehst du, warum das die meisten falsch machen") and close it inside the chapter; keep one big loop for the last chapter.
+
 Output ONLY JSON:
 {"title": "max 70 chars, German, curiosity + clarity, no #Shorts",
  "thumb_text": "2-4 punchy words for the thumbnail, uppercase",
@@ -526,22 +538,47 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
         topic = dict(topic, kind='evergreen')
     logger.info(f"📺 Long-form ({kind}): {topic.get('id')}")
     video, script = build(topic, titles)
-    vid = uploader.upload(video, script, language, kind='long')
+    # The YouTube quota day resets 09:00 local. The night render belongs to
+    # the OLD quota day (already carrying 4-5 uploads), so the upload waits
+    # for the reset — the release is scheduled for the evening anyway.
+    try:
+        hh, mm = os.environ.get('LONGFORM_UPLOAD_NOT_BEFORE', '09:05').split(':')
+        now = datetime.datetime.now()
+        gate = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+        if now < gate:
+            logger.info(f"⏳ Long-form rendered; upload waits for the quota reset at {gate:%H:%M}")
+            time.sleep((gate - now).total_seconds())
+    except Exception as e:
+        logger.warning(f"Upload gate skipped: {e}")
+    # release at prime time (default 18:00 local), never in the night
+    publish_at = None
+    try:
+        hh, mm = os.environ.get('LONGFORM_PUBLISH_AT', '17:30').split(':')
+        now = datetime.datetime.now()
+        publish_at = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+        if publish_at <= now + datetime.timedelta(minutes=20):
+            publish_at += datetime.timedelta(days=1)
+        publish_at = publish_at.astimezone()
+    except Exception as e:
+        logger.warning(f"Publish time not set ({e}) — publishing immediately")
+    vid = uploader.upload(video, script, language, kind='long', publish_at=publish_at)
     if vid:
         logger.info(f"✅ UPLOADED long-form [{language}]: https://youtube.com/watch?v={vid} "
                     f"({script['duration'] / 60:.1f} min)")
         if script.get('thumbnail'):
             uploader.set_thumbnail(vid, script['thumbnail'])
+        uploader.add_to_topic_playlist(vid, script, kind='long')
         try:
             with open(DONE_FLAG, 'w') as f:
                 f.write(str(int(time.time())))
         except OSError:
             pass
-        try:
-            from community_manager import CommunityManager
-            CommunityManager(uploader.service).seed_comment(vid, script)
-        except Exception as e:
-            logger.warning(f"Seed comment skipped: {e}")
+        if publish_at is None:  # comments on a private (scheduled) video fail
+            try:
+                from community_manager import CommunityManager
+                CommunityManager(uploader.service).seed_comment(vid, script)
+            except Exception as e:
+                logger.warning(f"Seed comment skipped: {e}")
     try:
         os.remove(video)
     except OSError:
