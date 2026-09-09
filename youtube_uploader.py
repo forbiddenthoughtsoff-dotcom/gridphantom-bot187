@@ -282,10 +282,21 @@ class YouTubeUploader:
             title = dict(self.TOPIC_PLAYLISTS)[key]
             pl_id = self._playlist_id(title, "GridPhantom – taeglich GTA Shorts, Guides und eigene Clips. "
                                              "Abonnieren fuer die naechste Folge.")
-            self.service.playlistItems().insert(
-                part='snippet',
-                body={'snippet': {'playlistId': pl_id,
-                                  'resourceId': {'kind': 'youtube#video', 'videoId': video_id}}}).execute()
+            # a freshly created playlist answers 409 SERVICE_UNAVAILABLE for a
+            # few seconds — retry briefly instead of losing the item
+            import time as _t
+            for attempt in range(4):
+                try:
+                    self.service.playlistItems().insert(
+                        part='snippet',
+                        body={'snippet': {'playlistId': pl_id,
+                                          'resourceId': {'kind': 'youtube#video',
+                                                         'videoId': video_id}}}).execute()
+                    break
+                except Exception as e:
+                    if attempt == 3 or 'SERVICE_UNAVAILABLE' not in str(e):
+                        raise
+                    _t.sleep(3 * (attempt + 1))
             logger.info(f"📚 Added to playlist '{title}': {video_id}")
             return True
         except Exception as e:
