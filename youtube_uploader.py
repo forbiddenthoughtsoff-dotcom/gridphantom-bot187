@@ -191,7 +191,10 @@ class YouTubeUploader:
             },
             'status': {
                 'privacyStatus': 'public',
-                'selfDeclaredMadeForKids': False,
+                'selfDeclaredMadeForKids': False,   # adult gaming audience
+                'embeddable': True,                 # reach outside YouTube
+                'publicStatsViewable': True,
+                'license': 'youtube',
             }
         }
         # Scheduled premiere: rendered at night, released at prime time.
