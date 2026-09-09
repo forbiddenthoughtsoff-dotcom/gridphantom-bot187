@@ -231,3 +231,15 @@ def upcoming(today=None) -> dict:
                 'newest_h': 0.0, 'sources': ['kalender'],
                 'headlines': ["Rockstar veroeffentlicht donnerstags das Wochenupdate"]}
     return None
+
+
+def recent_news(limit: int = 20) -> list:
+    """Headlines as {title, source, published} — the script generator's factual
+    ground truth. Same poll as the trend radar, so no second RSS round trip."""
+    import datetime as d
+    now = d.datetime.now(d.timezone.utc)
+    out = []
+    for h in sorted(_headlines(), key=lambda i: i['age'])[:limit]:
+        out.append({'title': h['t'], 'source': h['src'], 'link': h['link'],
+                    'published': (now - d.timedelta(hours=h['age'])).isoformat()})
+    return out

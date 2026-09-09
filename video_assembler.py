@@ -11,12 +11,10 @@ from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (VideoClip, AudioFileClip, ImageClip,
                             VideoFileClip, CompositeVideoClip,
                             concatenate_videoclips, vfx)
-from image_generator import get_background_image
 
 logger = logging.getLogger(__name__)
 
 W, H = 1080, 1920
-ZOOM = 0.10  # Ken-Burns zoom range per sentence (10%)
 
 
 _FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
@@ -358,30 +356,7 @@ def build_caption_groups(narration: str, tts_words: list,
     return groups
 
 
-def make_kb_clip(bg_big: np.ndarray, text: str, duration: float,
-                 zoom_in: bool) -> VideoClip:
-    """Ken-Burns segment: background slowly zooms while the text overlay
-    stays static — motion holds attention better than a still frame."""
-    H2, W2 = bg_big.shape[:2]
-    rgb, alpha = make_overlay(text)
-    inv_alpha = 1.0 - alpha
-    overlay_pre = rgb * alpha
-
-    def frame(t):
-        p = min(t / duration, 1.0) if duration > 0 else 0.0
-        s = 1.0 + ZOOM * p if zoom_in else 1.0 + ZOOM * (1.0 - p)
-        cw, ch = int(W2 / s), int(H2 / s)
-        x0, y0 = (W2 - cw) // 2, (H2 - ch) // 2
-        crop = Image.fromarray(bg_big[y0:y0 + ch, x0:x0 + cw])
-        base = np.asarray(crop.resize((W, H), Image.BILINEAR),
-                          dtype=np.float32)
-        return (base * inv_alpha + overlay_pre).astype('uint8')
-
-    return VideoClip(frame, duration=duration)
-
-
-GAMEPLAY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "gameplay")
+GAMEPLAY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gameplay")
 MUSIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "music")
 MUSIC_VOLUME = 0.20  # bed level before sidechain ducking under the voice
 
@@ -452,7 +427,7 @@ def _gameplay_entries() -> list:
 
 def _script_haystack(script: dict) -> str:
     return " ".join([
-        script.get("title", ""), script.get("pexels_query", ""),
+        script.get("title", ""),
         " ".join(script.get("tags", [])),
         " ".join(script.get("sentences", []))]).lower()
 
@@ -579,104 +554,6 @@ def pick_gameplay_clip(script: dict, require_match: bool = False) -> str:
     return choice
 
 
-def build_pexels_montage(queries: list, duration: float, n_segments: int = 3) -> str:
-    """Up to three different topic clips from Pexels, cut into one segment
-    per sentence (random window each) with camera motion on every cut,
-    concatenated into a silent 1080x1920 clip. None → caller falls back to
-    a single clip."""
-    paths = []
-    for q in queries[:4]:
-        p = fetch_pexels_video(q)
-        if p and p not in paths:
-            paths.append(p)
-        if len(paths) >= 3:
-            break
-    if not paths:
-        return None
-    try:
-        from trailer_library import _probe_duration
-        import imageio_ffmpeg
-        ff = imageio_ffmpeg.get_ffmpeg_exe()
-        n = max(1, min(n_segments, 6))
-        seg_len = duration / n
-        out_dir = '/tmp/pexels_montage'
-        os.makedirs(out_dir, exist_ok=True)
-        durs = {p: _probe_duration(p) for p in paths}
-        parts = []
-        for i in range(n):
-            src = paths[i % len(paths)]
-            total = durs.get(src) or 0.0
-            loop = ['-stream_loop', '-1'] if 0 < total < seg_len + 0.3 else []
-            start = (random.uniform(0, total - seg_len - 0.3)
-                     if total > seg_len + 0.5 else 0.0)
-            out = os.path.join(out_dir, f'seg_{os.getpid()}_{i}.mp4')
-            cmd = [ff, '-y'] + loop + ['-ss', f'{start:.2f}', '-i', src,
-                   '-t', f'{seg_len:.2f}', '-an',
-                   '-vf', motion_vf(i, seg_len) + ',fps=24', '-r', '24',
-                   '-c:v', 'libx264', '-preset', 'superfast', '-crf', '21',
-                   '-pix_fmt', 'yuv420p', out]
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-            if r.returncode == 0 and os.path.exists(out):
-                parts.append(out)
-            else:
-                logger.warning(f"Pexels segment failed: {r.stderr[-160:]}")
-        if not parts:
-            return None
-        lst = os.path.join(out_dir, f'concat_{os.getpid()}.txt')
-        with open(lst, 'w') as f:
-            for part in parts:
-                f.write(f"file '{part}'\n")
-        montage = os.path.join(out_dir, f'montage_{os.getpid()}.mp4')
-        r = subprocess.run([ff, '-y', '-f', 'concat', '-safe', '0', '-i', lst,
-                            '-c', 'copy', montage],
-                           capture_output=True, text=True, timeout=120)
-        for part in parts:
-            try:
-                os.remove(part)
-            except OSError:
-                pass
-        if r.returncode != 0 or not os.path.exists(montage):
-            logger.warning(f"Pexels concat failed: {r.stderr[-160:]}")
-            return None
-        logger.info(f"🎥 Pexels montage: {len(parts)} segments from {len(paths)} clip(s) "
-                    f"('{queries[0]}')")
-        return montage
-    except Exception as e:
-        logger.warning(f"Pexels montage skipped: {e}")
-        return None
-
-
-def fetch_pexels_video(query: str) -> str:
-    """Free stock video background from Pexels (needs PEXELS_API_KEY).
-    Returns a local mp4 path or None."""
-    key = os.environ.get('PEXELS_API_KEY', '')
-    if not key:
-        return None
-    r = requests.get(
-        'https://api.pexels.com/videos/search',
-        params={'query': query, 'orientation': 'portrait', 'per_page': 15},
-        headers={'Authorization': key}, timeout=20)
-    r.raise_for_status()
-    videos = r.json().get('videos', [])
-    # Pexels returns relevance-sorted results: keep the top hits so the
-    # footage actually shows the subject, shuffle only among those for variety
-    videos = videos[:6]
-    random.shuffle(videos)
-    for v in videos:
-        files = sorted(v.get('video_files', []),
-                       key=lambda f: abs((f.get('height') or 0) - H))
-        for f in files:
-            if (f.get('height') or 0) >= 1080 and f.get('link'):
-                path = '/tmp/bg_video.mp4'
-                data = requests.get(f['link'], timeout=90).content
-                with open(path, 'wb') as fh:
-                    fh.write(data)
-                logger.info(f"🎥 Pexels footage: '{query}' "
-                            f"({f.get('width')}x{f.get('height')})")
-                return path
-    return None
-
-
 class VideoAssembler:
     def __init__(self):
         self.output_dir = "/tmp/videos"
@@ -749,35 +626,19 @@ class VideoAssembler:
                 cuts_n = n_seg if bg_path else 0
                 if not bg_path:
                     bg_path = pick_gameplay_clip(script, require_match=gta6)
-            if not bg_path and gta6 and build_trailer_montage:
+            if not bg_path and build_trailer_montage:
+                # official trailer footage is the last resort for every topic:
+                # better looking than stock and always on disk
                 try:
-                    bg_path = build_trailer_montage(duration, n_segments=len(sentences) or 3)
-                    cuts_n = (len(sentences) or 3) if bg_path else 0
+                    bg_path = build_trailer_montage(duration, n_segments=n_seg)
+                    cuts_n = n_seg if bg_path else 0
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
-            if not bg_path and gta6:  # own footage still beats stock
+            if not bg_path:
                 bg_path = build_gameplay_montage(script, duration, n_seg)
                 cuts_n = n_seg if bg_path else 0
                 if not bg_path:
                     bg_path = pick_gameplay_clip(script)
-            if not bg_path:
-                # Topic-matched footage: the script's subject query first,
-                # then its broader alternatives, then a neutral fallback
-                queries = [script.get('pexels_query')]
-                alts = script.get('pexels_alternatives') or []
-                if isinstance(alts, list):
-                    queries.extend(alts[:3])
-                queries.append("night city street driving neon")
-                queries = [str(q).strip() for q in queries if q and str(q).strip()]
-                # several topic clips, one hard cut per sentence, camera
-                # motion on every cut — instead of one static stock clip
-                bg_path = build_pexels_montage(queries, duration, n_seg)
-                cuts_n = n_seg if bg_path else 0
-                if not bg_path:
-                    for q in queries:
-                        bg_path = fetch_pexels_video(q)
-                        if bg_path:
-                            break
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()
                 scale = max(W / base.w, H / base.h)
@@ -851,22 +712,8 @@ class VideoAssembler:
             final = CompositeVideoClip([base] + overlays).set_audio(
                 audio.subclip(0, duration))
         else:
-            # Fallback: AI image with Ken-Burns motion
-            logger.info("Fetching background image...")
-            bg = get_background_image(image_prompt)
-            big_w, big_h = int(W * (1 + ZOOM)), int(H * (1 + ZOOM))
-            bg_big = np.asarray(bg.resize((big_w, big_h), Image.LANCZOS))
-
-            clips = []
-            for i, sentence in enumerate(sentences):
-                start = i * seg_dur
-                end = min((i + 1) * seg_dur, duration)
-                c = make_kb_clip(bg_big, sentence, end - start,
-                                 zoom_in=(i % 2 == 0)).set_audio(
-                    audio.subclip(start, end))
-                clips.append(c)
-            final = concatenate_videoclips(clips).set_audio(
-                audio.subclip(0, duration))
+            raise RuntimeError("no background footage available "
+                               "(gameplay library empty and trailers missing)")
 
         logger.info(f"Exporting {duration:.1f}s video ({len(sentences)} sentences)...")
         # crf 22 / superfast: YouTube re-encodes whatever it gets — a blocky

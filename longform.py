@@ -525,8 +525,8 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
     titles = [r['title'] for r in recent]
     if kind == 'weekly':
         try:
-            from news_fetcher import fetch_recent_news
-            news = fetch_recent_news(max_age_days=8, limit=40)
+            from trends import recent_news
+            news = recent_news(limit=40)
         except Exception as e:
             logger.warning(f"News unavailable for the weekly recap: {e}")
             news = []

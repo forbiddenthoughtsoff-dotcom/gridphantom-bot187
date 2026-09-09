@@ -58,7 +58,7 @@ Output ONLY JSON:
  "lines": [{"speaker": "ben", "text": "..."}, {"speaker": "ava", "text": "..."}],
  "description": "2-3 German sentences + the question for the comments",
  "tags": ["8-12 German + GTA search phrases"],
- "pexels_query": "2-4 English words describing matching footage"}
+}
 """
 
 
@@ -106,8 +106,6 @@ def generate(language: str = 'de', avoid_titles: list = None, news_items: list =
         'description': str(data.get('description', '')).replace('ß', 'ss').strip(),
         'tags': [str(t).replace('ß', 'ss') for t in data.get('tags', []) if str(t).strip()][:12]
                 + ['mythos oder fakt', 'gta mythen'],
-        'pexels_query': str(data.get('pexels_query', 'gta gameplay')),
-        'pexels_alternatives': [],
         'image_prompt': 'night city neon street',
         'format': 'dialogue',
     }

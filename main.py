@@ -91,7 +91,7 @@ def run_pipeline(language: str = 'de', brief: dict = None):
         from voice_generator import VoiceGenerator
         from video_assembler import VideoAssembler
         from youtube_uploader import YouTubeUploader
-        from news_fetcher import fetch_recent_news
+        from trends import recent_news
 
         uploader = YouTubeUploader()
         recent = uploader.get_recent_performance()
@@ -107,7 +107,7 @@ def run_pipeline(language: str = 'de', brief: dict = None):
 
         # Live GTA news to ground the script (falls back to evergreen if empty)
         try:
-            news_items = fetch_recent_news()
+            news_items = recent_news()
         except Exception as e:
             logger.warning(f"News fetch failed, evergreen fallback: {e}")
             news_items = []
