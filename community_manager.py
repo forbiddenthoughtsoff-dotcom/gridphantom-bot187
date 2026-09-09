@@ -50,7 +50,7 @@ class CommunityManager:
         # Sonnet: replies must sound like a knowledgeable channel owner —
         # a handful per day costs cents and the quality gap is visible.
         msg = self.client.messages.create(
-            model="claude-sonnet-4-6", max_tokens=200,
+            model="claude-haiku-4-5-20251001", max_tokens=200,
             system=system,
             messages=[{"role": "user", "content": prompt}])
         # Swiss spelling: no ß, always ss

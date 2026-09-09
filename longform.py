@@ -141,13 +141,13 @@ def generate_script(topic: dict, recent_titles: list = None) -> dict:
     import anthropic
     from config import Config
     lo, hi = TARGET_WORDS.get(topic.get('kind', 'evergreen'), (1400, 1700))
-    prompt = (f"AUFTRAG:\n{topic['brief']}\n\nZiel-Laenge: {lo} bis {hi} Woerter gesprochener Text "
+    prompt = (f"AUFTRAG:\n{topic['brief']}\n\nZiel-Laenge: {lo} bis {hi} Woerter gesprochener Text (Pflicht, ein zu kurzer Text wird verworfen) "
               f"insgesamt (das ergibt etwa {lo // 140} bis {hi // 140} Minuten). "
               f"Kuerzlich veroeffentlichte Titel (nicht wiederholen): "
               + "; ".join((recent_titles or [])[:15]))
     client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
     for attempt in range(2):
-        msg = client.messages.create(model='claude-sonnet-4-6', max_tokens=9000,
+        msg = client.messages.create(model='claude-sonnet-4-6', max_tokens=6000,
                                      system=LONGFORM_SYSTEM,
                                      messages=[{'role': 'user', 'content': prompt}])
         txt = msg.content[0].text

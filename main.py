@@ -425,8 +425,8 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
     # Community management: answer viewer comments every 2 hours
-    schedule.every(1).hours.do(run_engagement)
-    logger.info("💬 Engagement: comment replies every hour")
+    schedule.every(3).hours.do(run_engagement)
+    logger.info("💬 Engagement: comment replies every 3h")
 
     # Immediate post on startup only if explicitly enabled — otherwise every
     # deploy/restart uploads an unscheduled extra video. Started BEFORE the
@@ -467,7 +467,7 @@ if __name__ == "__main__":
         srcs = sources()
         if srcs:
             sync_async()  # owner's own PS5 clips (waits while a cycle runs)
-            schedule.every(2).hours.do(sync_async)
+            schedule.every(8).hours.do(sync_async)
             logger.info(f"🎮 Gameplay sync every 2h: {', '.join(srcs)}")
         else:
             logger.info("🎮 Gameplay sync off (set PSN_NPSSO or GAMEPLAY_DRIVE_FOLDER)")
