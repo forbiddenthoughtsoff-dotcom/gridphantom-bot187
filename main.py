@@ -346,9 +346,15 @@ if __name__ == "__main__":
     schedule.every().day.at("07:30").do(run_clip_short)   # commute (audience is 25-44, working)
     schedule.every().day.at("19:00").do(run_bot_short)
     schedule.every().day.at("21:15").do(run_bot_short)
+    # long-form runs in its own thread: after the night render it sleeps
+    # until the 09:05 quota reset before uploading, and that wait must not
+    # block the scheduler (07:30 clip Short, 08:40 cleanup)
+    def _longform_bg(kind):
+        threading.Thread(target=run_longform_slot, args=(kind,),
+                         daemon=True, name='longform').start()
     for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
-        getattr(schedule.every(), _day).at("03:30").do(run_longform_slot, 'evergreen')
-    schedule.every().sunday.at("03:30").do(run_longform_slot, 'weekly')
+        getattr(schedule.every(), _day).at("03:30").do(_longform_bg, 'evergreen')
+    schedule.every().sunday.at("03:30").do(_longform_bg, 'weekly')
     schedule.every().day.at("08:40").do(run_cleanup)
     logger.info("⏰ Shorts 07:30 (Clip) | 12:00 (Serie) | 19:00 | 21:15 (Di/Fr Dialog) "
                 "+ long-form nightly, released 17:30")
