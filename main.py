@@ -468,7 +468,7 @@ if __name__ == "__main__":
         if srcs:
             sync_async()  # owner's own PS5 clips (waits while a cycle runs)
             schedule.every(8).hours.do(sync_async)
-            logger.info(f"🎮 Gameplay sync every 2h: {', '.join(srcs)}")
+            logger.info(f"🎮 Gameplay sync every 8h: {', '.join(srcs)}")
         else:
             logger.info("🎮 Gameplay sync off (set PSN_NPSSO or GAMEPLAY_DRIVE_FOLDER)")
     except Exception as e:
