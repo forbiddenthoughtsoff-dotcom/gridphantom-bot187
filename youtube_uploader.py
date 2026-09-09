@@ -387,6 +387,24 @@ class YouTubeUploader:
             logger.warning(f"Thumbnail skipped (non-fatal): {e}")
             return False
 
+    LATEST_LONGFORM = '/tmp/latest_longform.json'
+
+    @classmethod
+    def note_longform(cls, video_id: str, title: str):
+        try:
+            json.dump({'id': video_id, 'title': title},
+                      open(cls.LATEST_LONGFORM, 'w', encoding='utf-8'))
+        except Exception:
+            pass
+
+    @classmethod
+    def _longform_link(cls):
+        try:
+            d = json.load(open(cls.LATEST_LONGFORM, encoding='utf-8'))
+            return d.get('id'), d.get('title')
+        except Exception:
+            return None, None
+
     def _build_description(self, script: dict, language: str, shorts: bool = True) -> str:
         # First line: #Shorts (YouTube reads the first hashtags for classification)
         description = ("#Shorts\n\n" if shorts else "") + script.get('description', '')
@@ -403,6 +421,15 @@ class YouTubeUploader:
             label = ("▶️ Watch the full video here: " if language == 'en'
                      else "▶️ Passendes Video direkt hier: ")
             description += f"\n\n{label}{script['related_video_url']}"
+
+        # Shorts carry the reach, the long-form guide carries the watch hours:
+        # every Short points at it. Costs nothing, moves the metric that
+        # actually decides monetisation.
+        if shorts and not script.get('clip_marker'):
+            lf_id, lf_title = self._longform_link()
+            if lf_id:
+                description += (f"\n\n📺 Ausführlich erklärt im Guide: {lf_title}\n"
+                                f"https://youtu.be/{lf_id}")
 
         # Music attribution (CC BY requires credit)
         if script.get('music_credit'):

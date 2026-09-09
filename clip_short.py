@@ -95,7 +95,7 @@ def cut(entry: dict, h: dict, out_path: str):
 def _frames(path: str, length: float) -> list:
     ff = _ffmpeg()
     out = []
-    for t in (length * 0.15, length * 0.5, length * 0.85):
+    for t in (length * 0.45,):   # one frame is enough to describe the moment
         jpg = f'{path}.f{int(t * 10)}.jpg'
         subprocess.run([ff, '-y', '-loglevel', 'error', '-ss', f'{t:.2f}', '-i', path,
                         '-frames:v', '1', '-vf', 'scale=360:-2', '-q:v', '5', jpg],
@@ -131,7 +131,7 @@ def describe(clip_path: str, length: float, tags: list) -> dict:
         content = [{'type': 'image', 'source': {'type': 'base64',
                     'media_type': 'image/jpeg', 'data': fr}} for fr in frames]
         content.append({'type': 'text', 'text': (
-            "Three frames (start, middle, end) of ONE " + f"{length:.0f}" + "-second GTA Online (GTA 5, PS5) "
+            "A frame from a " + f"{length:.0f}" + "-second GTA Online (GTA 5, PS5) "
             "gameplay clip from the channel owner GridPhantom. Keyword tags for the clip: "
             + ", ".join(tags or []) + ".\n"
             "Write the on-screen hook and the metadata for a YouTube Short that shows this clip "

@@ -569,6 +569,7 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
         if script.get('thumbnail'):
             uploader.set_thumbnail(vid, script['thumbnail'])
         uploader.add_to_topic_playlist(vid, script, kind='long')
+        uploader.note_longform(vid, script.get('title', ''))
         try:
             with open(DONE_FLAG, 'w') as f:
                 f.write(str(int(time.time())))
