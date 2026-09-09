@@ -14,7 +14,10 @@ logger = logging.getLogger(__name__)
 GTA_RE = re.compile(r'gta|grand theft|rockstar|los santos|vice city|leonida|karriere|lucia|jason|'
                     r'gridphantom moments|mythos oder fakt', re.I)
 CUTOFF = '2026-07-26'          # first GTA upload; everything older and non-GTA goes private
-PER_RUN = int(os.environ.get('CLEANUP_PER_RUN', '14'))
+# Quota maths: 10 000 units a day, five uploads reserve 8 000, metadata and
+# polling take ~500. What is left buys 30 privacy changes at 50 units. The job
+# runs at 08:40, before the day's uploads, so this stays inside the budget.
+PER_RUN = int(os.environ.get('CLEANUP_PER_RUN', '30'))
 DESC_PER_RUN = int(os.environ.get('CLEANUP_DESC_PER_RUN', '5'))
 OLD_FOOTER_MARK = 'Jeden Tag um 07, 12, 17 & 22 Uhr'
 NEW_FOOTER_MARK = 'playlist?list=PLBEY4q4jZJiQ'
@@ -44,8 +47,18 @@ def run(service) -> int:
         for i in range(0, len(ids), 50):
             r = service.videos().list(part='status,snippet', id=','.join(ids[i:i + 50])).execute()
             todo += [v for v in r.get('items', []) if v['status'].get('privacyStatus') == 'public']
+        # never eat into the upload budget
+        try:
+            from youtube_uploader import uploads_today
+            used = uploads_today()
+        except Exception:
+            used = 0
+        budget = max(0, PER_RUN - 20 * used)
+        if budget <= 0:
+            logger.info("🧹 Cleanup postponed — the upload budget has priority")
+            return 0
         done = 0
-        for v in todo[:PER_RUN]:
+        for v in todo[:budget]:
             try:
                 service.videos().update(part='status', body={
                     'id': v['id'],
