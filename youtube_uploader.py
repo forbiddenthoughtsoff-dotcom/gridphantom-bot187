@@ -45,6 +45,15 @@ SCOPES = [x for x in os.environ.get(
     'https://www.googleapis.com/auth/yt-analytics-monetary.readonly').split() if x]
 
 
+FOOTER_DE = (
+    "\n\n🎮 GridPhantom – täglich GTA auf Hochdeutsch, ohne Clickbait."
+    "\n⏰ 07:30 eigener Clip · 12:00 GTA Online Karriere (Serie) · 17:30 Guide in voller Länge"
+    " · 19:00 & 21:15 GTA 6 News und Tricks · Di/Fr 21:15 Mythos oder Fakt"
+    "\n📚 Karriere-Serie komplett: https://www.youtube.com/playlist?list=PLBEY4q4jZJiQ"
+    "\n🔔 Abonnieren, damit du die nächste Folge nicht verpasst: @GridPhantom187"
+    "\n💬 Welche Frage sollen wir als Nächstes klären? Schreib es in die Kommentare.")
+
+
 class YouTubeUploader:
     def __init__(self):
         self.service = self._authenticate()
@@ -368,12 +377,7 @@ class YouTubeUploader:
                          'gta6', 'gtavi', 'grandtheftauto', 'rockstar',
                          'gtatricks', 'gaming', 'gtaclips']
         else:
-            description += ("\n\n🎮 GridPhantom — täglich GTA Shorts: Tricks, Fakten, "
-                            "Hilfe & Mythen zu GTA 5, GTA Online & GTA 6. "
-                            "Jeden Tag um 07, 12, 17 & 22 Uhr.")
-            description += "\n🔔 Abonnieren für deine tägliche GTA-Dosis: @GridPhantom187"
-            description += ("\n💬 Schreib in die Kommentare, welches GTA-Thema "
-                            "wir als Nächstes zeigen sollen!")
+            description += FOOTER_DE
             base_tags = ['shorts', 'gta', 'gta5', 'gta5deutsch', 'gtaonline',
                          'gta6', 'gtavi', 'gtatricksdeutsch', 'gtatippsdeutsch',
                          'grandtheftauto', 'rockstargames', 'gamingdeutsch']
