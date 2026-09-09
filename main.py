@@ -203,14 +203,28 @@ def run_pipeline(language: str = 'de', brief: dict = None):
 
         vid = uploader.upload(video, script, language)
         if vid:
+            # Everything after a successful upload is decoration. If any of
+            # it throws, the pipeline must still report success — the retry
+            # would otherwise upload the SAME video a second time.
+            try:
+                import re as _re
+                m = _re.search(r'karriere\s*#\s*(\d+)', script.get('title', ''), _re.I)
+                if m:
+                    from series import note_published
+                    note_published(int(m.group(1)))
+            except Exception:
+                pass
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
-            if trend:
-                import trends as _t
-                _t.mark_covered(trend['key'], vid)
-            if not uploader.add_to_series_playlist(vid, script.get('title', '')):
-                uploader.add_to_topic_playlist(vid, script)
-            from community_manager import CommunityManager
-            CommunityManager(uploader.service).seed_comment(vid, script)
+            try:
+                if trend:
+                    import trends as _t
+                    _t.mark_covered(trend['key'], vid)
+                if not uploader.add_to_series_playlist(vid, script.get('title', '')):
+                    uploader.add_to_topic_playlist(vid, script)
+                from community_manager import CommunityManager
+                CommunityManager(uploader.service).seed_comment(vid, script)
+            except Exception as e:
+                logger.warning(f"Post-upload extras failed (video is live): {e}")
         else:
             logger.error(f"❌ Upload returned None for [{language}]")
 
