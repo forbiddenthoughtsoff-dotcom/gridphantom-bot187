@@ -38,14 +38,38 @@ def is_series_slot(now: datetime = None) -> bool:
     return (now or datetime.now()).hour == hour
 
 
+LAST_FILE = '/tmp/series_last.json'
+
+
+def _local_last() -> int:
+    try:
+        return int(json.load(open(LAST_FILE)).get('n', 0))
+    except Exception:
+        return 0
+
+
+def note_published(n: int):
+    try:
+        json.dump({'n': max(int(n), _local_last())}, open(LAST_FILE, 'w'))
+    except Exception:
+        pass
+
+
 def next_episode(published_titles: list) -> dict:
     """Next episode after the highest number found in the published titles
-    (None when the series is complete)."""
+    (None when the series is complete). An EMPTY title list means the API
+    call failed — skip the slot instead of restarting the series at #1
+    (that is exactly how two duplicate episodes ended up on the channel)."""
+    if not published_titles:
+        logger.warning("Series slot skipped: no published titles available "
+                       "(API failure?) — refusing to guess the episode number")
+        return None
     done = 0
-    for t in published_titles or []:
+    for t in published_titles:
         m = TITLE_RE.search(str(t or ''))
         if m:
             done = max(done, int(m.group(1)))
+    done = max(done, _local_last())   # survives API hiccups within a container
     for e in load_episodes():
         if int(e.get('n', 0)) == done + 1:
             return e
