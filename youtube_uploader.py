@@ -54,6 +54,39 @@ FOOTER_DE = (
     "\n💬 Welche Frage sollen wir als Nächstes klären? Schreib es in die Kommentare.")
 
 
+# The YouTube quota day resets 09:00 local and allows 5 uploads (1600 units
+# each). Every upload passes through this module, so this is the one honest
+# place to count them.
+BUDGET_FILE = '/tmp/upload_budget.json'
+DAILY_UPLOADS = int(os.environ.get('DAILY_UPLOADS', '5'))
+
+
+def _quota_day() -> str:
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    return (now - timedelta(hours=9)).strftime('%Y-%m-%d')
+
+
+def uploads_today() -> int:
+    try:
+        d = json.load(open(BUDGET_FILE, encoding='utf-8'))
+        return int(d.get(_quota_day(), 0))
+    except Exception:
+        return 0
+
+
+def uploads_left() -> int:
+    return max(0, DAILY_UPLOADS - uploads_today())
+
+
+def _note_upload():
+    try:
+        json.dump({_quota_day(): uploads_today() + 1},
+                  open(BUDGET_FILE, 'w', encoding='utf-8'))
+    except Exception as e:
+        logger.warning(f"Upload budget not written: {e}")
+
+
 class YouTubeUploader:
     def __init__(self):
         self.service = self._authenticate()
@@ -228,6 +261,7 @@ class YouTubeUploader:
                 logger.info(f"Upload progress: {progress}%")
 
         video_id = response['id']
+        _note_upload()
         video_url = f"https://youtube.com/watch?v={video_id}"
         logger.info(f"✅ Uploaded: {video_url}")
         return video_id

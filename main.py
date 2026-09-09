@@ -126,6 +126,22 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             except Exception as e:
                 logger.warning(f"Series slot skipped: {e}")
 
+        # Ride the strongest current trend when the slot has no assignment:
+        # the topic people search for RIGHT NOW beats an evergreen one
+        trend = None
+        if not brief:
+            try:
+                import trends
+                from series import is_series_slot
+                if not is_series_slot():
+                    trend = trends.upcoming() or trends.pick(recent_titles)
+                    if trend:
+                        brief = trends.brief_for(trend)
+                        logger.info(f"📡 Trendthema: {trend['label'][:70]} "
+                                    f"(Score {trend['score']})")
+            except Exception as e:
+                logger.warning(f"Trend radar skipped: {e}")
+
         # Two-voice format "Mythos oder Fakt" twice a week (Tue/Fri 22:00)
         dialogue = None
         if not brief:
@@ -188,6 +204,9 @@ def run_pipeline(language: str = 'de', brief: dict = None):
         vid = uploader.upload(video, script, language)
         if vid:
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+            if trend:
+                import trends as _t
+                _t.mark_covered(trend['key'], vid)
             if not uploader.add_to_series_playlist(vid, script.get('title', '')):
                 uploader.add_to_topic_playlist(vid, script)
             from community_manager import CommunityManager
@@ -206,6 +225,9 @@ def run_pipeline(language: str = 'de', brief: dict = None):
 
 def run_bot_short(is_retry: bool = False, brief: dict = None):
     """Scheduled slot: 1 German GTA Short (brief = owner's assignment)."""
+    if not brief and _skip_this_short():
+        logger.info("⏭️ Short skipped — a breaking edition already used this slot")
+        return
     # A long-form video went out in the night: its upload took the fifth
     # quota slot of this quota day, so the morning Short steps aside
     try:
@@ -273,6 +295,44 @@ def run_clip_short(is_retry: bool = False):
             return schedule.CancelJob
 
         schedule.every(30).minutes.do(_retry)
+
+
+SKIP_FLAG = '/tmp/skip_next_short'
+
+
+def _skip_this_short() -> bool:
+    """A breaking video already spent one of the day's five uploads — the next
+    regular Short steps aside so the quota still adds up."""
+    try:
+        if not os.path.exists(SKIP_FLAG):
+            return False
+        day = open(SKIP_FLAG).read().strip()
+        os.remove(SKIP_FLAG)
+        return day == datetime.now().strftime('%Y-%m-%d')
+    except Exception:
+        return False
+
+
+def run_breaking_check():
+    """Every 30 min: is a topic exploding right now? Then publish immediately
+    instead of waiting for the next slot — being first is the whole game."""
+    try:
+        import trends
+        from youtube_uploader import YouTubeUploader, uploads_left
+        if not (8 <= datetime.now().hour < 22):     # nobody watches at 4 a.m.
+            return
+        if uploads_left() < 1:
+            return
+        uploader = YouTubeUploader()
+        topic = trends.pick(uploader.get_recent_titles(25), breaking_only=True)
+        if not topic:
+            return
+        logger.info(f"🚨 EILMELDUNG — Sonderausgabe: {topic['label'][:70]}")
+        with open(SKIP_FLAG, 'w') as f:
+            f.write(datetime.now().strftime('%Y-%m-%d'))
+        run_bot_short(brief=trends.brief_for(topic, breaking=True))
+    except Exception as e:
+        logger.error(f"Breaking check error: {e}", exc_info=True)
 
 
 def run_longform_slot(kind: str = 'evergreen', is_retry: bool = False):
@@ -356,8 +416,9 @@ if __name__ == "__main__":
         getattr(schedule.every(), _day).at("03:30").do(_longform_bg, 'evergreen')
     schedule.every().sunday.at("03:30").do(_longform_bg, 'weekly')
     schedule.every().day.at("08:40").do(run_cleanup)
+    schedule.every(30).minutes.do(run_breaking_check)   # free: RSS only
     logger.info("⏰ Shorts 07:30 (Clip) | 12:00 (Serie) | 19:00 | 21:15 (Di/Fr Dialog) "
-                "+ long-form nightly, released 17:30")
+                "+ long-form nightly 17:30 + Eil-Check alle 30 Min")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
