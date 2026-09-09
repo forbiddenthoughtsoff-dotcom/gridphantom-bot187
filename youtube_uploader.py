@@ -54,6 +54,39 @@ FOOTER_DE = (
     "\n💬 Welche Frage sollen wir als Nächstes klären? Schreib es in die Kommentare.")
 
 
+# The YouTube quota day resets 09:00 local and allows 5 uploads (1600 units
+# each). Every upload passes through this module, so this is the one honest
+# place to count them.
+BUDGET_FILE = '/tmp/upload_budget.json'
+DAILY_UPLOADS = int(os.environ.get('DAILY_UPLOADS', '5'))
+
+
+def _quota_day() -> str:
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    return (now - timedelta(hours=9)).strftime('%Y-%m-%d')
+
+
+def uploads_today() -> int:
+    try:
+        d = json.load(open(BUDGET_FILE, encoding='utf-8'))
+        return int(d.get(_quota_day(), 0))
+    except Exception:
+        return 0
+
+
+def uploads_left() -> int:
+    return max(0, DAILY_UPLOADS - uploads_today())
+
+
+def _note_upload():
+    try:
+        json.dump({_quota_day(): uploads_today() + 1},
+                  open(BUDGET_FILE, 'w', encoding='utf-8'))
+    except Exception as e:
+        logger.warning(f"Upload budget not written: {e}")
+
+
 class YouTubeUploader:
     def __init__(self):
         self.service = self._authenticate()
@@ -228,6 +261,7 @@ class YouTubeUploader:
                 logger.info(f"Upload progress: {progress}%")
 
         video_id = response['id']
+        _note_upload()
         video_url = f"https://youtube.com/watch?v={video_id}"
         logger.info(f"✅ Uploaded: {video_url}")
         return video_id
@@ -353,6 +387,24 @@ class YouTubeUploader:
             logger.warning(f"Thumbnail skipped (non-fatal): {e}")
             return False
 
+    LATEST_LONGFORM = '/tmp/latest_longform.json'
+
+    @classmethod
+    def note_longform(cls, video_id: str, title: str):
+        try:
+            json.dump({'id': video_id, 'title': title},
+                      open(cls.LATEST_LONGFORM, 'w', encoding='utf-8'))
+        except Exception:
+            pass
+
+    @classmethod
+    def _longform_link(cls):
+        try:
+            d = json.load(open(cls.LATEST_LONGFORM, encoding='utf-8'))
+            return d.get('id'), d.get('title')
+        except Exception:
+            return None, None
+
     def _build_description(self, script: dict, language: str, shorts: bool = True) -> str:
         # First line: #Shorts (YouTube reads the first hashtags for classification)
         description = ("#Shorts\n\n" if shorts else "") + script.get('description', '')
@@ -369,6 +421,15 @@ class YouTubeUploader:
             label = ("▶️ Watch the full video here: " if language == 'en'
                      else "▶️ Passendes Video direkt hier: ")
             description += f"\n\n{label}{script['related_video_url']}"
+
+        # Shorts carry the reach, the long-form guide carries the watch hours:
+        # every Short points at it. Costs nothing, moves the metric that
+        # actually decides monetisation.
+        if shorts and not script.get('clip_marker'):
+            lf_id, lf_title = self._longform_link()
+            if lf_id:
+                description += (f"\n\n📺 Ausführlich erklärt im Guide: {lf_title}\n"
+                                f"https://youtu.be/{lf_id}")
 
         # Music attribution (CC BY requires credit)
         if script.get('music_credit'):

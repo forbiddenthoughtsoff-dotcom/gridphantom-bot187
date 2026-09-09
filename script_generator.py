@@ -81,22 +81,6 @@ DESCRIPTION RULES (decides WHO the algorithm shows the video to):
 - Then: name the audience ("Egal ob du GTA 5 auf PS5, Xbox oder PC zockst, ...")
 - Last sentence: an engaging question that provokes comments (e.g. "Welchen GTA-Mythos sollen wir als Nächstes checken?")
 
-pexels_query: ENGLISH 3-5 word stock-footage query that shows the CONCRETE SUBJECT of THIS video in the real world — the viewer must SEE what the video is about. NEVER a generic gaming vibe (no "gaming controller neon", no "gamer setup") unless the video is literally about hardware or lobbies. Translate the GTA topic into real footage:
-- police / wanted level / cops → "police car chase night lights"
-- heist / money / cash / business → "bank vault cash money"
-- jets / planes / helicopters → "fighter jet flying sky" / "helicopter city night"
-- cars / racing / drifting → "sports car drifting night"
-- boats / beach / Vice City / Leonida → "miami beach neon night" / "speedboat ocean sunset"
-- weapons / shooting / combat → "shooting range gun fire"
-- map size / city / world → "aerial city drone night"
-- online lobby / griefers / players → "gamer playing console dark room"
-- PS5 / PC / hardware → "playstation controller closeup"
-- Netflix / series / movie deal → "tv streaming dark living room"
-- trailer / announcement / release → "cinema screen audience dark"
-- myths / mysteries / easter eggs → "foggy mountain night mystery"
-Prefer cinematic, dark, moody footage with motion.
-pexels_alternatives: 2 further queries for the SAME subject, each a bit broader (e.g. "police lights night", "police car city"), used only if the first finds nothing.
-
 TAGS: 12-15 — German + GTA search phrases first ("gta online geld verdienen", "gta 5 tricks deutsch", "gta 6 news deutsch", "gta online tipps", "gta 5 mythen"), then broader ones (gta, gta 5, gta online, gta 6, rockstar, gaming deutsch)
 
 For image_prompt: cinematic gaming-city visual matching the topic (neon-lit night city, luxury sports car, dramatic skyline — NO real GTA logos or copyrighted characters). Always end with: "dramatic cinematic lighting, high contrast, ultra detailed, 8k".
@@ -106,8 +90,6 @@ Output ONLY valid JSON, no markdown:
   "title": "German GTA power title with GTA keyword, max 55 chars",
   "description": "8-10 sentence, 200-280 word German SEO description following the DESCRIPTION RULES",
   "image_prompt": "cinematic neon night city or luxury car visual, dramatic cinematic lighting, high contrast, ultra detailed, 8k",
-  "pexels_query": "english query showing this video's concrete subject",
-  "pexels_alternatives": ["broader query same subject", "even broader query"],
   "sentences": ["Hook", "Satz 2", "Satz 3"],
   "tags": ["gta online geld verdienen", "gta 5 tricks deutsch", "..."]
 }"""

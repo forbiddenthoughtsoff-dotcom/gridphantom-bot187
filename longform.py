@@ -141,13 +141,13 @@ def generate_script(topic: dict, recent_titles: list = None) -> dict:
     import anthropic
     from config import Config
     lo, hi = TARGET_WORDS.get(topic.get('kind', 'evergreen'), (1400, 1700))
-    prompt = (f"AUFTRAG:\n{topic['brief']}\n\nZiel-Laenge: {lo} bis {hi} Woerter gesprochener Text "
+    prompt = (f"AUFTRAG:\n{topic['brief']}\n\nZiel-Laenge: {lo} bis {hi} Woerter gesprochener Text (Pflicht, ein zu kurzer Text wird verworfen) "
               f"insgesamt (das ergibt etwa {lo // 140} bis {hi // 140} Minuten). "
               f"Kuerzlich veroeffentlichte Titel (nicht wiederholen): "
               + "; ".join((recent_titles or [])[:15]))
     client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
     for attempt in range(2):
-        msg = client.messages.create(model='claude-sonnet-4-6', max_tokens=9000,
+        msg = client.messages.create(model='claude-sonnet-4-6', max_tokens=6000,
                                      system=LONGFORM_SYSTEM,
                                      messages=[{'role': 'user', 'content': prompt}])
         txt = msg.content[0].text
@@ -525,8 +525,8 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
     titles = [r['title'] for r in recent]
     if kind == 'weekly':
         try:
-            from news_fetcher import fetch_recent_news
-            news = fetch_recent_news(max_age_days=8, limit=40)
+            from trends import recent_news
+            news = recent_news(limit=40)
         except Exception as e:
             logger.warning(f"News unavailable for the weekly recap: {e}")
             news = []
@@ -569,6 +569,7 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
         if script.get('thumbnail'):
             uploader.set_thumbnail(vid, script['thumbnail'])
         uploader.add_to_topic_playlist(vid, script, kind='long')
+        uploader.note_longform(vid, script.get('title', ''))
         try:
             with open(DONE_FLAG, 'w') as f:
                 f.write(str(int(time.time())))

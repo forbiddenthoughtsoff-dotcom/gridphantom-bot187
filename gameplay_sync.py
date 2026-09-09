@@ -27,8 +27,11 @@ logger = logging.getLogger(__name__)
 RUNTIME_DIR = os.environ.get('GAMEPLAY_RUNTIME_DIR', '/tmp/gameplay_drive')
 MANIFEST = os.path.join(RUNTIME_DIR, 'manifest.json')
 VIDEO_EXT = ('.mp4', '.mov', '.m4v', '.webm', '.mkv')
-MAX_CLIPS = 80          # proxies kept per container (/tmp is fresh per deploy)
-PREFETCH_PER_RUN = 24   # background: how many new clips one sync may pull
+MAX_CLIPS = 30          # proxies kept per container (/tmp is fresh per deploy)
+PREFETCH_PER_RUN = 6    # background: how many new clips one sync may pull
+# 5 videos a day need ~15 clips. Pulling more only burns download,
+# CPU and one vision call per clip — /tmp is wiped on every deploy,
+# so everything above the daily need is paid for twice.
 JIT_PER_RENDER = 1      # right before a render: one fresh clip, keeps it quick
 MIN_RAW_BYTES = 200_000
 # PS5 captures are called "Grand Theft Auto V_20260905143055.mp4" — none of
@@ -275,7 +278,7 @@ def auto_tags(proxy: str, duration: float) -> list:
         import base64
         import anthropic
         ff = _ffmpeg()
-        for t in (duration * 0.2, duration * 0.5, duration * 0.8):
+        for t in (duration * 0.5,):   # one frame is enough for keyword tags
             out = proxy + f'.tag{int(t)}.jpg'
             subprocess.run([ff, '-y', '-loglevel', 'error', '-ss', f'{t:.1f}',
                             '-i', proxy, '-frames:v', '1', '-vf', 'scale=360:-2',
@@ -289,7 +292,7 @@ def auto_tags(proxy: str, duration: float) -> list:
         content = [{'type': 'image', 'source': {'type': 'base64',
                     'media_type': 'image/jpeg', 'data': fr}} for fr in frames]
         content.append({'type': 'text', 'text': (
-            'These are three frames from ONE GTA Online (GTA 5) gameplay clip. '
+            'This is a frame from a GTA Online (GTA 5) gameplay clip. '
             'Return ONLY a JSON array of 5-10 lowercase German keyword tags for '
             'what happens and where, e.g. "auto", "verfolgungsjagd", "polizei", '
             '"nacht", "flugzeug", "helikopter", "fallschirm", "heist", '
