@@ -110,6 +110,11 @@ def used_markers(descriptions) -> set:
 
 
 def next_evergreen(descriptions) -> dict:
+    if not descriptions:
+        # empty = the API call failed (quota, token): without the published
+        # Langform-IDs the picker is blind and would restart at LF-01
+        logger.warning("Long-form slot skipped: no channel data (API failure?)")
+        return None
     used = used_markers(descriptions)
     for t in load_topics():
         if t.get('id', '').upper() not in used:
