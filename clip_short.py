@@ -274,6 +274,12 @@ def run_clip_short(language: str = 'de'):
     from video_assembler import _gameplay_entries, add_music_bed
     uploader = YouTubeUploader()
     recent = uploader.get_recent_performance(50)
+    if not recent:
+        # An empty list means the API call failed (quota, token) — without
+        # the published Clip-IDs the repeat protection is blind, and a blind
+        # pick can put the same moment on the channel twice. Skip the slot.
+        logger.warning("🎞️ Clip slot skipped: no channel data (API failure?)")
+        return None
     used = used_markers([r.get('description') for r in recent])
     entries = _gameplay_entries()
     if len(entries) < 3:
