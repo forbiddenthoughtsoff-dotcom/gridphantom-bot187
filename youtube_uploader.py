@@ -228,6 +228,7 @@ class YouTubeUploader:
                 'embeddable': True,                 # reach outside YouTube
                 'publicStatsViewable': True,
                 'license': 'youtube',
+                'containsSyntheticMedia': False,    # no "Altered/AI content" label
             }
         }
         # Scheduled premiere: rendered at night, released at prime time.
