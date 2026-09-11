@@ -216,16 +216,26 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             except Exception:
                 pass
             logger.info(f"✅ UPLOADED [{language}]: https://youtube.com/watch?v={vid}")
+            # Each extra is independent: one failing (e.g. a playlist 409)
+            # must never block the others — the seed comment in particular
+            # was silently skipped on every video where the playlist call
+            # above it threw, because they shared one try/except.
             try:
                 if trend:
                     import trends as _t
                     _t.mark_covered(trend['key'], vid)
+            except Exception as e:
+                logger.warning(f"mark_covered failed (video is live): {e}")
+            try:
                 if not uploader.add_to_series_playlist(vid, script.get('title', '')):
                     uploader.add_to_topic_playlist(vid, script)
+            except Exception as e:
+                logger.warning(f"Playlist assignment failed (video is live): {e}")
+            try:
                 from community_manager import CommunityManager
                 CommunityManager(uploader.service).seed_comment(vid, script)
             except Exception as e:
-                logger.warning(f"Post-upload extras failed (video is live): {e}")
+                logger.warning(f"Seed comment failed (video is live): {e}")
         else:
             logger.error(f"❌ Upload returned None for [{language}]")
 
