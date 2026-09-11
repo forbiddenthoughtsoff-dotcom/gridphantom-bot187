@@ -243,15 +243,6 @@ def run_bot_short(is_retry: bool = False, brief: dict = None):
     if not brief and _skip_this_short():
         logger.info("⏭️ Short skipped — a breaking edition already used this slot")
         return
-    # A long-form video went out in the night: its upload took the fifth
-    # quota slot of this quota day, so the morning Short steps aside
-    try:
-        from longform import recently_done
-        if not brief and datetime.now().hour < 9 and recently_done(6.0):
-            logger.info("⏭️ Morning Short skipped (long-form uploaded tonight, quota)")
-            return
-    except Exception:
-        pass
     logger.info(f"🤖 SHORT cycle — {datetime.now():%Y-%m-%d %H:%M}"
                 + (" (retry)" if is_retry else ""))
     # Whole cycle owns the CPU: the background clip sync must not start a
@@ -413,23 +404,16 @@ if __name__ == "__main__":
 
     validate_config()
 
-    # Slots on the DACH activity peaks (YouTube gaming audience 14-30):
-    # 07:30 commute (clip Short), 12:00 lunch (series episode),
-    # 19:00 and 21:15 evening prime (narration / dialogue). The nightly
-    # long-form is released at 17:30. Five uploads per quota day = the cap.
+    # Back to the simple cadence that worked: exactly 3 Shorts a day, same
+    # times every day, no weekday/weekend split, no clip-short experiment.
+    # 12:00 (series episode), 17:00, 21:00 (dialogue Tue/Fri via
+    # DIALOGUE_HOUR). The long-form drops at 19:00 — the DACH evening peak,
+    # between the two afternoon/evening Shorts so it doesn't compete with
+    # either. Five uploads per quota day = the cap (3 Shorts + 1 long-form
+    # comfortably inside it).
     schedule.every().day.at("12:00").do(run_bot_short)
-    # Weekday mornings get the proven format (21-32 s single-fact Short);
-    # the raw clip experiment continues on weekends only, where casual
-    # feed-scrolling is highest (its first weekday uploads sat at ~0 views)
-    schedule.every().monday.at("07:30").do(run_bot_short)
-    schedule.every().tuesday.at("07:30").do(run_bot_short)
-    schedule.every().wednesday.at("07:30").do(run_bot_short)
-    schedule.every().thursday.at("07:30").do(run_bot_short)
-    schedule.every().friday.at("07:30").do(run_bot_short)
-    schedule.every().saturday.at("07:30").do(run_clip_short)
-    schedule.every().sunday.at("07:30").do(run_clip_short)
-    schedule.every().day.at("19:00").do(run_bot_short)
-    schedule.every().day.at("21:15").do(run_bot_short)
+    schedule.every().day.at("17:00").do(run_bot_short)
+    schedule.every().day.at("21:00").do(run_bot_short)
     # long-form runs in its own thread: after the night render it sleeps
     # until the 09:05 quota reset before uploading, and that wait must not
     # block the scheduler (07:30 clip Short, 08:40 cleanup)
@@ -441,8 +425,8 @@ if __name__ == "__main__":
     schedule.every().sunday.at("03:30").do(_longform_bg, 'weekly')
     schedule.every().day.at("08:40").do(run_cleanup)
     schedule.every(30).minutes.do(run_breaking_check)   # free: RSS only
-    logger.info("⏰ Shorts 07:30 | 12:00 (Serie) | 19:00 | 21:15 (Di/Fr Dialog), Clip Sa+So "
-                "+ long-form nightly 17:30 + Eil-Check alle 30 Min")
+    logger.info("⏰ Shorts 12:00 (Serie) | 17:00 | 21:00 (Di/Fr Dialog) "
+                "+ long-form 19:00 (Peak) + Eil-Check alle 30 Min")
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
