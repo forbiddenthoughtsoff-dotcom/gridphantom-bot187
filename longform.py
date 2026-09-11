@@ -556,10 +556,11 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
             time.sleep((gate - now).total_seconds())
     except Exception as e:
         logger.warning(f"Upload gate skipped: {e}")
-    # release at prime time (default 18:00 local), never in the night
+    # release at the DACH evening peak (default 19:00 local), never in the
+    # night — this is the channel's single "activest time" drop of the day
     publish_at = None
     try:
-        hh, mm = os.environ.get('LONGFORM_PUBLISH_AT', '17:30').split(':')
+        hh, mm = os.environ.get('LONGFORM_PUBLISH_AT', '19:00').split(':')
         now = datetime.datetime.now()
         publish_at = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
         if publish_at <= now + datetime.timedelta(minutes=20):
