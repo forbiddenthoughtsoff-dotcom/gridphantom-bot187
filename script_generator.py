@@ -167,10 +167,20 @@ class ScriptGenerator:
 
     def generate(self, language: str = 'de', avoid_titles: list = None,
                  news_items: list = None, top_performers: list = None,
-                 topic_brief: str = None) -> dict:
+                 topic_brief: str = None, brief_style: str = 'deep') -> dict:
         lang_name = {'en': 'ENGLISH', 'de': 'GERMAN'}.get(language, 'GERMAN')
 
-        if topic_brief:
+        if topic_brief and brief_style == 'short':
+            # Trend topic in the PROVEN winner format: every 900+ view video
+            # on this channel is a 21-32 second single-fact Short. A hot
+            # topic does not change that — it gets the same tight treatment.
+            user_prompt = f"""TODAY'S ASSIGNED TOPIC — the video MUST be about exactly this, nothing else:
+
+{topic_brief}
+
+Write it in the channel's WINNING format: 4 to 6 full, natural German sentences, 55-85 words in total (~25-35 seconds spoken). ONE concrete core fact, hook first, binary question last. Use ONLY the facts given above; label rumours as rumours. Digits for years, dates, prices. Write for the EAR.
+Language: {lang_name} ONLY. Output ONLY valid JSON."""
+        elif topic_brief:
             # Owner's assignment: a specific, in-depth video. Longer than the
             # daily format because the owner wants ALL relevant information.
             user_prompt = f"""OWNER'S ASSIGNMENT — this video MUST be about exactly this topic, nothing else:
@@ -186,7 +196,7 @@ Language: {lang_name} ONLY. Output ONLY valid JSON."""
 3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
 
-        if news_items and topic_brief:
+        if news_items and topic_brief and brief_style != 'short':
             news_block = "\n".join(
                 f"- [{n.get('published','')}] {n.get('title','')}"
                 f" (Quelle: {n.get('source','?')})"

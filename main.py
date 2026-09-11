@@ -134,7 +134,7 @@ def run_pipeline(language: str = 'de', brief: dict = None):
                 import trends
                 from series import is_series_slot
                 if not is_series_slot():
-                    trend = trends.upcoming() or trends.pick(recent_titles)
+                    trend = trends.pick(recent_titles)
                     if trend:
                         brief = trends.brief_for(trend)
                         logger.info(f"📡 Trendthema: {trend['label'][:70]} "
@@ -166,7 +166,8 @@ def run_pipeline(language: str = 'de', brief: dict = None):
                                                 avoid_titles=recent_titles,
                                                 news_items=news_items,
                                                 top_performers=top_performers,
-                                                topic_brief=brief.get('brief'))
+                                                topic_brief=brief.get('brief'),
+                                                brief_style=brief.get('style', 'deep'))
             if brief.get('images'):
                 script['still_images'] = list(brief['images'])
             logger.info(f"📝 Script: {script.get('title', '')}")
@@ -417,7 +418,16 @@ if __name__ == "__main__":
     # 19:00 and 21:15 evening prime (narration / dialogue). The nightly
     # long-form is released at 17:30. Five uploads per quota day = the cap.
     schedule.every().day.at("12:00").do(run_bot_short)
-    schedule.every().day.at("07:30").do(run_clip_short)   # commute (audience is 25-44, working)
+    # Weekday mornings get the proven format (21-32 s single-fact Short);
+    # the raw clip experiment continues on weekends only, where casual
+    # feed-scrolling is highest (its first weekday uploads sat at ~0 views)
+    schedule.every().monday.at("07:30").do(run_bot_short)
+    schedule.every().tuesday.at("07:30").do(run_bot_short)
+    schedule.every().wednesday.at("07:30").do(run_bot_short)
+    schedule.every().thursday.at("07:30").do(run_bot_short)
+    schedule.every().friday.at("07:30").do(run_bot_short)
+    schedule.every().saturday.at("07:30").do(run_clip_short)
+    schedule.every().sunday.at("07:30").do(run_clip_short)
     schedule.every().day.at("19:00").do(run_bot_short)
     schedule.every().day.at("21:15").do(run_bot_short)
     # long-form runs in its own thread: after the night render it sleeps
@@ -431,7 +441,7 @@ if __name__ == "__main__":
     schedule.every().sunday.at("03:30").do(_longform_bg, 'weekly')
     schedule.every().day.at("08:40").do(run_cleanup)
     schedule.every(30).minutes.do(run_breaking_check)   # free: RSS only
-    logger.info("⏰ Shorts 07:30 (Clip) | 12:00 (Serie) | 19:00 | 21:15 (Di/Fr Dialog) "
+    logger.info("⏰ Shorts 07:30 | 12:00 (Serie) | 19:00 | 21:15 (Di/Fr Dialog), Clip Sa+So "
                 "+ long-form nightly 17:30 + Eil-Check alle 30 Min")
     try:
         from trailer_library import ensure_trailers_async

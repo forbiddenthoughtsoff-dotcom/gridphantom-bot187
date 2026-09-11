@@ -166,6 +166,10 @@ def _covered(key: str, recent_titles: list) -> bool:
 def pick(recent_titles: list = None, breaking_only: bool = False) -> dict:
     """Best uncovered topic, or None. breaking_only: schedule-interrupt level."""
     floor = BREAKING_SCORE if breaking_only else RIDE_SCORE
+    if not breaking_only:
+        cal = upcoming()
+        if cal and not _covered(cal['key'], recent_titles):
+            return cal      # a known date beats the news — but only ONCE
     for t in scan():
         if t['score'] < floor:
             return None
@@ -195,7 +199,7 @@ def brief_for(topic: dict, breaking: bool = False) -> dict:
         f"ausdruecklich als solche. Keine Zahlen, Daten oder Preise erfinden, die oben "
         f"nicht stehen. Widersprechen sich die Meldungen, sag das offen - genau das ist "
         f"der Mehrwert gegenueber den Clickbait-Kanaelen."),
-        'images': [], 'trend_key': topic['key']}
+        'images': [], 'trend_key': topic['key'], 'style': 'short'}
 
 
 # --- Vorschau: bekannte Termine, die verlaesslich Aufmerksamkeit erzeugen ---
