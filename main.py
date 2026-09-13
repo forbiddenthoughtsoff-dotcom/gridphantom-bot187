@@ -433,7 +433,15 @@ if __name__ == "__main__":
     for _day in ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'):
         getattr(schedule.every(), _day).at("03:30").do(_longform_bg, 'evergreen')
     schedule.every().sunday.at("03:30").do(_longform_bg, 'weekly')
-    schedule.every().day.at("08:40").do(run_cleanup)
+    # PAUSED 2026-09-13: channel-wide daily views collapsed 4655 -> 21 over
+    # 09-06..09-10, right after a burst of ~169 videos.update privacy-status
+    # changes. Bulk visibility changes via the API are a known trigger for
+    # YouTube's spam/abuse throttling, and this job kept making 30 more of
+    # the same kind of change every day since — re-enable only once the
+    # channel's daily views have visibly recovered, and then at a much
+    # slower pace (a handful a week, not 30/day).
+    if os.environ.get('CLEANUP_ENABLED', '').lower() in ('1', 'true', 'yes'):
+        schedule.every().day.at("08:40").do(run_cleanup)
     schedule.every(30).minutes.do(run_breaking_check)   # free: RSS only
     logger.info("⏰ Shorts 12:00 (Serie) | 17:00 | 21:00 (Di/Fr Dialog) "
                 "+ long-form 19:00 (Peak) + Eil-Check alle 30 Min")
