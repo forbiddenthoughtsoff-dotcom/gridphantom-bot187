@@ -118,6 +118,56 @@ def _sanitize_json(raw: str) -> str:
     return raw
 
 
+def _repair_json(raw: str) -> str:
+    """The model occasionally quotes a word inside narration text with a
+    plain '"' instead of a German „..." pair, which breaks the JSON string
+    it sits in ('Expecting value' at that position). Walk the text with a
+    tiny state machine and escape any '"' that isn't acting as a real
+    structural delimiter (a real closer is followed, after whitespace, by
+    , } ] or :)."""
+    out = []
+    in_string = False
+    i, n = 0, len(raw)
+    while i < n:
+        c = raw[i]
+        if c == '\\' and in_string and i + 1 < n:
+            out.append(c)
+            out.append(raw[i + 1])
+            i += 2
+            continue
+        if c == '"':
+            if not in_string:
+                in_string = True
+                out.append(c)
+            else:
+                j = i + 1
+                while j < n and raw[j] in ' \t\n\r':
+                    j += 1
+                if j >= n or raw[j] in ',}]:':
+                    in_string = False
+                    out.append(c)
+                else:
+                    out.append('\\"')
+        else:
+            out.append(c)
+        i += 1
+    return ''.join(out)
+
+
+def _parse_script_json(raw: str) -> dict:
+    """Three-step fallback so one malformed model reply never kills the
+    whole slot: plain parse, then brace-trimmed, then quote-repaired."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    cleaned = _sanitize_json(raw)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        return json.loads(_repair_json(cleaned))
+
+
 _GENERIC = {
     'gta', 'gta5', 'gta6', 'online', 'shorts', 'short', 'rockstar', 'games',
     'der', 'die', 'das', 'und', 'oder', 'mit', 'für', 'fuer', 'von', 'vom',
@@ -263,9 +313,15 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
             )
             raw = message.content[0].text
             try:
-                script = json.loads(raw)
-            except json.JSONDecodeError:
-                script = json.loads(_sanitize_json(raw))
+                script = _parse_script_json(raw)
+            except json.JSONDecodeError as e:
+                # A malformed reply must not kill the whole slot (this cost
+                # a full Short on 09-11): regenerate instead of raising,
+                # same as the "topic too similar" retry below.
+                logger.warning(f"Unparseable script JSON (attempt {attempt+1}): {e}")
+                if attempt == 2:
+                    raise
+                continue
             title = script.get('title', '')
             if topic_brief or not avoid_titles or not too_similar(title, avoid_titles):
                 break
