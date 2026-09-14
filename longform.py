@@ -544,18 +544,30 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
         topic = dict(topic, kind='evergreen')
     logger.info(f"📺 Long-form ({kind}): {topic.get('id')}")
     video, script = build(topic, titles)
-    # The YouTube quota day resets 09:00 local. The night render belongs to
-    # the OLD quota day (already carrying 4-5 uploads), so the upload waits
-    # for the reset — the release is scheduled for the evening anyway.
+    # _quota_day() in youtube_uploader already shifts the day boundary back
+    # 9h, so a 04-06h render lands in the SAME quota bucket as yesterday's
+    # evening Shorts — uploads_left() here already reflects the real
+    # headroom (3 Shorts used, cap 5), so there is no need to block for
+    # hours waiting on the wall clock. That multi-hour time.sleep used to
+    # hold the rendered video hostage in this process; a redeploy during
+    # the wait (e.g. an unrelated PR merge) killed the container and lost
+    # the finished video outright — happened on 2026-09-13's weekly recap.
+    # Upload the instant there is room; only wait if the day is genuinely
+    # tight, and even then it's a short, rare wait instead of the default.
     try:
-        hh, mm = os.environ.get('LONGFORM_UPLOAD_NOT_BEFORE', '09:05').split(':')
-        now = datetime.datetime.now()
-        gate = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
-        if now < gate:
-            logger.info(f"⏳ Long-form rendered; upload waits for the quota reset at {gate:%H:%M}")
-            time.sleep((gate - now).total_seconds())
+        from youtube_uploader import uploads_left
+        left = uploads_left()
+        if left < 1:
+            hh, mm = os.environ.get('LONGFORM_UPLOAD_NOT_BEFORE', '09:05').split(':')
+            now = datetime.datetime.now()
+            gate = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+            if now < gate:
+                logger.info(f"⏳ Quota tight ({left} left) — waiting for reset at {gate:%H:%M}")
+                time.sleep((gate - now).total_seconds())
+        else:
+            logger.info(f"✅ Quota headroom ({left} left) — uploading now, no wait")
     except Exception as e:
-        logger.warning(f"Upload gate skipped: {e}")
+        logger.warning(f"Upload gate check failed, uploading immediately: {e}")
     # release at the DACH evening peak (default 19:00 local), never in the
     # night — this is the channel's single "activest time" drop of the day
     publish_at = None
