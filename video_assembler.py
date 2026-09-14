@@ -745,5 +745,12 @@ class VideoAssembler:
         except Exception as e:
             logger.warning(f"Sound design skipped: {e}")
 
+        # Production step 6: 0.7s intro sting + subscribe outro card
+        try:
+            from branding import add_branding
+            output_path = add_branding(output_path)
+        except Exception as e:
+            logger.warning(f"Branding skipped: {e}")
+
         logger.info(f"Video assembled: {output_path}")
         return output_path
