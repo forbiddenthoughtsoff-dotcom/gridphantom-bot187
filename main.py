@@ -329,6 +329,36 @@ def _skip_this_short() -> bool:
         return False
 
 
+BREAKING_LAST_FILE = '/tmp/breaking_last.json'
+BREAKING_COOLDOWN_H = float(os.environ.get('BREAKING_COOLDOWN_H', '4'))
+
+
+def _breaking_on_cooldown() -> bool:
+    """A hard, topic-independent cooldown between breaking editions. The
+    keyword-cluster dedup in trends.py is not reliable enough on its own —
+    on 2026-09-15 the same soundtrack-leak story re-clustered under a
+    slightly different keyword set on two consecutive 30-min polls and
+    slipped past _covered() twice, firing 3 breaking Shorts for one story
+    in 65 minutes (burned 2 of the day's 5 upload slots, triggered an OOM
+    kill from back-to-back renders, and starved the night's long-form of
+    quota). This cooldown is deliberately blunt: it doesn't care whether
+    the next big story is genuinely different — being a little slower to
+    the second breaking story of the day is a much smaller cost than
+    losing 40% of the day's uploads to a single leak."""
+    try:
+        last = json.load(open(BREAKING_LAST_FILE, encoding='utf-8')).get('ts', 0)
+        return (time.time() - last) < BREAKING_COOLDOWN_H * 3600
+    except Exception:
+        return False
+
+
+def _note_breaking():
+    try:
+        json.dump({'ts': time.time()}, open(BREAKING_LAST_FILE, 'w', encoding='utf-8'))
+    except Exception as e:
+        logger.warning(f"Breaking cooldown not written: {e}")
+
+
 def run_breaking_check():
     """Every 30 min: is a topic exploding right now? Then publish immediately
     instead of waiting for the next slot — being first is the whole game."""
@@ -339,6 +369,8 @@ def run_breaking_check():
             return
         if uploads_left() < 1:
             return
+        if _breaking_on_cooldown():
+            return
         uploader = YouTubeUploader()
         topic = trends.pick(uploader.get_recent_titles(25), breaking_only=True)
         if not topic:
@@ -346,6 +378,7 @@ def run_breaking_check():
         logger.info(f"🚨 EILMELDUNG — Sonderausgabe: {topic['label'][:70]}")
         with open(SKIP_FLAG, 'w') as f:
             f.write(datetime.now().strftime('%Y-%m-%d'))
+        _note_breaking()
         run_bot_short(brief=trends.brief_for(topic, breaking=True))
     except Exception as e:
         logger.error(f"Breaking check error: {e}", exc_info=True)
