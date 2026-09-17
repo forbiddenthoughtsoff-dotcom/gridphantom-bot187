@@ -73,6 +73,8 @@ NICHE META (measured across YouTube's top GTA 6 long-form videos, Sept 2026 — 
 - TITLE FORMULA: "GTA 6: [ein System] [was sich aendert] | Deep Dive" or "GTA 6: [X] Details, die fast alle UEBERSEHEN" — one concrete system, ONE uppercase phrase, "| Deep Dive" as the suffix. Comparisons ("GTA 6 vs GTA 5: ...") are the niche's strongest frame — use them whenever truthful.
 - EVERY CHAPTER opens with a specific detail from a specific trailer scene ("bei Sekunde 41 im zweiten Trailer siehst du...") — "details you missed" is the retention engine of this format. Vague summaries lose; timestamped observations win.
 - The viewer is a GTA 5 veteran: every mechanic is explained as "in GTA 5 war es so — in GTA 6 zeigt der Trailer das". Contrast is the content.
+- GERMAN MARKET (measured): the biggest German GTA 6 long-form videos name the concrete systems in the title — GameStar "Autos knacken, Geld verdienen, Ueberfaelle: So funktioniert GTA 6!" (1.3M in two weeks), "Die 6 Regionen von GTA 6" (785k). Concrete nouns + "So funktioniert" beats abstract titles.
+- GTA ONLINE GUIDES: the evergreen search lane for 10 years is "schnell LEGAL Geld verdienen" (Paluten 1.3M, Zeddi 995k, Taymetic 486k) — SOLO, LEGAL, a payout number and the year in the title ("... 2026"), and every chapter answers "wie viel GTA$ pro Stunde".
 
 Output ONLY JSON:
 {"title": "max 70 chars, German, curiosity + clarity, no #Shorts",
