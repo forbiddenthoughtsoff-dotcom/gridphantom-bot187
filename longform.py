@@ -467,9 +467,6 @@ def build(topic: dict, recent_titles: list = None, script: dict = None) -> tuple
                 f"{script.get('words', '?')} words)")
     narration, total, words, starts = voice_sections(script['sections'], WORK_DIR)
     logger.info(f"🎙️ Long-form narration: {total / 60:.1f} min, {len(words)} timed words")
-    import voice_generator as _vg
-    if _vg.LAST_ENGINE == 'elevenlabs':
-        script['voice_credit'] = 'ElevenLabs (elevenlabs.io)'
     montage = build_montage(script['sections'], starts, total, script.get('gta6', False), WORK_DIR)
     from video_assembler import build_caption_groups
     narration_text = " ".join(" ".join(s['sentences']) for s in script['sections'])
