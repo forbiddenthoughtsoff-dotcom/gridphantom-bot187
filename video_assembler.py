@@ -621,14 +621,13 @@ class VideoAssembler:
                     logger.warning(f"Still images unavailable: {e}")
             if bg_path:
                 cuts_n = max(n_seg, 4)
-            if not bg_path:
-                bg_path = build_gameplay_montage(script, duration, n_seg, require_match=gta6)
-                cuts_n = n_seg if bg_path else 0
-                if not bg_path:
-                    bg_path = pick_gameplay_clip(script, require_match=gta6)
-            if not bg_path and build_trailer_montage:
-                # official trailer footage is the last resort for every topic:
-                # better looking than stock and always on disk
+            # GTA 6 topics: the official trailer montage comes FIRST — every
+            # 900+ view video on this channel is a GTA 6 topic over trailer
+            # footage. The old require_match gate was too weak (one generic
+            # tag like "auto"/"stadt" matched), so GTA 5 own gameplay kept
+            # winning under GTA 6 news — visually wrong, and not the formula
+            # that worked. Own gameplay stays first for GTA 5/Online topics.
+            if not bg_path and gta6 and build_trailer_montage:
                 try:
                     bg_path = build_trailer_montage(duration, n_segments=n_seg)
                     cuts_n = n_seg if bg_path else 0
@@ -639,6 +638,14 @@ class VideoAssembler:
                 cuts_n = n_seg if bg_path else 0
                 if not bg_path:
                     bg_path = pick_gameplay_clip(script)
+            if not bg_path and build_trailer_montage:
+                # official trailer footage as the fallback for every topic:
+                # better looking than stock and always on disk
+                try:
+                    bg_path = build_trailer_montage(duration, n_segments=n_seg)
+                    cuts_n = n_seg if bg_path else 0
+                except Exception as e:
+                    logger.warning(f"Trailer footage unavailable: {e}")
             if bg_path:
                 base = VideoFileClip(bg_path).without_audio()
                 scale = max(W / base.w, H / base.h)
@@ -745,12 +752,11 @@ class VideoAssembler:
         except Exception as e:
             logger.warning(f"Sound design skipped: {e}")
 
-        # Production step 6: 0.7s intro sting + subscribe outro card
-        try:
-            from branding import add_branding
-            output_path = add_branding(output_path)
-        except Exception as e:
-            logger.warning(f"Branding skipped: {e}")
+        # NO intro sting / outro card: every 900+ view Short on this channel
+        # opens with the hook at second 0 and ends on the loop-back line.
+        # The branded bookends (added 09-14) delayed the hook by 0.7s and
+        # padded ~2.5s of dead time onto a 25s format — rolled back to match
+        # the winning videos exactly (owner's order, 09-17).
 
         logger.info(f"Video assembled: {output_path}")
         return output_path
