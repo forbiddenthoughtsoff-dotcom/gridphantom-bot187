@@ -228,8 +228,9 @@ class ScriptGenerator:
 
 {topic_brief}
 
-Write it in the channel's WINNING format: 4 to 6 full, natural German sentences, 55-85 words in total (~25-35 seconds spoken). ONE concrete core fact, hook first, binary question last. Use ONLY the facts given above; label rumours as rumours. Digits for years, dates, prices. Write for the EAR.
+Write it in the channel's WINNING format: 4 to 5 full, natural German sentences, 50-75 words in total (~22-30 seconds spoken — every 900+ view video on this channel is 23-30s, match them EXACTLY). ONE concrete core fact, hook first, binary question last. Use ONLY the facts given above; label rumours as rumours. Digits for years, dates, prices. Write for the EAR.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
+            word_ceiling = 80
         elif topic_brief:
             # Owner's assignment: a specific, in-depth video. Longer than the
             # daily format because the owner wants ALL relevant information.
@@ -240,11 +241,13 @@ Language: {lang_name} ONLY. Output ONLY valid JSON."""
 Write 6 to 8 full, natural German sentences, HARD LIMIT 150 words in total (~70 seconds spoken — count them): a sharp hook first, then every relevant fact in a logical order (what, when, where, how much, what is confirmed vs. only rumoured), and one closing sentence that makes people comment. Use ONLY the facts given in the assignment and in the news list below; where something is not officially confirmed, say so explicitly. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would say it out loud.
 NUMBERS: years, dates and prices ALWAYS as digits, also in the narration ("19. November 2026", "84,99 Euro", "1. Oktober 2013") — the voice engine reads them correctly and spelled-out years have produced wrong years. The description is normal written German (digits, no spoken-style spelling), 3-5 sentences, not a copy of the narration.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
+            word_ceiling = 165
         else:
             user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
 
 3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
+            word_ceiling = 60
 
         if news_items and topic_brief and brief_style != 'short':
             news_block = "\n".join(
@@ -299,8 +302,9 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
         # twice in a row despite the published list — a title too close to a
         # recent one is regenerated with the subject explicitly banned.
         banned = []
+        too_long_note = ""
         for attempt in range(3):
-            prompt = user_prompt
+            prompt = user_prompt + too_long_note
             if banned:
                 prompt += ("\n\nHARD BAN — the channel JUST covered these; pick a COMPLETELY "
                            "different subject (another pillar if needed), not a new angle "
@@ -323,10 +327,26 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
                     raise
                 continue
             title = script.get('title', '')
-            if topic_brief or not avoid_titles or not too_similar(title, avoid_titles):
+            # Length is enforced in code, not trusted to the model: the
+            # word-count instruction alone let live Shorts drift to 99-110
+            # words (41-59s) while every 900+ view video is 23-30s. On the
+            # final attempt the longest draft still ships (a slightly long
+            # Short beats a lost slot).
+            word_count = sum(len(str(s).split()) for s in script.get('sentences', []))
+            too_long = word_count > word_ceiling and attempt < 2
+            too_close = (not topic_brief and avoid_titles
+                         and too_similar(title, avoid_titles))
+            if not too_long and not too_close:
                 break
-            logger.warning(f"Topic too close to a recent video, regenerating: {title}")
-            banned.append(title)
+            if too_long:
+                logger.warning(f"Script too long ({word_count}/{word_ceiling} words), "
+                               f"regenerating: {title}")
+                too_long_note = (f"\n\nYOUR LAST DRAFT WAS TOO LONG ({word_count} words). "
+                                 f"STRICT LIMIT: under {word_ceiling} words in total. Cut "
+                                 f"every non-essential word — one core fact, nothing else.")
+            if too_close:
+                logger.warning(f"Topic too close to a recent video, regenerating: {title}")
+                banned.append(title)
 
         script = _swissify(script)
         script['narration'] = " ".join(script.get('sentences', []))
