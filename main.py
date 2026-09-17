@@ -173,9 +173,6 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             logger.info(f"📝 Script: {script.get('title', '')}")
             audio = VoiceGenerator().generate(script['narration'], language)
         logger.info(f"🎙️ Voice done: {audio}")
-        import voice_generator as _vg
-        if _vg.LAST_ENGINE == 'elevenlabs':
-            script['voice_credit'] = 'ElevenLabs (elevenlabs.io)'
 
         # The whole render (trailer/still/gameplay montage + export) gets the
         # box to itself: the background clip sync pauses between jobs while

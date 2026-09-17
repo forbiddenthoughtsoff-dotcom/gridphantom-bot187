@@ -432,14 +432,13 @@ class YouTubeUploader:
                 description += (f"\n\n📺 Ausführlich erklärt im Guide: {lf_title}\n"
                                 f"https://youtu.be/{lf_id}")
 
-        # Music attribution (CC BY requires credit)
+        # Music attribution (CC BY requires credit). No voice attribution:
+        # the ElevenLabs Pro plan doesn't require it, and naming the TTS
+        # provider in every description is the clearest possible tell that
+        # the narration is AI-generated — the owner wants that invisible.
         if script.get('music_credit'):
             label = "🎵 Music: " if language == 'en' else "🎵 Musik: "
             description += f"\n{label}{script['music_credit']}"
-        # Voice attribution (required on ElevenLabs' free tier)
-        if script.get('voice_credit'):
-            label = "🎙️ Voice: " if language == 'en' else "🎙️ Stimme: "
-            description += f"\n{label}{script['voice_credit']}"
 
         # Footer with brand + CTA
         if language == 'en':
