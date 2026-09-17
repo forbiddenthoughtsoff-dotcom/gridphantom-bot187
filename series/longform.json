@@ -30,6 +30,46 @@
   "brief": "EVERGREEN-GUIDE: 'GTA Online fuer Einsteiger 2026: die ersten 10 Stunden richtig nutzen'. Kapitel: Charakter und erste Einstellungen, Einladungssitzung statt oeffentlicher Lobby, das erste Geld ohne Frust, welche Immobilie zuerst, Snacks und Panzerung im Interaktionsmenue, Griefer vermeiden (Passivmodus, Lester), was man NICHT kaufen sollte, Karriere-Fortschritt als roter Faden."
  },
  {
+  "id": "LF-21",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: Die Polizei ist klueger als je zuvor | Deep Dive'. Kapitel: was die Trailer ueber Fahndung und Verfolgung zeigen, Verhalten der Cops im Vergleich zu GTA 5 (Sterne-System, Aufgeben, Verstecken), Details in den Szenen (Helikopter, Strassensperren, Reaktion auf Waffen), was Rockstar offiziell dazu gesagt hat, was noch offen ist. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-22",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: So funktionieren Fahrzeuge jetzt anders | Deep Dive'. Kapitel: Fahrphysik und Gewicht in den Trailer-Szenen, Schadensmodell, Innenraeume und Kamera, Motorraeder, Boote und Jetskis in Leonida, Tuning-Hinweise, Vergleich zu GTA 5 als Einordnung, was noch offen ist. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-23",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: Geld, Ueberfaelle und Wirtschaft - was sich aendert | Deep Dive'. Kapitel: die gezeigten Ueberfaelle auf Laeden und Tankstellen, wie Lucia und Jason an Geld kommen, Hehler und Verkauf, was ueber Wirtschaft und Preise offiziell bekannt ist, Vergleich zum GTA-Online-Grind, was noch offen ist. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-24",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: Waffen und Kampf im Detail | Deep Dive'. Kapitel: Waffenhandling und Zielsystem in den Trailer-Szenen, Nahkampf und Takedowns, Deckung, wie NPCs auf gezogene Waffen reagieren, Unterschiede zu GTA 5 als Einordnung, was noch offen ist. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-25",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: Wetter, Physik und Details, die fast alle uebersehen | Deep Dive'. Kapitel: Wasser und Hurrikan-Szenen, Sand, Schlamm und Reifenspuren, Haare, Kleidung und Schweiss, NPC-Reaktionen und Menschenmengen, Tiere und Alligatoren, Lichtstimmungen - jedes Detail mit der konkreten Trailer-Szene. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-26",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: Lucia und Jason - alles ueber die zwei Hauptfiguren | Deep Dive'. Kapitel: was offiziell ueber Lucia bekannt ist (Gefaengnis, Herkunft), was ueber Jason, ihre Beziehung und die Bonnie-und-Clyde-Dynamik, Charakterwechsel und Zusammenspiel, Sprecher soweit bestaetigt, was noch offen ist. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-27",
+  "gta6": true,
+  "brief": "VERGLEICH (das staerkste Format der Nische): 'GTA 6 vs GTA 5: 15 Dinge, die sich komplett aendern'. Jedes Kapitel ein Punkt mit direktem Vergleich (GTA 5 so, GTA 6 so): Karte, Polizei, Fahrzeuge, Waffen, NPCs, Social Media, Wetter, Tiere, Animationen, Interieurs, zwei Protagonisten, Online-Ausblick - nur belegbare Punkte. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
+  "id": "LF-28",
+  "gta6": true,
+  "brief": "DEEP DIVE (ein System, eine Folge): 'GTA 6: Social Media, Handy und NPC-Leben - die neue Welt | Deep Dive'. Kapitel: die gezeigten Social-Media-Feeds und Livestreams im Spiel, das Handy und seine Apps, Alltag und Routinen der NPCs, wie die Welt auf den Spieler reagiert, Vergleich zu GTA 5 als Einordnung, was noch offen ist. REGELN: nur offiziell Bestaetigtes (Rockstar Newswire, offizielle Website, die beiden offiziellen Trailer und der Extended Look) als Fakt; Leaks und Insider-Behauptungen ausdruecklich als Geruecht; keine erfundenen Zahlen, Daten oder Preise. Jedes Kapitel oeffnet mit einem konkreten Detail, das die meisten uebersehen haben."
+ },
+ {
   "id": "LF-07",
   "gta6": true,
   "brief": "EVERGREEN: 'GTA 6 Preis, Editionen, Vorbestellung: was bekannt ist und was nicht'. Kapitel: was Take-Two offiziell gesagt hat, Preis-Spekulationen einordnen, die limitierten GTA VI DualSense-Controller (Vorbestellung ab 10. September 2026), was eine Vorbestellung sinnvoll macht und was nicht, Warnung vor Fake-Shops und gefaelschten Keys."
