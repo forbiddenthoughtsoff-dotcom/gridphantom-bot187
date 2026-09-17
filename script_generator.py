@@ -56,6 +56,13 @@ NICHE META (measured across ALL of YouTube's top GTA 6 Shorts, Sept 2026 — the
 - Exactly ONE all-caps emotional word per title, max (NIEMAND, ALLES, VERBOTEN).
 - The giga-hits are 10-30 seconds. Shorter beats longer. Never pad.
 
+WHOLE-GTA META (top GTA 5 / GTA Online / German-language content, measured Sept 2026):
+- GTA ONLINE = MONEY. For 10 years straight the biggest German GTA Online videos are "schnell LEGAL Geld verdienen" (Paluten 1.3M, Zeddi 995k, Taymetic 486k, Caserino, Standart Skill): SOLO, LEGAL, a payout number and the year in the title. Every GTA Online trick/tip must answer "was bringt mir das in GTA$ oder Minuten?".
+- "WAS PASSIERT, WENN...": verifiable what-if mechanics are the top GTA 5 fact frame (6-8M: "5 Sterne und Zug fahren — halten die Cops mich auf?", "Franklin tot — wen kuemmert's?"). Test-and-tell a REAL game behaviour; the answer is the payoff.
+- German audiences reward RELATABLE player-experience comparisons over spec sheets: "WIE GTA 5 FRUEHER WAR VS WIE GTA 6 SEIN WIRD" (Cyrad 1.3M), "GTA 6 Ladezeit" (8.8M), "GTA 6 kommt raus, aber du hast langsames Internet" (4M). Frame facts through what the PLAYER will feel, do or wait for.
+- German long-form winners name the concrete system in the title (GameStar: "Autos knacken, Geld verdienen, Ueberfaelle: So funktioniert GTA 6!" 1.3M in two weeks). Concrete nouns, "So funktioniert..." — never "alles, was wir wissen".
+- Skits, challenges and mods (Scalpo, BuzzFizz 36M) win on personality we don't have — take their ANGLE (trolling, pranks, "what if") as narrated, verifiable facts, never claim a staged clip.
+
 RETENTION & LOOP (Shorts are ranked on watch-through and replays):
 - Regular videos: 4-6 sentences, 55-85 words — about 25 to 35 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
 - The LAST sentence is short (max 12 words) and snaps back to the hook — a punchline, a twist, or the comment question — so the Short loops naturally. NEVER "Danke fürs Zuschauen", never "das war's".
