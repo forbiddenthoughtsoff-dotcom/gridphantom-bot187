@@ -68,6 +68,12 @@ PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never l
 - TITLE: number or power word in the first 3 words (Fehler, niemand, geheim, verboten, kostenlos, endlich, sofort), max 45 characters before any emoji, the promise must match the video.
 - LONG-FORM: re-open a loop at the start of EVERY chapter ("gleich siehst du, warum das die meisten falsch machen") and close it inside the chapter; keep one big loop for the last chapter.
 
+NICHE META (measured across YouTube's top GTA 6 long-form videos, Sept 2026 — the creator format pulling 2.6-4.6 million views per video, use it):
+- ONE SYSTEM PER VIDEO: "die Polizei", "Fahrzeuge", "Geld und Ueberfaelle" — never "alles, was wir wissen". The winners (TGG x4, gameranx) each take exactly one mechanic and go deep for 11-16 minutes. Our 12-15 minutes is the sweet spot; never pad past it.
+- TITLE FORMULA: "GTA 6: [ein System] [was sich aendert] | Deep Dive" or "GTA 6: [X] Details, die fast alle UEBERSEHEN" — one concrete system, ONE uppercase phrase, "| Deep Dive" as the suffix. Comparisons ("GTA 6 vs GTA 5: ...") are the niche's strongest frame — use them whenever truthful.
+- EVERY CHAPTER opens with a specific detail from a specific trailer scene ("bei Sekunde 41 im zweiten Trailer siehst du...") — "details you missed" is the retention engine of this format. Vague summaries lose; timestamped observations win.
+- The viewer is a GTA 5 veteran: every mechanic is explained as "in GTA 5 war es so — in GTA 6 zeigt der Trailer das". Contrast is the content.
+
 Output ONLY JSON:
 {"title": "max 70 chars, German, curiosity + clarity, no #Shorts",
  "thumb_text": "2-4 punchy words for the thumbnail, uppercase",

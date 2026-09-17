@@ -49,6 +49,13 @@ PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never l
 - ZEIGARNIK for series/episodes: name what the next episode reveals in one concrete, tempting clause.
 - TITLE: number or power word in the first 3 words (Fehler, niemand, geheim, verboten, kostenlos, endlich, sofort), max 45 characters before any emoji, the promise must match the video.
 
+NICHE META (measured across ALL of YouTube's top GTA 6 Shorts, Sept 2026 — the formats pulling millions; use them whenever the topic truthfully allows):
+- "VS" COMPARISON is the strongest frame in the entire niche (7 of the top 30): GTA 6 vs GTA 5, vs RDR2, vs 2013. Turn a plain fact into a comparison whenever truthful ("GTA 5: 30 Tierarten. GTA 6: über 750.") — in the title AND the hook.
+- NUMBERS AS STAKES: "$2 Milliarden Budget", "13 Jahre Wartezeit", "600.000 Animationen" — one big concrete number in the first 5 title words beats any adjective. (This channel's own #1 video is exactly this.)
+- DRAMA FRAME for news: what fans fight about, lose, or can't believe ("Fans zerreissen dieses Detail") — the conflict must be REAL and sourced; the accuracy rules above always win. Never invent drama.
+- Exactly ONE all-caps emotional word per title, max (NIEMAND, ALLES, VERBOTEN).
+- The giga-hits are 10-30 seconds. Shorter beats longer. Never pad.
+
 RETENTION & LOOP (Shorts are ranked on watch-through and replays):
 - Regular videos: 4-6 sentences, 55-85 words — about 25 to 35 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
 - The LAST sentence is short (max 12 words) and snaps back to the hook — a punchline, a twist, or the comment question — so the Short loops naturally. NEVER "Danke fürs Zuschauen", never "das war's".
