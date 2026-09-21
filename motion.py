@@ -27,8 +27,12 @@ def motion_vf(index: int, seg_len: float, w: int = W, h: int = H) -> str:
         (f"(iw-ow)/2", f"(ih-oh)*t/{d:.2f}"),                  # pan down
     ]
     x, y = moves[index % len(moves)]
+    # Production step 7: a light vignette on the FINAL frame (after the
+    # crop, so it stays centred while the camera moves) — pulls the eye to
+    # the middle and gives every own-footage segment the same filmic edge.
+    # Trailer footage is already graded by Rockstar and is left untouched.
     return (f"scale={bw}:{bh}:force_original_aspect_ratio=increase:flags=bicubic,"
-            f"crop={bw}:{bh},crop={w}:{h}:x='{x}':y='{y}'")
+            f"crop={bw}:{bh},crop={w}:{h}:x='{x}':y='{y}',vignette=angle=PI/5")
 
 
 # Light "punch" grade for the owner's raw captures (contrast, colour, a touch
