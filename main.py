@@ -429,6 +429,21 @@ def run_engagement():
     except Exception as e:
         logger.error(f"Engagement cycle error: {e}", exc_info=True)
 
+KEEPALIVE_URL = os.environ.get('KEEPALIVE_URL',
+                               'https://fast-pulse-gew89.run.mcp-use.com/health')
+
+
+def keepalive_ping():
+    """One GET against our own public URL — inbound traffic through the
+    platform's edge proxy, which is what stops it from autosuspending the
+    VM. Fails silently; never worth a retry or a log line when it works."""
+    try:
+        import requests
+        requests.get(KEEPALIVE_URL, timeout=15)
+    except Exception as e:
+        logger.warning(f"Keep-alive ping failed: {e}")
+
+
 def validate_config():
     required = ['ANTHROPIC_API_KEY', 'YOUTUBE_CLIENT_SECRETS']
     missing = [k for k in required if not os.environ.get(k)]
@@ -473,6 +488,14 @@ if __name__ == "__main__":
     if os.environ.get('CLEANUP_ENABLED', '').lower() in ('1', 'true', 'yes'):
         schedule.every().day.at("08:40").do(run_cleanup)
     schedule.every(30).minutes.do(run_breaking_check)   # free: RSS only
+    # Keep-alive: the hosting platform suspends the VM when it sees no
+    # inbound traffic ("excess capacity, autosuspending machine") — it did
+    # so on 2026-09-21 17:41 and the whole schedule slept until an outside
+    # request woke it 13 h later (21:00 Short and the night's long-form
+    # lost). A request to our own public URL every few minutes goes out
+    # through the edge proxy and comes back as inbound traffic, so the
+    # machine never counts as idle. Costs nothing.
+    schedule.every(4).minutes.do(keepalive_ping)
     logger.info("⏰ Shorts 12:00 (Serie) | 17:00 | 21:00 (Di/Fr Dialog) "
                 "+ long-form 19:00 (Peak) + Eil-Check alle 30 Min")
     try:
