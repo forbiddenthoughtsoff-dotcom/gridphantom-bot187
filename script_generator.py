@@ -38,23 +38,13 @@ HOOK (sentence 1 — decides if they stay past second 2):
 AUDIENCE (measured with YouTube Analytics, September 2026): 90 % male, 32 % aged 25-34, 30 % aged 35-44, 11 % 45-54; only 8 % teenagers. Germany 78 %, Austria 10 %, Switzerland 5 %. Working adults who grew up with GTA: write for a 30-year-old, not a schoolkid — no youth slang, no "Bro", respect their time and intelligence, money/efficiency angles and "was Rockstar wirklich gesagt hat" beat memes. Nostalgia (San Andreas, GTA 4, Vice City) resonates.
 RETENTION FACT: the average viewer currently leaves after 15 seconds (51 % of a Short). The first concrete payoff must land BEFORE second 8, the second before second 15; nothing important after second 25 unless the video is a series episode.
 
-PSYCHOLOGY PLAYBOOK (why people stay, replay, comment — use every one, never lie):
-- OPEN LOOP in the first 2 seconds: promise a specific payoff that only the LAST third delivers ("das Dritte kennt fast niemand", "der letzte Punkt entscheidet"). The viewer stays to close the loop. The payoff MUST be delivered.
-- LOSS beats gain: "kostet dich", "verlierst du", "machst du falsch" outperforms "so verdienst du mehr". Frame the first sentence as a loss or a mistake where truthful.
+WINNING FORMAT (this channel's own top 10 — 887 to 1018 views each, measured 09-22 — copy it exactly):
+- Every one of them is a 23-30 second Short built on ONE concrete, sourced statement: "über 600.000 Animationen", "Polizei-KI arbeitet anders", "keine Echtgeld-Käufe im Story-Modus", "Autodiebstahl ist jetzt schwerer", "Leonida ist grösser als gedacht".
+- TITLE = "GTA 6: " (or "GTA Online: " / "GTA 5: ") + the fact as a plain, grammatical German statement, 30-45 characters, one emoji at the end. A number in the title whenever the fact has one. At most ONE capitalised word, and only where it carries the contrast (ANDERS, KEINE, JETZT) — never shouting words (ENTHÜLLT, BESTÄTIGT, VERBOTEN, SCHOCK, KRASS), never "Mega-Leak", never a title that is not a correct German phrase.
+- NARRATION: sentence 1 states the fact and its size in plain words (the hook IS the fact). Sentences 2-3 explain what it means in the game and, where truthful, compare it to GTA 5 or RDR2 ("GTA 5: 30 Tierarten. GTA 6: über 750." — the vs-comparison is the strongest frame in the whole niche). Last sentence: a short either/or question the viewer can answer in two words ("Lucia oder Jason?").
 - SPECIFICITY = credibility: exact numbers, names, places, dates (digits). "250.000 Dollar" not "viel Geld".
-- PATTERN INTERRUPT every 5-7 seconds: a new fact, an "aber", a question, a reversal. No two consecutive sentences with the same structure.
-- IDENTITY: address the viewer as part of the tribe ("wenn du seit Tag 1 dabei bist", "jeder echte Grinder weiss") — inclusive, never insulting.
-- SOCIAL PROOF only when true ("Millionen Spieler machen genau diesen Fehler" only if it is genuinely common).
-- ENDING = BINARY QUESTION: the last line asks an either/or the viewer can answer in two words ("Team Bunker oder Team Nightclub?", "Lucia oder Jason?"). Comments are the strongest ranking signal a small channel can trigger.
-- ZEIGARNIK for series/episodes: name what the next episode reveals in one concrete, tempting clause.
-- TITLE: number or power word in the first 3 words (Fehler, niemand, geheim, verboten, kostenlos, endlich, sofort), max 45 characters before any emoji, the promise must match the video.
-
-NICHE META (measured across ALL of YouTube's top GTA 6 Shorts, Sept 2026 — the formats pulling millions; use them whenever the topic truthfully allows):
-- "VS" COMPARISON is the strongest frame in the entire niche (7 of the top 30): GTA 6 vs GTA 5, vs RDR2, vs 2013. Turn a plain fact into a comparison whenever truthful ("GTA 5: 30 Tierarten. GTA 6: über 750.") — in the title AND the hook.
-- NUMBERS AS STAKES: "$2 Milliarden Budget", "13 Jahre Wartezeit", "600.000 Animationen" — one big concrete number in the first 5 title words beats any adjective. (This channel's own #1 video is exactly this.)
-- DRAMA FRAME for news: what fans fight about, lose, or can't believe ("Fans zerreissen dieses Detail") — the conflict must be REAL and sourced; the accuracy rules above always win. Never invent drama.
-- Exactly ONE all-caps emotional word per title, max (NIEMAND, ALLES, VERBOTEN).
-- The giga-hits are 10-30 seconds. Shorter beats longer. Never pad.
+- NO manufactured drama: no "Fans zerreissen", no loss-framing ("kostet dich", "verlierst du"), no "ändert ALLES" unless it truly does, no tribe talk ("jeder echte Grinder"). The fact carries the video — explain it like a knowledgeable friend, calm, precise, a little dry.
+- The giga-hits of the niche are 10-30 seconds. Shorter beats longer. Never pad.
 
 WHOLE-GTA META (top GTA 5 / GTA Online / German-language content, measured Sept 2026):
 - GTA ONLINE = MONEY. For 10 years straight the biggest German GTA Online videos are "schnell LEGAL Geld verdienen" (Paluten 1.3M, Zeddi 995k, Taymetic 486k, Caserino, Standart Skill): SOLO, LEGAL, a payout number and the year in the title. Every GTA Online trick/tip must answer "was bringt mir das in GTA$ oder Minuten?".
@@ -66,7 +56,6 @@ WHOLE-GTA META (top GTA 5 / GTA Online / German-language content, measured Sept 
 RETENTION & LOOP (Shorts are ranked on watch-through and replays):
 - Regular videos: 4-6 sentences, 55-85 words — about 25 to 35 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
 - The LAST sentence is short (max 12 words) and snaps back to the hook — a punchline, a twist, or the comment question — so the Short loops naturally. NEVER "Danke fürs Zuschauen", never "das war's".
-- In the last third, ONE natural subscribe reason tied to a benefit, max 9 words, e.g. "Abonnieren, hier gibt's jeden Tag die GTA 6 News." Not a plea, a promise.
 
 VOICE & TONE (this is spoken out loud — write for the EAR):
 - Natural, spoken German — like a fellow player explaining something to a friend, casual and confident. Gamer-vibe, but clear.

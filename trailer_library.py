@@ -13,7 +13,7 @@ import logging
 import threading
 import subprocess
 import requests
-from motion import motion_vf
+from motion import motion_vf, W, H
 
 logger = logging.getLogger(__name__)
 
@@ -123,10 +123,12 @@ def _probe_duration(path):
     return int(h) * 3600 + int(mi) * 60 + float(s)
 
 
-def build_trailer_montage(duration: float, n_segments: int = 3) -> str:
+def build_trailer_montage(duration: float, n_segments: int = 3,
+                          motion: bool = True) -> str:
     """Cut n random, non-overlapping vertical (1080x1920) segments out of the
     available trailers and stitch them into one silent clip of `duration`
-    seconds. Returns the mp4 path or None."""
+    seconds. Returns the mp4 path or None. motion=False gives the plain
+    Shorts look (one still window, no camera move)."""
     trailers = available_trailers()
     if not trailers:
         return None
@@ -152,8 +154,10 @@ def build_trailer_montage(duration: float, n_segments: int = 3) -> str:
                     break
             used.setdefault(src, []).append(start)
             out = os.path.join(TRAILER_DIR, f'seg_{os.getpid()}_{i}.mp4')
+            vf = (motion_vf(i, seg_len) if motion
+                  else f'scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}')
             cmd = [ff, '-y', '-ss', f'{start:.2f}', '-i', src, '-t', f'{seg_len:.2f}',
-                   '-an', '-vf', 'crop=ih*9/16:ih,' + motion_vf(i, seg_len) + ',fps=24',
+                   '-an', '-vf', 'crop=ih*9/16:ih,' + vf + ',fps=24',
                    '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
                    '-pix_fmt', 'yuv420p', out]
             # the box is small: one 20 s segment took >180 s once while a
