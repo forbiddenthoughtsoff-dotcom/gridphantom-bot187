@@ -247,9 +247,9 @@ class CaptionTrack:
             if len(self._cache) >= 2:
                 self._cache.pop(min(self._cache))
             sp = self.spans[i][3]
+            # plain white captions like the channel's best videos; the
+            # yellow "signal word" colour was part of the rolled-back cut
             fill = SPEAKER_FILL.get(sp, (255, 255, 255, 255))
-            if sp is None and is_signal_text(self.spans[i][2]):
-                fill = SIGNAL_FILL   # numbers / trigger words pop in yellow
             self._cache[i] = make_caption_layer(self.spans[i][2], fill)
         return self._cache[i]
 
@@ -594,9 +594,6 @@ class VideoAssembler:
         # 2) official GTA VI trailer montage (GTA 6 topics), 3) any own
         # gameplay clip, 4) topic-matched Pexels stock, 5) AI image + Ken Burns
         base = None
-        cuts_n = 0
-        # subscribe pill timing (also the cue for its pop sound)
-        sub_start = min(duration * 0.58, max(duration - 6.0, 0.0))
         try:
             gta6, build_trailer_montage = False, None
             try:
@@ -609,7 +606,6 @@ class VideoAssembler:
             # trailer beats GTA 5 gameplay
             n_seg = len(sentences) or 3
             bg_path = None
-            cuts_n = 0   # hard cuts in the background (for the whoosh sound design)
             # Owner-supplied stills (e.g. official product images for a
             # hardware topic) are the only right footage — they win outright
             if script.get('still_images'):
@@ -619,31 +615,24 @@ class VideoAssembler:
                         fetch_images(script['still_images']), duration, max(n_seg, 4))
                 except Exception as e:
                     logger.warning(f"Still images unavailable: {e}")
-            if bg_path:
-                cuts_n = max(n_seg, 4)
-            # GTA 6 topics: the official trailer montage comes FIRST — every
-            # 900+ view video on this channel is a GTA 6 topic over trailer
-            # footage. The old require_match gate was too weak (one generic
-            # tag like "auto"/"stadt" matched), so GTA 5 own gameplay kept
-            # winning under GTA 6 news — visually wrong, and not the formula
-            # that worked. Own gameplay stays first for GTA 5/Online topics.
+            # ONE continuous clip for the whole Short — no hard cuts, no
+            # camera moves. This is the render behind every 900+ view video
+            # on the channel; the highlight cut (a cut per sentence, a camera
+            # move per segment, a whoosh per cut) was rolled back on the
+            # owner's order (09-22). GTA 6 topics: one still window of the
+            # official trailer; everything else: one own gameplay clip.
             if not bg_path and gta6 and build_trailer_montage:
                 try:
-                    bg_path = build_trailer_montage(duration, n_segments=n_seg)
-                    cuts_n = n_seg if bg_path else 0
+                    bg_path = build_trailer_montage(duration, n_segments=1, motion=False)
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
             if not bg_path:
-                bg_path = build_gameplay_montage(script, duration, n_seg)
-                cuts_n = n_seg if bg_path else 0
-                if not bg_path:
-                    bg_path = pick_gameplay_clip(script)
+                bg_path = pick_gameplay_clip(script)
             if not bg_path and build_trailer_montage:
                 # official trailer footage as the fallback for every topic:
                 # better looking than stock and always on disk
                 try:
-                    bg_path = build_trailer_montage(duration, n_segments=n_seg)
-                    cuts_n = n_seg if bg_path else 0
+                    bg_path = build_trailer_montage(duration, n_segments=1, motion=False)
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
             if bg_path:
@@ -698,15 +687,6 @@ class VideoAssembler:
                                             duration=duration))
                         .set_position((0, CAPTION_Y)))
                 logger.info(f"💬 Word-synced captions: {len(track.spans)} pop-ins")
-                # subscribe pill in the last third, gone before the end card
-                # moment — long enough to read, short enough not to annoy
-                sub_len = min(3.5, max(duration - sub_start, 0.5))
-                sub_rgb, sub_a = make_subscribe_layer()
-                overlays.append(
-                    ImageClip(sub_rgb)
-                    .set_mask(ImageClip(sub_a, ismask=True))
-                    .set_position((0, SUB_Y))
-                    .set_start(sub_start).set_duration(sub_len))
             else:
                 for i, sentence in enumerate(sentences):
                     start = i * seg_dur
@@ -742,15 +722,13 @@ class VideoAssembler:
         output_path, credit = add_music_bed(output_path, duration)
         if credit:
             script['music_credit'] = credit
-        # Sound design on top of the mix: whoosh per cut, impact under the
-        # hook, pop with the subscribe pill, cash register on money talk
+        # No sound effects (whoosh/impact/pop were part of the rolled-back
+        # cut) — only the loudness pass so every Short plays at the same level
         try:
-            from sfx import plan_events, mix_sfx, finalize_loudness
-            output_path = mix_sfx(output_path, plan_events(
-                duration, cuts_n, words, sub_start))
+            from sfx import finalize_loudness
             output_path = finalize_loudness(output_path)
         except Exception as e:
-            logger.warning(f"Sound design skipped: {e}")
+            logger.warning(f"Loudness pass skipped: {e}")
 
         # NO intro sting / outro card: every 900+ view Short on this channel
         # opens with the hook at second 0 and ends on the loop-back line.
