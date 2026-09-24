@@ -554,6 +554,42 @@ def pick_gameplay_clip(script: dict, require_match: bool = False) -> str:
     return choice
 
 
+def prepare_own_clip(path: str, duration: float) -> str:
+    """One continuous 1080x1920 / 24 fps background of exactly `duration`
+    seconds from ONE own clip, prepared by ffmpeg: a random window of a
+    long clip, a short clip looped. moviepy then only reads a file
+    sequentially, exactly like the montage files it rendered in ~2 min.
+    Reading the raw proxy through moviepy's own loop/resize ran at 0.7 fps
+    (09-24: 17 min for the first 30 s of a 73 s episode). Returns the mp4
+    path or None (caller uses the raw clip)."""
+    try:
+        import imageio_ffmpeg
+        from trailer_library import _probe_duration
+        ff = imageio_ffmpeg.get_ffmpeg_exe()
+        total = _probe_duration(path)
+        start = random.uniform(0, total - duration - 0.5) if total > duration + 0.5 else 0.0
+        out_dir = '/tmp/gameplay_montage'
+        os.makedirs(out_dir, exist_ok=True)
+        out = os.path.join(out_dir, f'bg_{os.getpid()}.mp4')
+        cmd = [ff, '-y', '-stream_loop', '-1', '-ss', f'{start:.2f}', '-i', path,
+               '-t', f'{duration + 0.5:.2f}', '-an',
+               '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,'
+                      'crop=1080:1920,fps=24',
+               '-c:v', 'libx264', '-preset', 'superfast', '-crf', '20',
+               '-pix_fmt', 'yuv420p', out]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=420)
+        if r.returncode != 0 or not os.path.exists(out):
+            logger.warning(f"Own-clip background failed: {r.stderr[-160:]}")
+            return None
+        logger.info(f"🎮 Own-clip background: {os.path.basename(path)} "
+                    f"from {start:.1f}s, {duration:.1f}s"
+                    f"{' (looped)' if total < duration else ''}")
+        return out
+    except Exception as e:
+        logger.warning(f"Own-clip background skipped: {e}")
+        return None
+
+
 class VideoAssembler:
     def __init__(self):
         self.output_dir = "/tmp/videos"
@@ -627,7 +663,9 @@ class VideoAssembler:
                 except Exception as e:
                     logger.warning(f"Trailer footage unavailable: {e}")
             if not bg_path:
-                bg_path = pick_gameplay_clip(script)
+                own = pick_gameplay_clip(script)
+                if own:
+                    bg_path = prepare_own_clip(own, duration) or own
             if not bg_path and build_trailer_montage:
                 # official trailer footage as the fallback for every topic:
                 # better looking than stock and always on disk
