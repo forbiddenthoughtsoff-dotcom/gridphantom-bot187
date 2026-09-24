@@ -17,15 +17,35 @@ except Exception:
 
 # Health server starts FIRST
 import json, threading, time, os, sys, logging, schedule
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path.startswith('/hold'):
+            return self._hold()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
         self.wfile.write(b'{"status":"ok"}')
+
+    def _hold(self):
+        """Endless event stream. The bot itself keeps ONE request to this
+        path open through the public URL (see hold_connection): an in-flight
+        inbound request is the only thing the platform counts as "in use" —
+        periodic pings did not stop it from autosuspending the VM."""
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/event-stream')
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('X-Accel-Buffering', 'no')
+        self.end_headers()
+        try:
+            while True:
+                self.wfile.write(b': hold\n\n')
+                self.wfile.flush()
+                time.sleep(10)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
         self.rfile.read(content_length)
@@ -43,7 +63,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 def _run_health_server():
     while True:
         try:
-            HTTPServer(('0.0.0.0', 8080), HealthHandler).serve_forever()
+            ThreadingHTTPServer(('0.0.0.0', 8080), HealthHandler).serve_forever()
         except Exception as e:
             print(f"[HEALTH] error, restarting: {e}", flush=True)
             time.sleep(2)
@@ -433,15 +453,40 @@ KEEPALIVE_URL = os.environ.get('KEEPALIVE_URL',
                                'https://fast-pulse-gew89.run.mcp-use.com/health')
 
 
+HOLD_URL = os.environ.get('HOLD_URL',
+                          'https://fast-pulse-gew89.run.mcp-use.com/hold')
+
+
 def keepalive_ping():
-    """One GET against our own public URL — inbound traffic through the
-    platform's edge proxy, which is what stops it from autosuspending the
-    VM. Fails silently; never worth a retry or a log line when it works."""
+    """One GET against our own public URL. Not enough on its own (the VM
+    was suspended twice with this running), kept as the cheap heartbeat
+    that shows up in the platform's request analytics."""
     try:
         import requests
         requests.get(KEEPALIVE_URL, timeout=15)
     except Exception as e:
         logger.warning(f"Keep-alive ping failed: {e}")
+
+
+def hold_connection():
+    """Keep ONE request to our own /hold stream permanently open through
+    the public URL. The platform suspends the VM whenever no request is in
+    flight at its periodic check ("excess capacity, autosuspending" — 09-21,
+    09-22 twice, each time within minutes of a ping); a request that never
+    ends means the machine never counts as idle. Reconnects on any drop."""
+    import requests
+    while True:
+        try:
+            with requests.get(HOLD_URL, stream=True, timeout=(15, 60)) as r:
+                logger.info(f"🔗 Hold connection open ({r.status_code})")
+                # byte-wise: iter_lines would block until a 512-byte
+                # buffer fills, i.e. minutes between 8-byte heartbeats
+                for _ in r.iter_content(chunk_size=1):
+                    pass
+            logger.warning("Hold connection ended, reconnecting")
+        except Exception as e:
+            logger.warning(f"Hold connection dropped: {e}")
+        time.sleep(5)
 
 
 def validate_config():
@@ -496,6 +541,7 @@ if __name__ == "__main__":
     # through the edge proxy and comes back as inbound traffic, so the
     # machine never counts as idle. Costs nothing.
     schedule.every(4).minutes.do(keepalive_ping)
+    threading.Thread(target=hold_connection, daemon=True, name='hold').start()
     logger.info("⏰ Shorts 12:00 (Serie) | 17:00 | 21:00 (Di/Fr Dialog) "
                 "+ long-form 19:00 (Peak) + Eil-Check alle 30 Min")
     try:
