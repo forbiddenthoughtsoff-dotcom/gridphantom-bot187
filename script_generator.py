@@ -54,7 +54,7 @@ WHOLE-GTA META (top GTA 5 / GTA Online / German-language content, measured Sept 
 - Skits, challenges and mods (Scalpo, BuzzFizz 36M) win on personality we don't have — take their ANGLE (trolling, pranks, "what if") as narrated, verifiable facts, never claim a staged clip.
 
 RETENTION & LOOP (Shorts are ranked on watch-through and replays):
-- Regular videos: 4-6 sentences, 55-85 words — about 25 to 35 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
+- Regular videos: 4-5 sentences, 45-65 words — about 20 to 28 seconds. Every sentence must add a new fact, step or twist; cut anything that only repeats.
 - The LAST sentence is short (max 12 words) and snaps back to the hook — a punchline, a twist, or the comment question — so the Short loops naturally. NEVER "Danke fürs Zuschauen", never "das war's".
 
 VOICE & TONE (this is spoken out loud — write for the EAR):
@@ -231,9 +231,9 @@ class ScriptGenerator:
 
 {topic_brief}
 
-Write it in the channel's WINNING format: 4 to 5 full, natural German sentences, 50-75 words in total (~22-30 seconds spoken — every 900+ view video on this channel is 23-30s, match them EXACTLY). ONE concrete core fact, hook first, binary question last. Use ONLY the facts given above; label rumours as rumours. Digits for years, dates, prices. Write for the EAR.
+Write it in the channel's WINNING format: 4 to 5 full, natural German sentences, 45-65 words in total (~20-28 seconds spoken — every 900+ view video on this channel is 23-30s; 80 words came out at 37 s, too long). ONE concrete core fact, hook first, binary question last. Use ONLY the facts given above; label rumours as rumours. Digits for years, dates, prices. Write for the EAR.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
-            word_ceiling = 80
+            word_ceiling = 70
         elif topic_brief:
             # Owner's assignment: a specific, in-depth video. Longer than the
             # daily format because the owner wants ALL relevant information.

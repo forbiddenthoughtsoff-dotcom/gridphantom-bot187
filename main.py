@@ -202,16 +202,26 @@ def run_pipeline(language: str = 'de', brief: dict = None):
             RENDER_BUSY.set()
         except Exception:
             RENDER_BUSY = None
-        # Fresh container (empty /tmp) and no owner stills: pull a few own
-        # PS5 clips NOW rather than rendering the first video on stock
+        # Fresh container (empty /tmp): pull ONE own PS5 clip now rather than
+        # rendering on the trailer fallback. Only when the library is empty
+        # and the topic is not GTA 6 (trailer footage wins there anyway):
+        # the old "fill up to 4 clips" pull delayed every Short by 7-25 min
+        # (09-24: 12:00 slot uploaded 13:11, 17:00 slot 17:16). The 8-hourly
+        # background sync grows the library between renders.
         if not script.get('still_images'):
             try:
-                from gameplay_sync import ensure_library
-                n = ensure_library()
-                if n:
-                    logger.info(f"🎮 Own-clip library: {n} clip(s) usable")
-            except Exception as e:
-                logger.warning(f"Just-in-time clip sync skipped: {e}")
+                from trailer_library import is_gta6_topic
+                gta6 = is_gta6_topic(script)
+            except Exception:
+                gta6 = False
+            if not gta6:
+                try:
+                    from gameplay_sync import ensure_library
+                    n = ensure_library(min_clips=1, max_new=1, time_budget=240.0)
+                    if n:
+                        logger.info(f"🎮 Own-clip library: {n} clip(s) usable")
+                except Exception as e:
+                    logger.warning(f"Just-in-time clip sync skipped: {e}")
         try:
             video = VideoAssembler().assemble(script, audio)
         finally:
