@@ -399,8 +399,18 @@ def run_breaking_check():
         if _breaking_on_cooldown():
             return
         uploader = YouTubeUploader()
-        topic = trends.pick(uploader.get_recent_titles(25), breaking_only=True)
+        recent = uploader.get_recent_titles(25)
+        topic = trends.pick(recent, breaking_only=True)
         if not topic:
+            return
+        # Never the same topic twice (owner's rule): the keyword-cluster
+        # dedup in trends missed an English trend label against a German
+        # title (09-24: "Collector's Edition" as the 17:00 Short AND as a
+        # breaking edition 56 minutes later). Plain title similarity against
+        # the last few uploads (~2 days) catches that.
+        from script_generator import too_similar
+        if too_similar(topic['label'], recent[:6]):
+            logger.info(f"⏭️ Breaking skipped — topic already covered: {topic['label'][:60]}")
             return
         logger.info(f"🚨 EILMELDUNG — Sonderausgabe: {topic['label'][:70]}")
         with open(SKIP_FLAG, 'w') as f:

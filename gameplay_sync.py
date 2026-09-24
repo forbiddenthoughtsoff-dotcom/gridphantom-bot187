@@ -45,6 +45,12 @@ _lock = threading.Lock()
 # Set by the video assembler while a render runs: the container has ~1 GB,
 # and a background ffmpeg proxy next to the render got both OOM-killed.
 RENDER_BUSY = threading.Event()
+# Every ffmpeg the sync spawns runs at the lowest CPU priority: a proxy job
+# next to a render starved it (09-24: a 22 s trailer crop timed out after
+# 420 s, a 22 s export took 13 min while the startup sync was encoding).
+# The busy flag only pauses BETWEEN jobs; nice(19) makes a running job
+# yield the core to the render immediately.
+_LOW = {'preexec_fn': lambda: os.nice(19)}
 
 
 def _wait_render_idle(t0: float, time_budget: float,
@@ -151,7 +157,7 @@ def make_proxy(src: str, dst: str, timeout: int = 900) -> bool:
            '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-ac', '2',
            '-movflags', '+faststart', dst]
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, **_LOW)
     except subprocess.TimeoutExpired:
         logger.warning(f"Gameplay proxy timed out: {os.path.basename(src)}")
         return False
@@ -182,11 +188,11 @@ def analyze_highlights(raw: str, duration: float, window: float = 8.0,
         cmd = [ff, '-hide_banner', '-nostats', '-threads', '2', '-i', raw,
                '-filter_complex', vpart + ";[0:a]ebur128=peak=none[a]",
                '-map', '[v]', '-map', '[a]', '-f', 'null', '-']
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600, **_LOW)
         if r.returncode != 0:  # e.g. no audio stream: motion only
             cmd = [ff, '-hide_banner', '-nostats', '-threads', '2', '-i', raw,
                    '-filter_complex', vpart, '-map', '[v]', '-f', 'null', '-']
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=600, **_LOW)
         n = int(duration) + 1
         aud = [None] * n
         for m in re.finditer(r't:\s*([\d.]+)\s+TARGET:[^\n]*?M:\s*(-?[\d.]+|-inf)', r.stderr):
