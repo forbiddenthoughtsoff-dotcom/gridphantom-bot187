@@ -477,13 +477,19 @@ def hold_connection():
     import requests
     while True:
         try:
+            t0, n = time.time(), 0
             with requests.get(HOLD_URL, stream=True, timeout=(15, 60)) as r:
-                logger.info(f"🔗 Hold connection open ({r.status_code})")
+                logger.info(f"🔗 Hold connection open ({r.status_code}, "
+                            f"http/{getattr(r.raw, 'version', '?')}, "
+                            f"chunked={getattr(r.raw, 'chunked', '?')}, "
+                            f"len={getattr(r.raw, 'length_remaining', '?')}, "
+                            f"headers={dict(r.headers)})")
                 # byte-wise: iter_lines would block until a 512-byte
                 # buffer fills, i.e. minutes between 8-byte heartbeats
                 for _ in r.iter_content(chunk_size=1):
-                    pass
-            logger.warning("Hold connection ended, reconnecting")
+                    n += 1
+            logger.warning(f"Hold connection ended after {time.time() - t0:.1f}s "
+                           f"and {n} bytes, reconnecting")
         except Exception as e:
             logger.warning(f"Hold connection dropped: {e}")
         time.sleep(5)
