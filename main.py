@@ -386,6 +386,29 @@ def _note_breaking():
         logger.warning(f"Breaking cooldown not written: {e}")
 
 
+def _same_story(label: str, recent: list) -> bool:
+    """Semantic 'already covered' check for breaking topics. Keyword overlap
+    missed "Vice City Collection" against "Collector's Edition" (09-25: the
+    third Short on one story within 16 hours). One tiny model call; on any
+    error the answer is "not the same" so a real story is never blocked."""
+    try:
+        import anthropic
+        from config import Config
+        titles = "\n".join(f"- {t}" for t in recent[:8])
+        msg = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY).messages.create(
+            model='claude-sonnet-4-6', max_tokens=5,
+            messages=[{'role': 'user', 'content':
+                       f"Recent videos of a German GTA news channel:\n{titles}\n\n"
+                       f"New topic: {label}\n\n"
+                       "Is the new topic the same story as one of the recent videos "
+                       "(same product, announcement, event or leak, even from a "
+                       "different angle or in another language)? Answer YES or NO."}])
+        return msg.content[0].text.strip().upper().startswith('YES')
+    except Exception as e:
+        logger.warning(f"Same-story check failed: {e}")
+        return False
+
+
 def run_breaking_check():
     """Every 30 min: is a topic exploding right now? Then publish immediately
     instead of waiting for the next slot — being first is the whole game."""
@@ -398,6 +421,12 @@ def run_breaking_check():
             return
         if _breaking_on_cooldown():
             return
+        try:
+            from gameplay_sync import RENDER_BUSY
+            if RENDER_BUSY.is_set():   # long-form or Short render running
+                return
+        except Exception:
+            pass
         uploader = YouTubeUploader()
         recent = uploader.get_recent_titles(25)
         topic = trends.pick(recent, breaking_only=True)
@@ -409,7 +438,7 @@ def run_breaking_check():
         # breaking edition 56 minutes later). Plain title similarity against
         # the last few uploads (~2 days) catches that.
         from script_generator import too_similar
-        if too_similar(topic['label'], recent[:6]):
+        if too_similar(topic['label'], recent[:6]) or _same_story(topic['label'], recent):
             logger.info(f"⏭️ Breaking skipped — topic already covered: {topic['label'][:60]}")
             return
         logger.info(f"🚨 EILMELDUNG — Sonderausgabe: {topic['label'][:70]}")

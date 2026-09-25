@@ -230,15 +230,22 @@ def voice_sections(sections: list, work: str) -> tuple:
 # --------------------------------------------------------------- visuals --
 def _cut_segment(src: str, start: float, length: float, idx: int, out: str,
                  crop_subs: bool, timeout: int = 420) -> bool:
-    pre = ('crop=iw:ih*0.9:0:0,' + GRADE + ',') if crop_subs else ''
+    # Scale the 4K capture down BEFORE the grade: eq+unsharp on 8 MP frames
+    # was the slowest link (09-25: 5 h without a finished montage). 2112 px
+    # wide is exactly motion_vf's 110 % overscan, so nothing is scaled twice.
+    pre = ('crop=iw:ih*0.9:0:0,scale=2112:-2,' + GRADE + ',') if crop_subs else ''
     cmd = [_ffmpeg(), '-y', '-ss', f'{start:.2f}', '-i', src, '-t', f'{length:.2f}', '-an',
            '-threads', '2', '-vf', pre + motion_vf(idx, length, W, H) + ',fps=24',
            '-c:v', 'libx264', '-preset', 'superfast', '-crf', '22', '-pix_fmt', 'yuv420p', out]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
+        logger.warning(f"Long-form segment {idx} timed out ({timeout} s): {os.path.basename(src)}")
         return False
-    return r.returncode == 0 and os.path.exists(out) and os.path.getsize(out) > 20_000
+    ok = r.returncode == 0 and os.path.exists(out) and os.path.getsize(out) > 20_000
+    if not ok:
+        logger.warning(f"Long-form segment {idx} failed: {r.stderr[-160:]}")
+    return ok
 
 
 def _gameplay_windows(work: str, n_needed: int, time_budget: float = 1500.0) -> list:
@@ -299,7 +306,12 @@ def build_montage(sections: list, starts: list, total: float, gta6_main: bool, w
         sec_flags.append(gta6_main or sum(blob.count(k) for k in GTA6_KEYS) >= 2)
     n_gta6 = sum(1 for f in sec_flags if f)
     trailer = _trailer_windows(min(24, n_total)) if n_gta6 else []
-    gameplay = _gameplay_windows(work, n_total)
+    # GTA 6 deep dives run mostly on the 1080p trailer (the format's visual
+    # language anyway); a quarter of the windows from own 4K captures is
+    # plenty and keeps the montage under an hour. Decoding 4K for every
+    # second segment took the whole night (09-25, LF-24 never finished).
+    gameplay = _gameplay_windows(work, max(6, n_total // 4) if gta6_main else n_total,
+                                 time_budget=600.0 if gta6_main else 1500.0)
     if not gameplay and not trailer:
         raise RuntimeError("no footage for long-form montage")
     random.shuffle(gameplay)
@@ -331,6 +343,8 @@ def build_montage(sections: list, starts: list, total: float, gta6_main: bool, w
             parts.append(out)
             t += length
         idx += 1
+        if idx % 25 == 0:
+            logger.info(f"🎬 Long-form montage: {len(parts)} segments, {t / 60:.1f} of {total / 60:.1f} min")
         if idx > n_total * 2:
             break
     lst = os.path.join(work, 'concat.txt')
