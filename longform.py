@@ -310,8 +310,11 @@ def build_montage(sections: list, starts: list, total: float, gta6_main: bool, w
     # language anyway); a quarter of the windows from own 4K captures is
     # plenty and keeps the montage under an hour. Decoding 4K for every
     # second segment took the whole night (09-25, LF-24 never finished).
-    gameplay = _gameplay_windows(work, max(6, n_total // 4) if gta6_main else n_total,
-                                 time_budget=600.0 if gta6_main else 1500.0)
+    # Own 4K PS5 captures are out of the long-form for now: the box decodes
+    # 4K HEVC at ~1 fps, every 8 s window timed out at 420 s (09-25 and
+    # 09-26, montage still unfinished after 5 h). The 1080p trailer cuts in
+    # seconds. Gameplay returns once the sync also writes 16:9 proxies.
+    gameplay = []
     if not gameplay and not trailer:
         raise RuntimeError("no footage for long-form montage")
     random.shuffle(gameplay)
@@ -545,7 +548,9 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
     """Slot entry: topic → build → upload. Returns the video id or None."""
     from youtube_uploader import YouTubeUploader
     uploader = YouTubeUploader()
-    recent = uploader.get_recent_performance(50)
+    # 200 uploads back: the Langform-ID markers of every published long-form
+    # must stay visible to the picker, or a topic gets made twice
+    recent = uploader.get_recent_performance(200)
     titles = [r['title'] for r in recent]
     if kind == 'weekly':
         try:
