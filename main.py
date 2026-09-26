@@ -560,7 +560,7 @@ def validate_config():
 
 if __name__ == "__main__":
     logger.info("=" * 60)
-    logger.info("  GridPhantom Bot — @GridPhantom187")
+    logger.info(f"  {Config.CHANNEL_NAME} Bot — {Config.CHANNEL_HANDLE}")
     logger.info("=" * 60)
 
     validate_config()

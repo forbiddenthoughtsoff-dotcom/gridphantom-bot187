@@ -16,6 +16,7 @@ memory) → music bed + sound design → thumbnail → upload as a regular video
 with chapters. Runs at night; the following 07:00 Short is skipped to
 stay inside the YouTube quota."""
 import os
+from config import Config as _C
 import re
 import json
 import time
@@ -39,7 +40,7 @@ MARKER_RE = re.compile(r'Langform-ID:\s*(LF-\d+)', re.I)
 TARGET_WORDS = {'weekly': (1500, 1800), 'evergreen': (1800, 2100)}
 GTA6_KEYS = ('gta 6', 'gta6', 'gta vi', 'vice city', 'leonida', 'lucia', 'jason', 'trailer')
 
-LONGFORM_SYSTEM = """You write long-form YouTube video scripts for the German GTA channel GridPhantom
+LONGFORM_SYSTEM = """You write long-form YouTube video scripts for the German GTA channel """ + _C.CHANNEL_NAME + """
 (GTA 5, GTA Online, GTA 6). Audience: German-speaking GTA players. Standard High German, NEVER the
 character ß (always ss). Digits for numbers, years, prices. Spoken language, short sentences, no
 lists read aloud, no headings spoken. Confident, warm, knowledgeable ("Sharing is caring"), never
@@ -405,7 +406,7 @@ Style: Brand,DejaVu Sans,34,&H00E6E6E6,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     lines = [head]
-    lines.append(f"Dialogue: 0,{_ts(0)},{_ts(total)},Brand,,0,0,0,,@GridPhantom187\n")
+    lines.append(f"Dialogue: 0,{_ts(0)},{_ts(total)},Brand,,0,0,0,,{_C.CHANNEL_HANDLE}\n")
     for i, s in enumerate(sections):
         if i == 0:
             continue
@@ -469,7 +470,7 @@ def make_thumbnail(video: str, text: str, out: str, at: float) -> str:
         d.text((60, y), ln, font=font, fill=col, stroke_width=8, stroke_fill=(0, 0, 0))
         y += int(size * 1.15)
     fb = load_font(34)
-    d.text((60, 40), "@GridPhantom187", font=fb, fill=(235, 235, 235), stroke_width=3, stroke_fill=(0, 0, 0))
+    d.text((60, 40), _C.CHANNEL_HANDLE, font=fb, fill=(235, 235, 235), stroke_width=3, stroke_fill=(0, 0, 0))
     im.save(out, quality=90)
     try:
         os.remove(jpg)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from config import Config as _C
 import json
 import logging
 import random
@@ -107,7 +108,7 @@ def make_overlay(text: str):
 
     # Branding bottom
     fb = load_font(48)
-    brand = "@GridPhantom187"
+    brand = _C.CHANNEL_HANDLE
     bw = draw.textbbox((0, 0), brand, font=fb)[2]
     draw.text(((W - bw)//2, H - 130), brand, font=fb, fill=(220, 220, 220, 255))
 
@@ -267,7 +268,7 @@ def make_brand_layer():
     layer = Image.new('RGBA', (W, BRAND_BAND_H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     fb = load_font(44)
-    brand = "@GridPhantom187"
+    brand = _C.CHANNEL_HANDLE
     bw = d.textbbox((0, 0), brand, font=fb, stroke_width=4)[2]
     d.text(((W - bw) // 2, 30), brand, font=fb,
            fill=(235, 235, 235, 255), stroke_width=4, stroke_fill=(0, 0, 0, 255))
