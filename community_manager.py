@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
+from config import Config as _C
 import anthropic
 from config import Config
 
 logger = logging.getLogger(__name__)
 
-REPLY_SYSTEM = """You are the channel voice of GridPhantom (@GridPhantom187), a German YouTube Shorts channel all about GTA — GTA 5, GTA Online and GTA 6 (tricks, facts, help, myths, news).
+REPLY_SYSTEM = """You are the channel voice of """ + _C.CHANNEL_NAME + " (" + _C.CHANNEL_HANDLE + """), a German YouTube Shorts channel all about GTA — GTA 5, GTA Online and GTA 6 (tricks, facts, help, myths, news).
 
 You reply to viewer comments. Quality bar: every reply must read like it was written by a knowledgeable, likeable channel owner — never like a bot.
 

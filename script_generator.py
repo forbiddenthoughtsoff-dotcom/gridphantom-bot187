@@ -171,7 +171,25 @@ def _parse_script_json(raw: str) -> dict:
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
+        pass
+    try:
         return json.loads(_repair_json(cleaned))
+    except json.JSONDecodeError:
+        pass
+    # Fourth step (09-26: "Extra data: line 10 column 1 (char 198)"): the
+    # reply held more than one JSON value, e.g. a stray object before the
+    # script. Decode every object that starts at a "{" and keep the one
+    # that is actually the script.
+    dec = json.JSONDecoder()
+    for m in re.finditer(r'\{', raw):
+        for cand in (raw[m.start():], _repair_json(raw[m.start():])):
+            try:
+                obj, _ = dec.raw_decode(cand)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(obj, dict) and obj.get('sentences') and obj.get('title'):
+                return obj
+    raise json.JSONDecodeError('no script object in reply', raw, 0)
 
 
 _GENERIC = {
@@ -251,9 +269,10 @@ Language: {lang_name} ONLY. Output ONLY valid JSON."""
         else:
             user_prompt = f"""Create today's video: pick EXACTLY ONE GTA topic that makes a GTA player think "das muss ich wissen!".
 
-3 full, natural German sentences, ~20-30 seconds spoken. Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
+4 to 5 full, natural German sentences, 45-65 words in total (~20-28 seconds spoken). Write for the EAR: proper sentence structure, varied rhythm, the way a fellow player would actually say it out loud. Hook = the surprising result or payoff.
+NO INVENTED STATISTICS: without a news list you have no source for counts, prices or sizes. Do not state any figure (\"17.000 Zeilen\", \"600 Fahrzeuge\") unless it is one of the officially confirmed basics (release 19. November 2026, two protagonists Lucia and Jason, Vice City in Leonida). Describe qualitatively instead.
 Language: {lang_name} ONLY. Output ONLY valid JSON."""
-            word_ceiling = 60
+            word_ceiling = 70
 
         if news_items and topic_brief and brief_style != 'short':
             news_block = "\n".join(
@@ -309,7 +328,7 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
         # recent one is regenerated with the subject explicitly banned.
         banned = []
         too_long_note = ""
-        for attempt in range(3):
+        for attempt in range(4):
             prompt = user_prompt + too_long_note
             if banned:
                 prompt += ("\n\nHARD BAN — the channel JUST covered these; pick a COMPLETELY "
@@ -329,7 +348,7 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
                 # a full Short on 09-11): regenerate instead of raising,
                 # same as the "topic too similar" retry below.
                 logger.warning(f"Unparseable script JSON (attempt {attempt+1}): {e}")
-                if attempt == 2:
+                if attempt == 3:
                     raise
                 continue
             title = script.get('title', '')
@@ -339,9 +358,17 @@ Pick a genuinely DIFFERENT GTA topic — a new trick, a new fact, a different my
             # final attempt the longest draft still ships (a slightly long
             # Short beats a lost slot).
             word_count = sum(len(str(s).split()) for s in script.get('sentences', []))
-            too_long = word_count > word_ceiling and attempt < 2
+            too_long = word_count > word_ceiling and attempt < 3
             too_close = (not topic_brief and avoid_titles
                          and too_similar(title, avoid_titles))
+            # evergreen mode has no source: a big figure in the narration is
+            # almost certainly invented (09-26: "über 17.000 Zeilen Dialog")
+            if not topic_brief and not news_items and attempt < 3:
+                blob = " ".join(str(x) for x in script.get('sentences', [])) + " " + title
+                nums = [int(n.replace('.', '')) for n in re.findall(r'\b\d{1,3}(?:\.\d{3})+\b|\b\d{3,}\b', blob)]
+                if any(n >= 100 and n not in (2013, 2025, 2026) for n in nums):
+                    logger.warning(f"Unsourced figure in evergreen script, regenerating: {title}")
+                    too_close = True
             if not too_long and not too_close:
                 break
             if too_long:

@@ -12,6 +12,7 @@ in its description; the picker skips clips whose marker is already on the
 channel, so a moment is never posted twice — across restarts and redeploys
 (the channel itself is the memory, not /tmp)."""
 import os
+from config import Config as _C
 import re
 import json
 import base64
@@ -132,7 +133,7 @@ def describe(clip_path: str, length: float, tags: list) -> dict:
                     'media_type': 'image/jpeg', 'data': fr}} for fr in frames]
         content.append({'type': 'text', 'text': (
             "A frame from a " + f"{length:.0f}" + "-second GTA Online (GTA 5, PS5) "
-            "gameplay clip from the channel owner GridPhantom. Keyword tags for the clip: "
+            "gameplay clip from the channel owner " + _C.CHANNEL_NAME + ". Keyword tags for the clip: "
             + ", ".join(tags or []) + ".\n"
             "Write the on-screen hook and the metadata for a YouTube Short that shows this clip "
             "raw with its original game audio (no narration). Rules:\n"

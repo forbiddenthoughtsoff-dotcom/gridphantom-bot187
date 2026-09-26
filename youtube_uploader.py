@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from config import Config as _C
 import json
 import logging
 from google.oauth2.credentials import Credentials
@@ -46,12 +47,10 @@ SCOPES = [x for x in os.environ.get(
 
 
 FOOTER_DE = (
-    "\n\n🎮 GridPhantom – täglich GTA auf Hochdeutsch, ohne Clickbait."
-    "\n⏰ 07:30 eigener Clip · 12:00 GTA Online Karriere (Serie) · 17:30 Guide in voller Länge"
-    " · 19:00 & 21:15 GTA 6 News und Tricks · Di/Fr 21:15 Mythos oder Fakt"
-    "\n📚 Karriere-Serie komplett: https://www.youtube.com/playlist?list=PLBEY4q4jZJiQ"
-    "\n🔔 Abonnieren, damit du die nächste Folge nicht verpasst: @GridPhantom187"
-    "\n💬 Welche Frage sollen wir als Nächstes klären? Schreib es in die Kommentare.")
+    "\n\n🎮 {name} – täglich GTA 6 Fakten auf Hochdeutsch, ohne Gerüchte als Fakten."
+    "\n🔔 Abonnieren, damit du die nächste Folge nicht verpasst: {handle}"
+    "\n💬 Welche Frage sollen wir als Nächstes klären? Schreib es in die Kommentare."
+).format(name=_C.CHANNEL_NAME, handle=_C.CHANNEL_HANDLE)
 
 
 # The YouTube quota day resets 09:00 local and allows 5 uploads (1600 units
@@ -216,7 +215,7 @@ class YouTubeUploader:
         tags = script.get('tags', [])
 
         # Branding + audience-targeting search tags
-        tags.extend(['GridPhantom', 'GTA', 'GTA 5', 'GTA V', 'GTA Online',
+        tags.extend([_C.CHANNEL_NAME, 'GTA', 'GTA 5', 'GTA V', 'GTA Online',
                      'GTA 6', 'GTA VI', 'Grand Theft Auto', 'Rockstar Games',
                      'gta tricks', 'gta tipps deutsch', 'gta online deutsch',
                      'gta 5 deutsch', 'gaming shorts'])
@@ -282,7 +281,7 @@ class YouTubeUploader:
     # browse/suggested, session time for the channel
     TOPIC_PLAYLISTS = [
         ('mythos', "Mythos oder Fakt – GTA Behauptungen im Check"),
-        ('clip', "GridPhantom Moments – eigene GTA Online Clips"),
+        ('clip', _C.CHANNEL_NAME + " Moments – eigene GTA Online Clips"),
         ('long', "GTA Guides in voller Laenge (10+ Minuten)"),
         ('gta6', "GTA 6 News & Fakten – alles Bestaetigte"),
         ('online', "GTA Online Tricks, Geld & Geheimnisse"),
@@ -325,7 +324,7 @@ class YouTubeUploader:
         try:
             key = self.topic_key(script, kind)
             title = dict(self.TOPIC_PLAYLISTS)[key]
-            pl_id = self._playlist_id(title, "GridPhantom – taeglich GTA Shorts, Guides und eigene Clips. "
+            pl_id = self._playlist_id(title, _C.CHANNEL_NAME + " – taeglich GTA Shorts, Guides und eigene Clips. "
                                              "Abonnieren fuer die naechste Folge.")
             # a freshly created playlist answers 409 SERVICE_UNAVAILABLE for a
             # few seconds — retry briefly instead of losing the item
@@ -452,10 +451,10 @@ class YouTubeUploader:
 
         # Footer with brand + CTA
         if language == 'en':
-            description += ("\n\n🎮 GridPhantom — daily GTA Shorts: tricks, facts, "
+            description += ("\n\n🎮 " + _C.CHANNEL_NAME + " — daily GTA Shorts: tricks, facts, "
                             "help & myths for GTA 5, GTA Online & GTA 6. "
                             "New Shorts every day at 7am, 12pm, 5pm & 10pm (CET).")
-            description += "\n🔔 Subscribe for your daily GTA fix: @GridPhantom187"
+            description += "\n🔔 Subscribe for your daily GTA fix: " + _C.CHANNEL_HANDLE
             description += ("\n💬 Tell us in the comments which GTA topic "
                             "we should cover next!")
             base_tags = ['shorts', 'gta', 'gta5', 'gtav', 'gtaonline',

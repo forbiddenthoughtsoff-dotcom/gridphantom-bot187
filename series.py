@@ -9,6 +9,7 @@ local) publishes the next unpublished episode as an owner assignment
 title starts with "GTA Online Karriere #N", so the next N is max(N)+1 of
 the recent uploads — no local state to lose on a restart."""
 import os
+from config import Config as _C
 import re
 import json
 import logging
@@ -90,7 +91,7 @@ def brief_for(e: dict) -> dict:
         f"keine Zahlen erfinden, die hier nicht stehen):\n{tasks}\n"
         f"Ziel des Videos: Der Zuschauer weiss danach genau, was zu tun ist, in welcher Reihenfolge es am schnellsten geht, "
         f"welche Voraussetzung (Immobilie/Kontakt) noetig ist und welchen typischen Fehler er vermeidet. "
-        f"Tipps NUR, wenn sie in GTA Online sicher zutreffen; im Zweifel weglassen. Ton: GridPhantom kennt sich aus und teilt sein Wissen "
+        f"Tipps NUR, wenn sie in GTA Online sicher zutreffen; im Zweifel weglassen. Ton: {_C.CHANNEL_NAME} kennt sich aus und teilt sein Wissen "
         f"('Sharing is caring'), souveraen, kein Angeben. "
         f"Schluss: ein Satz mit Hinweis auf die naechste Folge ({nxt}) und die Bitte, die Serie zu abonnieren."
     )

@@ -11,6 +11,7 @@ Output is a normal script dict (title, sentences, narration, tags ...) plus
 writes ONE narration mp3 with merged word timings (each word carries its
 speaker for the caption colour)."""
 import os
+from config import Config as _C
 import re
 import json
 import logging
@@ -22,7 +23,7 @@ AVA = os.environ.get('ELEVENLABS_VOICE_ID', 'AnvlJBAqSLDzEevYr9Ap').strip() or '
 BEN = os.environ.get('ELEVENLABS_VOICE_ID_2', 'aTTiK3YzK3dXETpuDE2h').strip() or 'aTTiK3YzK3dXETpuDE2h'
 GAP = 0.22
 
-SYSTEM = """You write a two-voice German YouTube Short for the GTA channel GridPhantom (GTA 5, GTA Online, GTA 6).
+SYSTEM = """You write a two-voice German YouTube Short for the GTA channel """ + _C.CHANNEL_NAME + """ (GTA 5, GTA Online, GTA 6).
 Format "Mythos oder Fakt": BEN is a curious, slightly cocky GTA player who has heard a claim; AVA is the
 channel's expert who knows the facts and answers warmly, precisely, never condescending.
 

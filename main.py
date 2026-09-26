@@ -24,6 +24,22 @@ class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/hold'):
             return self._hold()
+        if self.path.startswith('/shots.json'):
+            # the scene index (shots.py) — read-only, fetched once by the
+            # maintainer and committed, so a redeploy does not re-tag
+            # 300 frames; nothing secret in it (timestamps + German tags)
+            p = os.path.join(os.environ.get('TRAILER_DIR', '/tmp/trailers'), 'shots.json')
+            if os.path.exists(p):
+                data = open(p, 'rb').read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self.send_response(404)
+                self.end_headers()
+            return
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
@@ -84,6 +100,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger('GridPhantomBot')
+from config import Config
 
 def owner_brief() -> dict:
     """Owner's assignment for the startup post: TOPIC_BRIEF_JSON holds a
@@ -560,7 +577,7 @@ def validate_config():
 
 if __name__ == "__main__":
     logger.info("=" * 60)
-    logger.info("  GridPhantom Bot — @GridPhantom187")
+    logger.info(f"  {Config.CHANNEL_NAME} Bot — {Config.CHANNEL_HANDLE}")
     logger.info("=" * 60)
 
     validate_config()
