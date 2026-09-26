@@ -84,6 +84,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger('GridPhantomBot')
+from config import Config
 
 def owner_brief() -> dict:
     """Owner's assignment for the startup post: TOPIC_BRIEF_JSON holds a
