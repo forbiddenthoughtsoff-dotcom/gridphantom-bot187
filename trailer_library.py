@@ -7,6 +7,7 @@ trailers. Files are fetched at runtime from stable archive.org mirrors into
 stitched into a montage. Everything fails soft: if a trailer isn't available
 yet, the assembler falls back to topic-matched stock footage."""
 import os
+import time
 import json
 import random
 import logging
@@ -101,8 +102,18 @@ def ensure_trailers_async():
         _started = True
 
     def worker():
-        for t in TRAILERS:
-            _download(t)
+        # archive.org answers with read timeouts now and then (09-26: trailer 2
+        # failed once at start and stayed missing all day); retry the missing
+        # files a few times with a pause instead of giving up after one pass
+        for attempt in range(6):
+            missing = [t for t in TRAILERS if not os.path.exists(_path(t))
+                       or os.path.getsize(_path(t)) <= 1_000_000]
+            if not missing:
+                return
+            if attempt:
+                time.sleep(120 * attempt)
+            for t in missing:
+                _download(t)
     threading.Thread(target=worker, daemon=True, name='trailer-prefetch').start()
 
 
