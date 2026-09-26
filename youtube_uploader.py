@@ -134,17 +134,27 @@ class YouTubeUploader:
             ch = self.service.channels().list(
                 part='contentDetails', mine=True).execute()
             uploads = ch['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-            items = self.service.playlistItems().list(
-                part='snippet,contentDetails', playlistId=uploads,
-                maxResults=limit).execute().get('items', [])
-            ids = [i['contentDetails']['videoId'] for i in items]
+            # Paginated: the API caps a page at 50, and the long-form picker
+            # needs to see further back than that (09-26: LF-01, published
+            # 09-10, fell off the 50-item window and was picked again).
+            ids, token = [], None
+            while len(ids) < limit:
+                page = self.service.playlistItems().list(
+                    part='snippet,contentDetails', playlistId=uploads,
+                    maxResults=min(50, limit - len(ids)), pageToken=token).execute()
+                ids += [i['contentDetails']['videoId'] for i in page.get('items', [])]
+                token = page.get('nextPageToken')
+                if not token:
+                    break
             if not ids:
                 return []
-            stats = self.service.videos().list(
-                part='snippet,statistics', id=','.join(ids)).execute()
+            vitems = []
+            for i in range(0, len(ids), 50):
+                vitems += self.service.videos().list(
+                    part='snippet,statistics', id=','.join(ids[i:i + 50])).execute().get('items', [])
             now = datetime.now(timezone.utc)
             out = []
-            for v in stats.get('items', []):
+            for v in vitems:
                 pub = datetime.fromisoformat(
                     v['snippet']['publishedAt'].replace('Z', '+00:00'))
                 age_h = max((now - pub).total_seconds() / 3600.0, 1.0)

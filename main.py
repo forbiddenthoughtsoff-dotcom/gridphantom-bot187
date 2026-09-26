@@ -155,6 +155,12 @@ def run_pipeline(language: str = 'de', brief: dict = None):
                 from series import is_series_slot
                 if not is_series_slot():
                     trend = trends.pick(recent_titles)
+                    if trend and _same_story(trend['label'], recent_titles):
+                        # a story that stays hot for days must not fill every
+                        # slot (09-25: 4th Collector's Edition Short in 26 h)
+                        logger.info(f"⏭️ Trend already covered, evergreen instead: "
+                                    f"{trend['label'][:60]}")
+                        trend = None
                     if trend:
                         brief = trends.brief_for(trend)
                         logger.info(f"📡 Trendthema: {trend['label'][:70]} "
