@@ -629,6 +629,16 @@ class VideoAssembler:
         # Background priority: 1) own gameplay clip tagged for the topic,
         # 2) official GTA VI trailer montage (GTA 6 topics), 3) any own
         # gameplay clip, 4) topic-matched Pexels stock, 5) AI image + Ken Burns
+        # Word-level timings (written by VoiceGenerator): the caption sync
+        # and the scene cut both key off them
+        words = None
+        try:
+            words_path = audio_path + '.words.json'
+            if os.path.exists(words_path):
+                words = json.load(open(words_path, encoding='utf-8')) or None
+        except Exception as e:
+            logger.warning(f"Word timings unreadable, sentence overlays: {e}")
+
         base = None
         try:
             gta6, build_trailer_montage = False, None
@@ -657,6 +667,17 @@ class VideoAssembler:
             # move per segment, a whoosh per cut) was rolled back on the
             # owner's order (09-22). GTA 6 topics: one still window of the
             # official trailer; everything else: one own gameplay clip.
+            # GTA 6 topics: scene-matched cut from the official footage —
+            # each sentence gets shots that show what it talks about, no shot
+            # repeats across the last 40 videos (shots.py, owner's brief
+            # 09-26). Falls back to one plain trailer window until the shot
+            # index exists on a fresh container.
+            if not bg_path and gta6:
+                try:
+                    from shots import build_scene_montage
+                    bg_path = build_scene_montage(script, words, duration)
+                except Exception as e:
+                    logger.warning(f"Scene cut unavailable: {e}")
             if not bg_path and gta6 and build_trailer_montage:
                 try:
                     bg_path = build_trailer_montage(duration, n_segments=1, motion=False)
@@ -689,16 +710,6 @@ class VideoAssembler:
         except Exception as e:
             logger.warning(f"Stock footage unavailable, falling back: {e}")
             base = None
-
-        # Word-level timings (written by VoiceGenerator) enable pro-style
-        # pop-in captions synced to the voice — the professional-Shorts look.
-        words = None
-        try:
-            words_path = audio_path + '.words.json'
-            if os.path.exists(words_path):
-                words = json.load(open(words_path, encoding='utf-8')) or None
-        except Exception as e:
-            logger.warning(f"Word timings unreadable, sentence overlays: {e}")
 
         if base is not None:
             overlays = []

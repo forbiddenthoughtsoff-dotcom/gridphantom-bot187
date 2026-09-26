@@ -608,6 +608,8 @@ if __name__ == "__main__":
     try:
         from trailer_library import ensure_trailers_async
         ensure_trailers_async()  # background prefetch of official GTA VI trailers
+        from shots import ensure_index_async
+        ensure_index_async()     # scene index of that footage (shots.py)
     except Exception as e:
         logger.warning(f"Trailer prefetch not started: {e}")
     # Community management: answer viewer comments every 2 hours

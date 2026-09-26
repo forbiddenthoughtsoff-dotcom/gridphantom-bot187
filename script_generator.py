@@ -94,8 +94,11 @@ Output ONLY valid JSON, no markdown:
   "description": "8-10 sentence, 200-280 word German SEO description following the DESCRIPTION RULES",
   "image_prompt": "cinematic neon night city or luxury car visual, dramatic cinematic lighting, high contrast, ultra detailed, 8k",
   "sentences": ["Hook", "Satz 2", "Satz 3"],
+  "visuals": [["polizei", "verfolgungsjagd", "nacht"], ["lucia", "jason", "dialog"], ["..."]],
   "tags": ["gta online geld verdienen", "gta 5 tricks deutsch", "..."]
-}"""
+}
+
+VISUALS: for EVERY sentence one list of 3-5 tags naming the footage that should be on screen while it is spoken — ONLY words from this list (exact spelling): """ + ", ".join(__import__('shots').VOCAB) + """. Pick what the sentence literally talks about (a police chase → polizei, verfolgungsjagd, auto, nacht; a fact about Lucia → lucia, dialog; the map → luftaufnahme, stadt, strand). The editor cuts official GTA 6 footage to these tags, so the picture matches the words."""
 
 
 def _swissify(obj):

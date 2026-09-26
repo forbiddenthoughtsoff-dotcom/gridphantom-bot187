@@ -35,6 +35,17 @@ TRAILERS = [
                 'Grand%20Theft%20Auto%20VI%20Trailer%201%20%284k%29.mp4'),
         'skip_head': 12.0, 'skip_tail': 14.0,
     },
+    {
+        # Rockstar's official 26-minute "Extended Look" (08-27-2026): the
+        # bulk of the shot library for scene-matched cuts (shots.py). 720p:
+        # the box decodes it fast, and the framed 16:9 picture stays sharp.
+        'name': 'gta6_extended_look_720p',
+        'url': ('https://archive.org/download/'
+                'grand-theft-auto-vi-gta-6-an-extended-look-26-minute-gameplay-reveal/'
+                'Grand%20Theft%20Auto%20VI%20%28GTA%206%29_%20An%20Extended%20Look%20_'
+                '%2026%20Minute%20Gameplay%20Reveal.mp4'),
+        'skip_head': 20.0, 'skip_tail': 40.0,
+    },
 ]
 
 # "rockstar" is deliberately NOT a key: it appears in nearly every GTA script
