@@ -160,7 +160,21 @@ def _tag_batch(frames: list) -> list:
     return out
 
 
+REPO_INDEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'footage', 'shots.json')
+
+
 def load_index() -> list:
+    """The live index next to the footage; on a fresh container the copy
+    committed to the repo (footage/shots.json) is seeded first, so a
+    redeploy costs no re-detection and no re-tagging."""
+    if not os.path.exists(_index_path()) and os.path.exists(REPO_INDEX):
+        try:
+            os.makedirs(_dir(), exist_ok=True)
+            with open(REPO_INDEX, 'rb') as src, open(_index_path(), 'wb') as dst:
+                dst.write(src.read())
+            logger.info("🎞️ Shot index seeded from the repo copy")
+        except Exception as e:
+            logger.warning(f"Shot index seed failed: {e}")
     try:
         with open(_index_path(), encoding='utf-8') as f:
             return json.load(f)
