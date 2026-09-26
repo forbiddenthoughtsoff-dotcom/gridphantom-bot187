@@ -41,3 +41,7 @@ Thumbs.db
 !series/longform.json
 !sfx/*.mp3
 !sfx/manifest.json
+
+# the committed scene index (shots.py) — the only footage artefact in git
+!footage/
+!footage/shots.json
