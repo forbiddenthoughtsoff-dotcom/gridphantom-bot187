@@ -33,7 +33,11 @@ WORK_DIR = '/tmp/longform'
 DONE_FLAG = '/tmp/longform_done'
 LF_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'series', 'longform.json')
 FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
-W, H = 1920, 1080
+# 1280x720 since 09-27: the box encodes 1080p at ~3 fps, so a 10-minute
+# video hit the 90-minute render timeout (weekly recap KW 39). 720p is
+# 0.44 of the pixels; the captions are laid out in a fixed 1920x1080
+# coordinate system (PlayRes) that libass scales to the frame.
+W, H = 1280, 720
 SEG_LEN = 8.0
 SECTION_GAP = 0.6
 MARKER_RE = re.compile(r'Langform-ID:\s*(LF-\d+)', re.I)
@@ -391,8 +395,8 @@ def _ass_escape(s: str) -> str:
 def write_ass(path: str, groups: list, sections: list, starts: list, total: float):
     head = f"""[Script Info]
 ScriptType: v4.00+
-PlayResX: {W}
-PlayResY: {H}
+PlayResX: 1920
+PlayResY: 1080
 WrapStyle: 0
 ScaledBorderAndShadow: yes
 
@@ -426,12 +430,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 
 def render(montage: str, narration: str, ass_path: str, total: float, out: str,
-           timeout: int = 5400) -> str:
+           timeout: int = 10800) -> str:
     ass_arg = ass_path.replace('\\', '/').replace(':', '\\:')
     fonts = FONTS_DIR.replace(':', '\\:')
     cmd = [_ffmpeg(), '-y', '-i', montage, '-i', narration, '-threads', '2',
            '-vf', f"ass=filename={ass_arg}:fontsdir={fonts}",
-           '-t', f'{total:.2f}', '-c:v', 'libx264', '-preset', 'superfast', '-crf', '23',
+           '-t', f'{total:.2f}', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '22',
            '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0 or not os.path.exists(out):
@@ -561,6 +565,11 @@ def run_longform(kind: str = 'evergreen', language: str = 'de'):
             logger.warning(f"News unavailable for the weekly recap: {e}")
             news = []
         topic = weekly_topic(news)
+        # LONGFORM_ON_START=weekly re-runs on every container start: never
+        # build the same week's recap twice
+        if topic['id'].upper() in used_markers([r.get('description') for r in recent]):
+            logger.info(f"📺 Long-form: {topic['id']} already published — skipping")
+            return None
     else:
         topic = next_evergreen([r.get('description') for r in recent])
         if not topic:
