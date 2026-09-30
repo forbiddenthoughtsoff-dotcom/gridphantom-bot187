@@ -59,7 +59,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             while True:
                 self.wfile.write(b': hold\n\n')
                 self.wfile.flush()
-                time.sleep(10)
+                time.sleep(5)
         except (BrokenPipeError, ConnectionResetError, OSError):
             pass
     def do_POST(self):
@@ -475,6 +475,15 @@ def run_breaking_check():
 
 def run_longform_slot(kind: str = 'evergreen', is_retry: bool = False):
     """Night slot: one 8-12 min 16:9 video for watch time."""
+    # 09-30: after a 19 h platform suspend the scheduler fired the missed
+    # 03:30 long-form at 19:26 together with two catch-up Shorts; the
+    # parallel renders OOM-killed the process. A long-form that is more
+    # than two hours late is not made up (next night instead), so it can
+    # never collide with the daytime Shorts.
+    if not is_retry and datetime.now().hour not in (3, 4, 5):
+        logger.warning(f"📺 Long-form ({kind}) skipped: slot missed by more than "
+                       f"2 h (now {datetime.now():%H:%M}), next night instead")
+        return
     logger.info(f"📺 LONG-FORM cycle ({kind}) — {datetime.now():%Y-%m-%d %H:%M}")
     try:
         from gameplay_sync import RENDER_BUSY as busy
@@ -522,7 +531,7 @@ def run_engagement():
         logger.error(f"Engagement cycle error: {e}", exc_info=True)
 
 KEEPALIVE_URL = os.environ.get('KEEPALIVE_URL',
-                               'https://fast-pulse-gew89.run.mcp-use.com/health')
+                               'https://fast-pulse-gew89.run.mcp-use.com/ping')
 
 
 HOLD_URL = os.environ.get('HOLD_URL',
@@ -532,7 +541,9 @@ HOLD_URL = os.environ.get('HOLD_URL',
 def keepalive_ping():
     """One GET against our own public URL. Not enough on its own (the VM
     was suspended twice with this running), kept as the cheap heartbeat
-    that shows up in the platform's request analytics."""
+    that shows up in the platform's request analytics. /ping, not /health:
+    the platform's edge answers /health itself ({"status":"healthy"}) and
+    never forwards it, so pings there never reached the VM (09-30)."""
     try:
         import requests
         requests.get(KEEPALIVE_URL, timeout=15)
@@ -540,31 +551,43 @@ def keepalive_ping():
         logger.warning(f"Keep-alive ping failed: {e}")
 
 
-def hold_connection():
-    """Keep ONE request to our own /hold stream permanently open through
-    the public URL. The platform suspends the VM whenever no request is in
+def hold_connection(slot=0, stagger=0.0):
+    """Keep a request to our own /hold stream permanently open through the
+    public URL. The platform suspends the VM whenever no request is in
     flight at its periodic check ("excess capacity, autosuspending" — 09-21,
     09-22 twice, each time within minutes of a ping); a request that never
-    ends means the machine never counts as idle. Reconnects on any drop."""
+    ends means the machine never counts as idle.
+
+    09-29 23:47: the check landed in the 5 s gap between one stream ending
+    and the next opening, and the box slept 19 h (long-form + two Shorts
+    lost). So: two staggered streams (a second thread starts a minute
+    later), reconnect after 0.5 s instead of 5 s, and the streams are cut
+    proactively at different ages so they never drop together."""
     import requests
+    import random
+    time.sleep(stagger)
     while True:
         try:
             t0, n = time.time(), 0
+            # rotate well before the proxy's own cut, with a per-slot age
+            # so the two streams are never renewed in the same second
+            max_age = 600 + slot * 180 + random.uniform(0, 60)
             with requests.get(HOLD_URL, stream=True, timeout=(15, 60)) as r:
-                logger.info(f"🔗 Hold connection open ({r.status_code}, "
-                            f"http/{getattr(r.raw, 'version', '?')}, "
-                            f"chunked={getattr(r.raw, 'chunked', '?')}, "
-                            f"len={getattr(r.raw, 'length_remaining', '?')}, "
-                            f"headers={dict(r.headers)})")
+                if r.status_code != 200:
+                    logger.warning(f"Hold {slot}: HTTP {r.status_code}")
                 # byte-wise: iter_lines would block until a 512-byte
                 # buffer fills, i.e. minutes between 8-byte heartbeats
                 for _ in r.iter_content(chunk_size=1):
                     n += 1
-            logger.warning(f"Hold connection ended after {time.time() - t0:.1f}s "
-                           f"and {n} bytes, reconnecting")
+                    if time.time() - t0 > max_age:
+                        break
+            age = time.time() - t0
+            (logger.info if age >= max_age else logger.warning)(
+                f"🔗 Hold {slot} {'rotated' if age >= max_age else 'ended early'} "
+                f"after {age:.0f}s ({n} bytes)")
         except Exception as e:
-            logger.warning(f"Hold connection dropped: {e}")
-        time.sleep(5)
+            logger.warning(f"Hold {slot} dropped: {e}")
+        time.sleep(0.5)
 
 
 def validate_config():
@@ -619,7 +642,9 @@ if __name__ == "__main__":
     # through the edge proxy and comes back as inbound traffic, so the
     # machine never counts as idle. Costs nothing.
     schedule.every(4).minutes.do(keepalive_ping)
-    threading.Thread(target=hold_connection, daemon=True, name='hold').start()
+    for _slot, _stagger in ((0, 0.0), (1, 60.0)):
+        threading.Thread(target=hold_connection, args=(_slot, _stagger),
+                         daemon=True, name=f'hold{_slot}').start()
     logger.info("⏰ Shorts 12:00 (Serie) | 17:00 | 21:00 (Di/Fr Dialog) "
                 "+ long-form 19:00 (Peak) + Eil-Check alle 30 Min")
     try:
