@@ -1,8 +1,10 @@
-# External keep-alive: the hosting platform suspends the bot's VM when no
-# request reaches it from outside ("excess capacity, autosuspending
-# machine"). A ping from inside the VM does not count, so GitHub pings the
-# health endpoint every 5 minutes from the outside. Scheduled runs may lag a
-# few minutes, which is fine: a resumed machine picks up its schedule.
+# External safety net: the hosting platform suspends the bot's VM when it
+# sees no request in flight ("excess capacity, autosuspending machine").
+# The bot's own /hold streams normally prevent that; this ping wakes a
+# suspended machine so it picks up its schedule. Two lessons (09-30):
+# /health is answered by the platform's edge and never reaches the VM, so
+# the target must be a forwarded path (/ping); and GitHub runs this cron
+# only every few hours in practice, so it limits an outage, not prevents it.
 name: keepalive
 on:
   schedule:
@@ -13,4 +15,4 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - run: curl -fsS --max-time 30 https://fast-pulse-gew89.run.mcp-use.com/health
+      - run: curl -fsS --max-time 30 https://fast-pulse-gew89.run.mcp-use.com/ping
