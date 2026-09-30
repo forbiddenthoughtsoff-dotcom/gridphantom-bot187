@@ -475,6 +475,15 @@ def run_breaking_check():
 
 def run_longform_slot(kind: str = 'evergreen', is_retry: bool = False):
     """Night slot: one 8-12 min 16:9 video for watch time."""
+    # 09-30: after a 19 h platform suspend the scheduler fired the missed
+    # 03:30 long-form at 19:26 together with two catch-up Shorts; the
+    # parallel renders OOM-killed the process. A long-form that is more
+    # than two hours late is not made up (next night instead), so it can
+    # never collide with the daytime Shorts.
+    if not is_retry and datetime.now().hour not in (3, 4, 5):
+        logger.warning(f"📺 Long-form ({kind}) skipped: slot missed by more than "
+                       f"2 h (now {datetime.now():%H:%M}), next night instead")
+        return
     logger.info(f"📺 LONG-FORM cycle ({kind}) — {datetime.now():%Y-%m-%d %H:%M}")
     try:
         from gameplay_sync import RENDER_BUSY as busy
