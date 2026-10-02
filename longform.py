@@ -155,30 +155,84 @@ def weekly_topic(news_items: list) -> dict:
 
 
 # ---------------------------------------------------------------- script --
+def _parse_longform_json(txt: str) -> dict:
+    """Best-effort JSON extraction. 10-02: LF-27 ("15 Dinge") produced an
+    answer longer than max_tokens twice in a row; the truncated JSON failed
+    json.loads, both attempts counted as "too short" and the night's
+    long-form was lost. Order: whole object -> first decodable object ->
+    salvage every complete section from a truncated answer."""
+    dec = json.JSONDecoder()
+    m = re.search(r'\{.*\}', txt, re.S)
+    if m:
+        try:
+            return json.loads(m.group(0))
+        except Exception:
+            pass
+    for i in [k for k, ch in enumerate(txt) if ch == '{'][:5]:
+        try:
+            obj, _ = dec.raw_decode(txt[i:])
+            if isinstance(obj, dict) and obj.get('sections'):
+                return obj
+        except Exception:
+            continue
+    # truncated: pull the complete section objects out one by one
+    data = {}
+    for key in ('title', 'thumb_text', 'description'):
+        km = re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)"' % key, txt)
+        if km:
+            try:
+                data[key] = json.loads('"' + km.group(1) + '"')
+            except Exception:
+                data[key] = km.group(1)
+    sm = re.search(r'"sections"\s*:\s*\[', txt)
+    secs = []
+    if sm:
+        pos = sm.end()
+        while True:
+            nxt = txt.find('{', pos)
+            if nxt < 0:
+                break
+            try:
+                obj, used = dec.raw_decode(txt[nxt:])
+            except Exception:
+                break
+            if isinstance(obj, dict) and obj.get('sentences'):
+                secs.append(obj)
+            pos = nxt + used
+    if secs:
+        data['sections'] = secs
+        data['truncated'] = True
+    return data
+
+
 def generate_script(topic: dict, recent_titles: list = None) -> dict:
     import anthropic
     from config import Config
     lo, hi = TARGET_WORDS.get(topic.get('kind', 'evergreen'), (1400, 1700))
     prompt = (f"AUFTRAG:\n{topic['brief']}\n\nZiel-Laenge: {lo} bis {hi} Woerter gesprochener Text (Pflicht, ein zu kurzer Text wird verworfen) "
-              f"insgesamt (das ergibt etwa {lo // 140} bis {hi // 140} Minuten). "
+              f"insgesamt (das ergibt etwa {lo // 140} bis {hi // 140} Minuten), hoechstens {hi + 300} Woerter. "
               f"Kuerzlich veroeffentlichte Titel (nicht wiederholen): "
               + "; ".join((recent_titles or [])[:15]))
     client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+    secs, words, data = [], 0, {}
     for attempt in range(2):
-        msg = client.messages.create(model='claude-sonnet-4-6', max_tokens=6000,
+        msg = client.messages.create(model='claude-sonnet-4-6', max_tokens=12000,
                                      system=LONGFORM_SYSTEM,
                                      messages=[{'role': 'user', 'content': prompt}])
         txt = msg.content[0].text
-        m = re.search(r'\{.*\}', txt, re.S)
-        try:
-            data = json.loads(m.group(0)) if m else {}
-        except Exception:
-            data = {}
+        data = _parse_longform_json(txt)
         secs = [s for s in data.get('sections', []) if s.get('sentences')]
         words = sum(len(" ".join(s['sentences']).split()) for s in secs)
+        logger.info(f"Long-form script attempt {attempt + 1}: {len(secs)} sections, "
+                    f"{words} words, stop={getattr(msg, 'stop_reason', '?')}, "
+                    f"{len(txt)} chars{', salvaged from truncated JSON' if data.get('truncated') else ''}")
         if len(secs) >= 4 and words >= lo * 0.75:
             break
-        prompt += f"\n\nVORHERIGER VERSUCH ZU KURZ ({words} Woerter). Halte die Ziel-Laenge ein."
+        if getattr(msg, 'stop_reason', '') == 'max_tokens' or data.get('truncated'):
+            prompt += (f"\n\nVORHERIGER VERSUCH ZU LANG (Antwort abgeschnitten). Hoechstens {hi} Woerter "
+                       f"insgesamt und hoechstens 9 Kapitel, kompakt formulieren.")
+        else:
+            prompt += f"\n\nVORHERIGER VERSUCH ZU KURZ ({words} Woerter). Halte die Ziel-Laenge ein."
     if len(secs) < 4:
         raise RuntimeError("long-form script too short / unparsable")
     for s in secs:
